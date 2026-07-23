@@ -6,7 +6,7 @@
   "description": "WANION Cloud Functions - legacy claim bridge & point economy",
   "main": "index.js",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "scripts": {
     "deploy": "firebase deploy --only functions"
