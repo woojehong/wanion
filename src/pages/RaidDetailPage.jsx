@@ -14,6 +14,7 @@ import { getCaps } from '../lib/utils';
 import { MonoLabel, SectionTitle, Card, DDay, ArtSlot, Avatar, KV, Chip, HostBadge } from '../components/ui';
 import SynergyBoard from '../components/SynergyBoard';
 import GuestPanel from '../components/GuestPanel';
+import SimulatorModal from '../components/SimulatorModal';
 
 const DIFF_LABEL = { normal: '일반', heroic: '영웅', mythic: '신화' };
 const pad = (n) => String(n).padStart(2, '0');
@@ -221,6 +222,7 @@ export default function RaidDetailPage() {
   const [apps, setApps] = useState([]);
   const [guests, setGuests] = useState([]);
   const [applyOpen, setApplyOpen] = useState(false);
+  const [simOpen, setSimOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => subscribeRaid(raidId, setRaid), [raidId]);
@@ -307,9 +309,12 @@ export default function RaidDetailPage() {
               </button>
             )}
             {canManage && (
-              <button className="btn-ghost" onClick={copyInvite}>
-                {copied ? '복사됨!' : '인게임 초대 코드'}
-              </button>
+              <>
+                <button className="btn-ghost" onClick={() => setSimOpen(true)}>시뮬레이터</button>
+                <button className="btn-ghost" onClick={copyInvite}>
+                  {copied ? '복사됨!' : '인게임 초대 코드'}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -391,6 +396,7 @@ export default function RaidDetailPage() {
       </div>
 
       {applyOpen && <ApplyModalLite raid={raid} onClose={() => setApplyOpen(false)} />}
+      {simOpen && <SimulatorModal raid={raid} apps={apps} guests={guests} onClose={() => setSimOpen(false)} />}
     </main>
   );
 }

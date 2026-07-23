@@ -589,3 +589,17 @@ export async function isBootstrapped() {
   const snap = await getDoc(doc(db, 'meta', 'super'));
   return snap.exists();
 }
+
+// ── Simulation (파티 배치 — 본문서와 분리 저장) ─────────────────────
+
+export function saveSimulation(raidId, assignment) {
+  return setDoc(doc(db, 'raids', raidId, 'sim', 'main'), {
+    assignment, // { memberKey: 파티번호 } — memberKey = app.id 또는 guest:{guestId}
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function fetchSimulation(raidId) {
+  const snap = await getDoc(doc(db, 'raids', raidId, 'sim', 'main'));
+  return snap.exists() ? snap.data().assignment || {} : {};
+}

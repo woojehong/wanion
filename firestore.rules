@@ -163,6 +163,12 @@ service cloud.firestore {
           || (signedIn() && appId == me());
       }
 
+      // 시뮬레이션 — 본문서와 분리 저장 (kgusystem 쓰기증폭 문제의 구조적 해결)
+      match /sim/{docId} {
+        allow read: if signedIn();
+        allow write: if canManageRaid(get(/databases/$(database)/documents/raids/$(raidId)).data);
+      }
+
       match /logs/{logId} {
         allow read: if isPlatformAdmin();
         allow write: if false; // Functions 전용
