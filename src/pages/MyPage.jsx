@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
-import { ME } from '../lib/mock';
 import { useApp } from '../context/AppContext';
 import { functions } from '../lib/firebase';
 import {
@@ -10,7 +9,28 @@ import {
   subscribeWallet,
   subscribeMyCharacters,
   setMainCharacter,
+  fetchMyMemberships,
+  fetchLedger,
 } from '../lib/db';
+import { MonoLabel, SectionTitle, Card, Avatar, Chip } from '../components/ui';
+
+const SCOPE_KO = { platform: '플랫폼', guild: '길드', team: '공대', alliance: '연합' };
+const ROLE_KO = {
+  owner: '소유자',
+  staff: '운영진',
+  master: '길드 마스터',
+  officer: '관리자',
+  leader: '공대장',
+  member: '멤버',
+};
+const LEDGER_KO = {
+  daily: '일일 출석',
+  attend: '레이드 출석',
+  leader: '공대장 완주 보너스',
+  guide: '공략 추천 보상',
+  penalty: '벌점',
+  shop: '상점',
+};
 
 // KST 새벽 2시 리셋 기준의 '오늘' 키 (사양 3.1 — 게이머의 하루)
 function checkinDateKey() {
@@ -18,14 +38,27 @@ function checkinDateKey() {
   return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 }
 
-function DailyCheckinCard() {
+function fmtDate(ts) {
+  const d = ts?.toDate ? ts.toDate() : null;
+  return d ? `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}` : '';
+}
+
+function fmtShort(ts) {
+  const d = ts?.toDate ? ts.toDate() : null;
+  return d ? `${d.getMonth() + 1}/${d.getDate()}` : '';
+}
+
+function fmtTime(ts) {
+  const d = ts?.toDate ? ts.toDate() : null;
+  if (!d) return '';
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// ── 일일 출석 ────────────────────────────────────────────────────────
+function DailyCheckinCard({ wallet }) {
   const { uid, user, signInGoogle } = useApp();
   const [state, setState] = useState('idle'); // idle | done | busy
-  const [wallet, setWallet] = useState(null);
 
-  useEffect(() => (uid ? subscribeWallet(uid, setWallet) : undefined), [uid]);
-
-  // 오늘 이미 출석했으면 버튼을 완료 상태로
   useEffect(() => {
     if (!uid) return;
     hasCheckedInToday(uid, checkinDateKey()).then((done) => done && setState('done'));
@@ -57,17 +90,13 @@ function DailyCheckinCard() {
     </Card>
   );
 }
-import { MonoLabel, SectionTitle, Card, ArtSlot, Avatar, KV, Chip } from '../components/ui';
 
-// ── Battle.net 연동 + 대표 캐릭터 (P2-2 · 사양 §4 하드 게이트의 열쇠) ─
-function BnetLinkCard() {
+// ── Battle.net 연동 + 대표 캐릭터 (사양 §4 하드 게이트의 열쇠) ───────
+function BnetLinkCard({ chars }) {
   const { uid, user, profile, signInGoogle } = useApp();
   const location = useLocation();
-  const [chars, setChars] = useState([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
-
-  useEffect(() => (uid ? subscribeMyCharacters(uid, setChars) : undefined), [uid]);
 
   // 콜백 리다이렉트 결과 배너 (?bnet=linked | error)
   useEffect(() => {
@@ -160,79 +189,143 @@ function ConnCard({ label, status, sub, linked }) {
   );
 }
 
+// ── 페이지 ───────────────────────────────────────────────────────────
 export default function MyPage() {
-  const m = ME;
-  const p = m.points;
-  const tierPct = Math.round((p.tier.progress / p.tier.nextAt) * 100);
+  const { uid, user, profile, authReady, isPlatformAdmin, signInGoogle } = useApp();
+  const [chars, setChars] = useState([]);
+  const [memberships, setMemberships] = useState(null);
+  const [wallet, setWallet] = useState(null);
+  const [ledger, setLedger] = useState(null);
+
+  useEffect(() => (uid ? subscribeMyCharacters(uid, setChars) : setChars([])), [uid]);
+  useEffect(() => (uid ? subscribeWallet(uid, setWallet) : setWallet(null)), [uid]);
+  useEffect(() => {
+    if (!uid) {
+      setMemberships(null);
+      setLedger(null);
+      return;
+    }
+    fetchMyMemberships(uid).then(setMemberships).catch(() => setMemberships([]));
+    fetchLedger(uid).then(setLedger).catch(() => setLedger([]));
+  }, [uid]);
+
+  if (!authReady) {
+    return <main className="mx-auto max-w-6xl px-4 py-16 text-center text-[13px] text-mute">불러오는 중…</main>;
+  }
+  if (!user) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-16 text-center">
+        <p className="text-sub">마이페이지는 로그인이 필요합니다.</p>
+        <button className="btn-primary mt-4" onClick={signInGoogle}>Google로 로그인</button>
+      </main>
+    );
+  }
+
+  const displayName = profile?.displayName || user.displayName || '모험가';
+  const mainColor = profile?.mainChar?.classColor || '#8A70FF';
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      <BnetLinkCard />
-      <DailyCheckinCard />
+      <BnetLinkCard chars={chars} />
+      <DailyCheckinCard wallet={wallet} />
+
       {/* 프로필 헤더 */}
       <div className="flex flex-wrap items-center gap-5 rounded border border-line bg-surface p-5">
-        <ArtSlot label="아바타 1:1" ratio="1 / 1" className="h-[72px] w-[72px]" />
+        <Avatar name={displayName} color={mainColor} size="h-[72px] w-[72px] !text-[26px]" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[24px] font-extrabold">{m.name}</h1>
-            <span className="font-mono text-[11px] tracking-[0.06em] text-heal">BNET VERIFIED</span>
+            <h1 className="text-[24px] font-extrabold">{displayName}</h1>
+            {profile?.bnetLinked ? (
+              <span className="font-mono text-[11px] tracking-[0.06em] text-heal">BNET VERIFIED</span>
+            ) : (
+              <span className="font-mono text-[11px] tracking-[0.06em] text-mute">BNET 미연동</span>
+            )}
           </div>
-          <MonoLabel className="mt-0.5 block">HOOJE · JOINED {m.joined}</MonoLabel>
+          <MonoLabel className="mt-0.5 block">
+            {profile?.battletag ? `${profile.battletag} · ` : ''}JOINED {fmtDate(profile?.createdAt) || '—'}
+          </MonoLabel>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {m.roles.map((r) => (
-              <Chip key={r} className={r === '플랫폼 운영자' ? 'chip-active' : ''}>{r}</Chip>
-            ))}
+            {isPlatformAdmin && <Chip className="chip-active">플랫폼 운영자</Chip>}
+            {profile?.mainChar && (
+              <Chip>
+                대표{' '}
+                <span className="font-bold" style={{ color: profile.mainChar.classColor || undefined }}>
+                  {profile.mainChar.name}
+                </span>
+              </Chip>
+            )}
           </div>
         </div>
-        <button className="btn-ghost">프로필 편집</button>
       </div>
 
       {/* 계정 연동 */}
       <div className="mt-6">
         <SectionTitle ko="계정 연동" en="CONNECTED ACCOUNTS" />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <ConnCard label="GOOGLE" status="연동됨" sub={m.connections.google} linked />
-          <ConnCard label="DISCORD · 필수" status="연동됨" sub={m.connections.discord} linked />
-          <ConnCard label="BATTLE.NET" status="연동됨" sub={`캐릭터 ${m.connections.bnet.chars}개 · 최근 동기화 ${m.connections.bnet.syncedAt}`} linked />
-          <ConnCard label="WARCRAFT LOGS" status="미연동" sub="연동하면 파스·출석이 자동 집계됩니다" linked={false} />
+          <ConnCard label="GOOGLE" status="연동됨" sub={user.email || ''} linked />
+          <ConnCard
+            label="BATTLE.NET"
+            status={profile?.bnetLinked ? '연동됨' : '미연동'}
+            sub={
+              profile?.bnetLinked
+                ? `캐릭터 ${chars.length}개 · 동기화 ${fmtTime(profile?.bnetSyncedAt) || '—'}`
+                : '위 카드에서 연동하세요 — 레이드 신청 필수'
+            }
+            linked={!!profile?.bnetLinked}
+          />
+          <ConnCard label="DISCORD" status="미연동" sub="디코봇 오픈 시 연동 (일정 알림·명령어)" linked={false} />
+          <ConnCard label="WARCRAFT LOGS" status="미연동" sub="연동하면 파스·진도가 자동 집계됩니다 (P3)" linked={false} />
         </div>
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
         <div>
           {/* 캐릭터 */}
-          <SectionTitle ko="내 캐릭터" en="CHARACTERS · BNET SYNCED" right="만렙(90)만 등록 가능" />
+          <SectionTitle ko="내 캐릭터" en="CHARACTERS · BNET SYNCED" right="만렙만 자동 등록" />
           <Card>
-            {m.characters.map((c, i) => (
-              <div key={c.name} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-line' : ''}`}>
-                <Avatar name={c.name} color={c.color} />
+            {chars.map((c, i) => (
+              <div key={c.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-line' : ''}`}>
+                <Avatar name={c.name} color={c.classColor || '#8A70FF'} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-[14px] font-bold" style={{ color: c.color }}>{c.name}</span>
-                    {c.main && <span className="rounded border border-violet-deep px-1 font-mono text-[9px] tracking-[0.06em] text-violet-hi">MAIN</span>}
+                    <span className="truncate text-[14px] font-bold" style={{ color: c.classColor || undefined }}>
+                      {c.name}
+                    </span>
+                    {profile?.mainCharId === c.id && (
+                      <span className="rounded border border-violet-deep px-1 font-mono text-[9px] tracking-[0.06em] text-violet-hi">MAIN</span>
+                    )}
                   </div>
-                  <p className="truncate text-[12px] text-sub">{c.cls} · {c.spec} · <span className="num">{c.ilvl}</span></p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-[12px] font-semibold ${c.verified ? 'text-txt' : 'text-mute'}`}>{c.guildName}</p>
-                  <p className={`font-mono text-[10px] tracking-[0.06em] ${c.verified ? 'text-heal' : 'text-mute'}`}>
-                    {c.verified ? 'VERIFIED' : 'UNREGISTERED'}
+                  <p className="truncate text-[12px] text-sub">
+                    {c.className}{c.realm ? ` · ${c.realm}` : ''} · <span className="num">Lv.{c.level}</span>
                   </p>
                 </div>
+                <p className="font-mono text-[10px] tracking-[0.06em] text-heal">VERIFIED</p>
               </div>
             ))}
+            {!chars.length && (
+              <div className="p-8 text-center text-[13px] text-sub">
+                등록된 캐릭터가 없습니다 — Battle.net을 연동하면 만렙 캐릭터가 자동 등록됩니다.
+              </div>
+            )}
           </Card>
 
           {/* 소속 */}
           <div className="mt-6">
             <SectionTitle ko="내 소속" en="MEMBERSHIPS" />
             <Card>
-              {m.memberships.map((ms, i) => (
-                <div key={ms.name} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-line' : ''}`}>
-                  <MonoLabel className="w-20 shrink-0">{ms.scope}</MonoLabel>
-                  <span className="min-w-0 flex-1 truncate text-[14px] font-bold">{ms.name}</span>
-                  <Chip className="chip-active">{ms.role}</Chip>
+              {(memberships || []).map((ms, i) => (
+                <div key={ms.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-line' : ''}`}>
+                  <MonoLabel className="w-16 shrink-0">{SCOPE_KO[ms.scopeType] || ms.scopeType}</MonoLabel>
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-bold">{ms.orgName}</span>
+                  <Chip className="chip-active">{ROLE_KO[ms.role] || ms.role}</Chip>
                 </div>
               ))}
+              {memberships && !memberships.length && (
+                <div className="p-8 text-center text-[13px] text-sub">
+                  아직 소속이 없습니다 — 길드 가입 신청 기능이 곧 열립니다.
+                </div>
+              )}
+              {!memberships && <p className="p-8 text-center text-[13px] text-mute">불러오는 중…</p>}
             </Card>
           </div>
         </div>
@@ -245,63 +338,51 @@ export default function MyPage() {
               <span className="font-mono text-[11px] text-sub">시즌 1</span>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="num text-[34px] font-extrabold leading-none">{p.balance.toLocaleString()}</span>
-              <span className="text-[18px] font-extrabold text-violet">P</span>
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[12px]">
-              <span className="text-sub">이번 주 출석 적립</span>
-              <span className="flex items-center gap-1">
-                {Array.from({ length: p.weeklyCap }).map((_, i) => (
-                  <i key={i} className={`h-1.5 w-4 rounded-full ${i < p.weeklyEarned ? 'bg-violet' : 'bg-line'}`} />
-                ))}
-                <span className="num ml-1 font-mono text-sub">{p.weeklyEarned}/{p.weeklyCap}</span>
+              <span className="num text-[34px] font-extrabold leading-none">
+                {Number(wallet?.balance || 0).toLocaleString()}
               </span>
+              <span className="text-[18px] font-extrabold text-violet">P</span>
             </div>
             <div className="mt-4 border-t border-line pt-3">
               <div className="flex items-center justify-between text-[12px]">
                 <span className="text-sub">누적 획득 <span className="text-mute">(공개)</span></span>
-                <span className="num font-bold text-violet-hi">{p.lifetime.toLocaleString()} P</span>
+                <span className="num font-bold text-violet-hi">{Number(wallet?.lifetime || 0).toLocaleString()} P</span>
               </div>
               <div className="mt-1.5 flex items-center justify-between text-[12px]">
                 <span className="text-sub">연속 출석</span>
-                <span className="num font-bold">{p.streakWeeks}주</span>
+                <span className="num font-bold">{Number(wallet?.streakWeeks || 0)}주</span>
               </div>
-              <div className="mt-1.5 flex items-center justify-between text-[12px]">
-                <span className="text-sub">계급</span>
-                <span className="font-bold text-violet-hi">{p.tier.name}</span>
-              </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
-                <i className="block h-full bg-violet" style={{ width: `${tierPct}%` }} />
-              </div>
-              <p className="num mt-1 text-right font-mono text-[10px] text-sub">
-                {p.tier.next}까지 {(p.tier.nextAt - p.tier.progress).toLocaleString()}P
-              </p>
             </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-mute">
+              레이드 출석 적립·계급 티어는 시즌 오픈과 함께 활성화됩니다.
+            </p>
           </Card>
 
           <Card className="p-5">
             <MonoLabel violet>LEDGER</MonoLabel>
             <div className="mt-1">
-              {p.ledger.map((l, i) => (
-                <div key={i} className="flex items-center gap-3 border-b border-line py-2.5 text-[12px] last:border-0">
-                  <span className="num w-9 shrink-0 font-mono text-sub">{l.date}</span>
-                  <span className="min-w-0 flex-1 truncate text-txt">{l.label}</span>
+              {(ledger || []).map((l) => (
+                <div key={l.id} className="flex items-center gap-3 border-b border-line py-2.5 text-[12px] last:border-0">
+                  <span className="num w-9 shrink-0 font-mono text-sub">{fmtShort(l.at)}</span>
+                  <span className="min-w-0 flex-1 truncate text-txt">{LEDGER_KO[l.type] || l.type}</span>
                   <span className={`num shrink-0 font-mono font-bold ${l.amount > 0 ? 'text-heal' : 'text-dps'}`}>
                     {l.amount > 0 ? '+' : ''}{l.amount}
                   </span>
                 </div>
               ))}
+              {ledger && !ledger.length && (
+                <p className="py-4 text-center text-[12px] text-sub">아직 적립 내역이 없습니다 — 오늘 첫 출석을 해보세요.</p>
+              )}
+              {!ledger && <p className="py-4 text-center text-[12px] text-mute">불러오는 중…</p>}
             </div>
           </Card>
 
           <Card className="p-5">
-            <MonoLabel violet>SHOP</MonoLabel>
-            <div className="mt-1">
-              <KV k="칭호 「공허를 걷는 자」" v="보유중" />
-              <KV k="프로필 테두리 · 바이올렛 오라" v="600P" />
-              <KV k="프로필 배너 슬롯 확장" v="800P" />
-            </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-mute">포인트는 출석으로만 적립됩니다 — 현금 구매 불가.</p>
+            <MonoLabel violet>SHOP · 준비 중</MonoLabel>
+            <p className="mt-2 text-[12px] leading-relaxed text-sub">
+              포인트 전용 치장(칭호·테두리·배너)이 입점 예정입니다.
+            </p>
+            <p className="mt-1 text-[11px] leading-relaxed text-mute">포인트는 활동으로만 적립됩니다 — 현금 구매 불가.</p>
           </Card>
         </aside>
       </div>

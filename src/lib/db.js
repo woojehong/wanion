@@ -793,6 +793,24 @@ export function subscribeMyCharacters(uid, cb) {
   );
 }
 
+/** 내 소속 전체 (마이페이지) — 조직 이름까지 조인한 단발 조회 */
+export async function fetchMyMemberships(uid) {
+  const snap = await getDocs(query(collection(db, 'memberships'), where('uid', '==', uid)));
+  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const COL = { guild: 'guilds', team: 'teams', alliance: 'alliances' };
+  return Promise.all(
+    rows.map(async (m) => {
+      if (m.scopeType === 'platform') return { ...m, orgName: '와니온 플랫폼' };
+      try {
+        const o = await getDoc(doc(db, COL[m.scopeType] || 'guilds', m.scopeId));
+        return { ...m, orgName: o.exists() ? o.data().name : m.scopeId };
+      } catch {
+        return { ...m, orgName: m.scopeId };
+      }
+    })
+  );
+}
+
 /** 대표 캐릭터 지정 (사양 §4 필수) — 작성자 표기 스냅샷의 원천 */
 export function setMainCharacter(uid, ch) {
   return updateDoc(doc(db, 'users', uid), {
