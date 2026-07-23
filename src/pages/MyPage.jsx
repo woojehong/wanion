@@ -11,6 +11,7 @@ import {
   setMainCharacter,
   fetchMyMemberships,
   fetchLedger,
+  fetchPointsConfig,
 } from '../lib/db';
 import { MonoLabel, SectionTitle, Card, Avatar, Chip, Segments } from '../components/ui';
 
@@ -58,11 +59,16 @@ function fmtTime(ts) {
 function DailyCheckinCard({ wallet }) {
   const { uid, user, signInGoogle } = useApp();
   const [state, setState] = useState('idle'); // idle | done | busy
+  const [pointsLive, setPointsLive] = useState(true); // 시즌 잠금 여부
 
   useEffect(() => {
     if (!uid) return;
     hasCheckedInToday(uid, checkinDateKey()).then((done) => done && setState('done'));
   }, [uid]);
+
+  useEffect(() => {
+    fetchPointsConfig().then((c) => setPointsLive(c.enabled === true));
+  }, []);
 
   const check = async () => {
     if (!user) return signInGoogle();
@@ -79,10 +85,16 @@ function DailyCheckinCard({ wallet }) {
     <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
       <div>
         <MonoLabel violet>DAILY CHECK-IN · KST 02:00 리셋</MonoLabel>
-        <p className="mt-0.5 text-[13px] text-sub">
-          매일 출석하면 +10P{wallet ? ` — 현재 잔액 ${Number(wallet.balance || 0).toLocaleString()}P` : ''}
-          <span className="ml-1 text-mute">(지급은 몇 초 내 자동 반영)</span>
-        </p>
+        {pointsLive ? (
+          <p className="mt-0.5 text-[13px] text-sub">
+            매일 출석하면 +10P{wallet ? ` — 현재 잔액 ${Number(wallet.balance || 0).toLocaleString()}P` : ''}
+            <span className="ml-1 text-mute">(지급은 몇 초 내 자동 반영)</span>
+          </p>
+        ) : (
+          <p className="mt-0.5 text-[13px] text-sub">
+            출석은 기록되지만 <span className="text-mute">포인트 적립은 시즌 오픈과 함께 시작됩니다.</span>
+          </p>
+        )}
       </div>
       <button className="btn-primary" disabled={state !== 'idle'} onClick={check}>
         {state === 'done' ? '오늘 출석 완료' : state === 'busy' ? '처리 중…' : '출석 체크'}

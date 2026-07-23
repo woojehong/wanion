@@ -18,7 +18,8 @@ import {
   increment,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from './firebase';
 import {
   CLASSES,
   SYNERGIES,
@@ -1047,6 +1048,77 @@ export async function assertNoGuests(raidId) {
   }
 }
 
+const GUEST_ROLE_LABEL = { tank: '탱커', heal: '힐러', dps: '딜러' };
+
+/**
+ * 손님 → 일반 공대원 변환 (사양 7.1) — 신청서 생성 + 손님·업비 제거를 한 트랜잭션으로.
+ * 정원 초과면 대기(wait)로. 연동 손님(linkedUid)은 그 uid로, 외부 손님은 guest_{id}로.
+ */
+export async function convertGuestToMember(raidId, guest, role) {
+  if (!GUEST_ROLE_LABEL[role]) throw new Error('역할을 선택해주세요.');
+  await runTransaction(db, async (tx) => {
+    const raidRef = doc(db, 'raids', raidId);
+    const raidSnap = await tx.get(raidRef);
+    if (!raidSnap.exists()) throw new Error('레이드를 찾을 수 없습니다.');
+    const raid = raidSnap.data();
+    const caps = getCaps(raid);
+    const capMap = { tank: caps.tankCap, heal: caps.healerCap, dps: caps.dpsCap };
+    const current = (raid.counts && raid.counts[role]) || 0;
+    const status = current >= capMap[role] ? 'wait' : 'active';
+    const appId = guest.linkedUid || `guest_${guest.id}`;
+    tx.set(doc(db, 'raids', raidId, 'apps', appId), {
+      userId: appId,
+      nickname: guest.charName,
+      guildId: 'none',
+      guildName: '무소속',
+      guildColor: '#64748b',
+      charName: guest.charName,
+      server: guest.server || '아즈샤라',
+      classId: guest.classId || null,
+      className: guest.className || null,
+      classColor: guest.classColor || null,
+      specId: null,
+      specName: GUEST_ROLE_LABEL[role],
+      allSpecNames: [],
+      role,
+      range: null,
+      ilvl: 0,
+      leaderCapable: false,
+      isGuildMaster: false,
+      swap: false,
+      swapRoles: [],
+      seq: Date.now(),
+      isReservation: false,
+      via: 'guest-convert',
+      status,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    if (status === 'active') tx.update(raidRef, { [`counts.${role}`]: increment(1) });
+    tx.delete(doc(db, 'raids', raidId, 'guests', guest.id));
+    tx.delete(doc(db, 'raids', raidId, 'guestFees', guest.id));
+  });
+}
+
+/** 손님 유형 프리셋 저장 (사양 7.8) — 길드·공대 관리자 (rules: org write) */
+export function saveGuestTypePresets(scopeType, scopeId, presets) {
+  const COL = { guild: 'guilds', team: 'teams' };
+  return updateDoc(doc(db, COL[scopeType] || 'guilds', scopeId), {
+    guestTypePresets: presets,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** 포인트 설정 조회 (공개 read) — 시즌 잠금 상태 표시용 */
+export async function fetchPointsConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'points'));
+    return snap.exists() ? snap.data() : {};
+  } catch {
+    return {};
+  }
+}
+
 // ── 정규 로스터 (정공) ───────────────────────────────────────────────
 
 export function saveTeamRoster(teamId, roster) {
@@ -1261,4 +1333,22 @@ export function subscribeTeamWclReport(teamId, cb) {
     (snap) => cb(snap.exists() ? { id: snap.id, ...snap.data() } : null),
     () => cb(null)
   );
+}
+
+// ── 조직 로고 업로드 (사양 7.7) — Storage 업로드 + logoPath 확정 ──────
+// logoPath 쓰기는 마스터/공대장 권한(Firestore rules)이 강제. Storage는 이미지·용량만 제한.
+
+/** 길드·공대 로고 업로드 → URL 반환 + 문서 logoPath 갱신 */
+export async function uploadOrgLogo(scopeType, scopeId, file) {
+  const COL = { guild: 'guilds', team: 'teams' };
+  const col = COL[scopeType];
+  if (!col) throw new Error('지원하지 않는 조직 유형입니다.');
+  const extRaw = (file.name.split('.').pop() || 'png').toLowerCase();
+  const ext = extRaw.replace(/[^a-z0-9]/g, '') || 'png';
+  const path = `logos/${scopeType}/${scopeId}/logo_${Date.now()}.${ext}`;
+  const r = storageRef(storage, path);
+  await uploadBytes(r, file, { contentType: file.type || 'image/png' });
+  const url = await getDownloadURL(r);
+  await updateDoc(doc(db, col, scopeId), { logoPath: url, logoUpdatedAt: serverTimestamp() });
+  return url;
 }

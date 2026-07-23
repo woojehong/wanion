@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// WANION Storage 규칙 — 조직 로고 업로드 (사양 7.7)
+// 로고는 공개 열람. 업로드는 로그인 유저(이미지·500KB 제한)에게 허용하되,
+// 실제 노출값(logoPath 확정)은 Firestore 규칙이 마스터/공대장 권한으로 강제한다.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /logos/{scopeType}/{scopeId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 512 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

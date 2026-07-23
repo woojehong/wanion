@@ -15,6 +15,8 @@ import { MonoLabel, SectionTitle, Card, ArtSlot, Segments, KV, Avatar, Chip } fr
 import PostBoard from '../components/PostBoard';
 import RosterEditor from '../components/RosterEditor';
 import TeamWclPanel from '../components/TeamWclPanel';
+import LogoUploader from '../components/LogoUploader';
+import GuestPresetEditor from '../components/GuestPresetEditor';
 import { OrgJoinModal, OrgManagePanel } from '../components/OrgMembership';
 
 function fmtWclDate(ms) {
@@ -200,7 +202,9 @@ export default function TeamPage() {
       {activeTab === 'manage' && isLeader && (
         <>
           <OrgManagePanel scopeType="team" scopeId={teamId} members={members} reloadMembers={reloadMembers} />
+          <LogoUploader scopeType="team" scopeId={teamId} current={team.logoPath} onSaved={reloadTeam} />
           <RosterEditor teamId={teamId} roster={team.roster} gamedata={gamedata} onSaved={reloadTeam} />
+          <GuestPresetEditor scopeType="team" scopeId={teamId} current={team.guestTypePresets} onSaved={reloadTeam} />
           <TeamWclPanel teamId={teamId} team={team} onSaved={reloadTeam} />
         </>
       )}

@@ -7,8 +7,13 @@ import {
   subscribeGuestFees,
   assertNoGuests,
   updateRaid,
+  convertGuestToMember,
+  fetchGuild,
+  fetchTeam,
 } from '../lib/db';
 import { MonoLabel, Card, Chip } from './ui';
+
+const CONV_ROLE_KO = { tank: '탱', heal: '힐', dps: '딜' };
 
 const inputCls =
   'w-full rounded border border-line bg-surface2 px-2.5 py-1.5 text-[13px] text-txt outline-none focus:border-violet-deep';
@@ -26,8 +31,29 @@ export default function GuestPanel({ raid, guests, canManage }) {
   const [form, setForm] = useState(null); // null=닫힘, {}=신규, {id,...}=수정
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [presets, setPresets] = useState([]); // 호스트 조직의 손님 유형 프리셋 (사양 7.8)
+  const [convRole, setConvRole] = useState({}); // {guestId: role} 변환 역할 선택
 
   useEffect(() => (user ? subscribeGuestFees(raid.id, setFees) : undefined), [raid.id, user]);
+
+  // 손님 유형 프리셋 — 길드·공대 주최 레이드면 그 조직의 프리셋을 불러온다
+  useEffect(() => {
+    const loader = raid.hostType === 'guild' ? fetchGuild : raid.hostType === 'team' ? fetchTeam : null;
+    if (!loader) return setPresets([]);
+    loader(raid.hostId)
+      .then((org) => setPresets(Array.isArray(org?.guestTypePresets) ? org.guestTypePresets : []))
+      .catch(() => setPresets([]));
+  }, [raid.hostType, raid.hostId]);
+
+  const convertGuest = async (g) => {
+    const role = convRole[g.id] || 'dps';
+    if (!window.confirm(`${g.charName} 님을 ${{ tank: '탱커', heal: '힐러', dps: '딜러' }[role]}(으)로 공대원 전환할까요?\n손님 목록에서 제거되고 로스터에 편성됩니다.`)) return;
+    try {
+      await convertGuestToMember(raid.id, g, role);
+    } catch (e) {
+      window.alert(e.message || '전환에 실패했습니다.');
+    }
+  };
 
   const openNew = () =>
     setForm({
@@ -129,6 +155,19 @@ export default function GuestPanel({ raid, guests, canManage }) {
             )}
             {canManage && (
               <>
+                <select
+                  className="rounded border border-line bg-surface px-1 py-0.5 text-[11px] text-txt outline-none"
+                  value={convRole[g.id] || 'dps'}
+                  onChange={(e) => setConvRole({ ...convRole, [g.id]: e.target.value })}
+                  title="전환 역할"
+                >
+                  {['tank', 'heal', 'dps'].map((r) => (
+                    <option key={r} value={r}>{CONV_ROLE_KO[r]}</option>
+                  ))}
+                </select>
+                <button className="text-[11px] text-violet-hi hover:underline" onClick={() => convertGuest(g)} title="일반 공대원으로 전환">
+                  공대원
+                </button>
                 <button
                   className="text-[11px] text-sub hover:text-txt"
                   onClick={() => setForm({ id: g.id, charName: g.charName, server: g.server, classId: g.classId, guestType: g.guestType || '', gold: fees[g.id] ?? '' })}
@@ -182,6 +221,15 @@ export default function GuestPanel({ raid, guests, canManage }) {
             <input className={inputCls} placeholder="유형 (깡/업적/탈것… 선택)" value={form.guestType} maxLength={10}
               onChange={(e) => setForm({ ...form, guestType: e.target.value })} />
           </div>
+          {presets.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {presets.map((p) => (
+                <Chip key={p} active={form.guestType === p} onClick={() => setForm({ ...form, guestType: p })}>
+                  {p}
+                </Chip>
+              ))}
+            </div>
+          )}
           <input className={inputCls} placeholder="업비 (만골 단위 · 선택 · 생성자만 열람)" value={form.gold}
             onChange={(e) => setForm({ ...form, gold: e.target.value.replace(/\D/g, '') })} />
           {msg && <p className="text-[12px] font-semibold text-dps">{msg}</p>}

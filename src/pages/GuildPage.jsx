@@ -13,6 +13,8 @@ import {
 import { MonoLabel, SectionTitle, Card, ArtSlot, KV, Avatar, Chip } from '../components/ui';
 import PostBoard from '../components/PostBoard';
 import GuildVerifyPanel from '../components/GuildVerifyPanel';
+import LogoUploader from '../components/LogoUploader';
+import GuestPresetEditor from '../components/GuestPresetEditor';
 import { OrgJoinModal, OrgManagePanel, ORG_ROLE_LABELS } from '../components/OrgMembership';
 
 const ADMIN_ROLES = ['master', 'officer'];
@@ -159,6 +161,8 @@ export default function GuildPage() {
       {activeTab === 'manage' && isMaster && (
         <>
           <OrgManagePanel scopeType="guild" scopeId={guildId} members={members} reloadMembers={reloadMembers} />
+          <LogoUploader scopeType="guild" scopeId={guildId} current={guild.logoPath} onSaved={() => fetchGuild(guildId).then(setGuild).catch(() => {})} />
+          <GuestPresetEditor scopeType="guild" scopeId={guildId} current={guild.guestTypePresets} onSaved={() => fetchGuild(guildId).then(setGuild).catch(() => {})} />
           <GuildVerifyPanel guildId={guildId} guild={guild} />
         </>
       )}
