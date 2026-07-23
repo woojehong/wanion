@@ -1240,3 +1240,25 @@ export async function resolveKickProposal(proposal) {
   batch.delete(doc(db, 'kickProposals', proposal.id));
   await batch.commit();
 }
+
+// ── WCL 정공 리포트 (사양 7.3) — 갱신은 Functions, 열람은 공개범위(rules) ──
+
+/** WCL 길드 연결 + 공개 범위 — 공대장·관리자 (rules: team write) */
+export function saveTeamWclBinding(teamId, { wclGuildName, wclServerSlug, wclRegion, wclVisibility }) {
+  return updateDoc(doc(db, 'teams', teamId), {
+    wclGuildName: wclGuildName || null,
+    wclServerSlug: wclServerSlug || null,
+    wclRegion: wclRegion || 'KR',
+    wclVisibility: wclVisibility || 'members',
+    wclBoundAt: serverTimestamp(),
+  });
+}
+
+/** 리포트 캐시 구독 — 공개 범위상 권한 없으면 null (rules 거부 → 조용히 폴백) */
+export function subscribeTeamWclReport(teamId, cb) {
+  return onSnapshot(
+    doc(db, 'wclReports', teamId),
+    (snap) => cb(snap.exists() ? { id: snap.id, ...snap.data() } : null),
+    () => cb(null)
+  );
+}

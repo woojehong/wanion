@@ -33,6 +33,7 @@ import {
   scheduledProgressEvening,
 } from './progressJobs.js';
 import { verifyGuildNow, scheduledGuildVerify } from './bnetVerify.js';
+import { refreshTeamWclReport } from './wcl.js';
 
 setGlobalOptions({ region: 'asia-northeast3', maxInstances: 5 });
 
@@ -47,6 +48,8 @@ export { onOrgApplicationDecided, onRaidFixedNotify, onAppPromoted, onMembership
 export { refreshMyProgress, scheduledProgressDaily, scheduledProgressEvening };
 // ── BNet 상시 로스터 검증 — 구현은 functions/bnetVerify.js ──
 export { verifyGuildNow, scheduledGuildVerify };
+// ── WCL 정공 리포트 — 구현은 functions/wcl.js ──
+export { refreshTeamWclReport };
 
 // ── Battle.net OAuth (P2-2) ──────────────────────────────────────────
 // 콜백 = Functions 고정 주소 (사이트 도메인 변경에 면역 — 설계 결정).

@@ -484,6 +484,17 @@ service cloud.firestore {
       allow update, delete: if isScopeMaster('guild', resource.data.guildId);
     }
 
+    // ── WCL 정공 리포트 캐시 (사양 7.3) — 공개 범위 3단계 ───────────
+    // 생성/갱신은 Functions 전용. 열람: teams.wclVisibility (public|members|hidden).
+    //  public=누구나, members=공대원 이상, hidden=공대장·관리자만.
+    match /wclReports/{teamId} {
+      allow read: if get(/databases/$(database)/documents/teams/$(teamId)).data.wclVisibility == 'public'
+        || (get(/databases/$(database)/documents/teams/$(teamId)).data.wclVisibility == 'members'
+            && isScopeMember('team', teamId))
+        || isScopeAdmin('team', teamId);
+      allow write: if false; // Functions(Admin SDK) 전용
+    }
+
     // ── 레거시(kgusystem 이관) 대기 데이터 — 클라이언트 접근 전면 금지 ──
     // Admin SDK(마이그레이션 스크립트)와 P2 병합 브릿지 Functions만 접근한다.
     // legacyNicknames에는 구 시스템 인증 식별자가 포함되므로 절대 공개 금지.

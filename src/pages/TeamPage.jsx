@@ -9,11 +9,19 @@ import {
   fetchMyScopeRole,
   fetchMyOrgApplication,
   cancelOrgApplication,
+  subscribeTeamWclReport,
 } from '../lib/db';
 import { MonoLabel, SectionTitle, Card, ArtSlot, Segments, KV, Avatar, Chip } from '../components/ui';
 import PostBoard from '../components/PostBoard';
 import RosterEditor from '../components/RosterEditor';
+import TeamWclPanel from '../components/TeamWclPanel';
 import { OrgJoinModal, OrgManagePanel } from '../components/OrgMembership';
+
+function fmtWclDate(ms) {
+  if (!ms) return '';
+  const d = new Date(ms);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
 
 const ROLE_LABELS = { leader: '공대장', officer: '관리자', member: '공대원' };
 const ADMIN_ROLES = ['leader', 'officer'];
@@ -41,6 +49,7 @@ export default function TeamPage() {
   const [myApp, setMyApp] = useState(null);
   const [joinOpen, setJoinOpen] = useState(false);
   const [tab, setTab] = useState(null);
+  const [wclReport, setWclReport] = useState(null);
 
   const reloadMembers = useCallback(() => {
     fetchScopeMembers('team', teamId).then(setMembers).catch(() => {});
@@ -49,6 +58,9 @@ export default function TeamPage() {
   const reloadTeam = useCallback(() => {
     fetchTeam(teamId).then((t) => t && setTeam(t)).catch(() => {});
   }, [teamId]);
+
+  // WCL 리포트 구독 — 공개 범위(rules)상 권한 없으면 null
+  useEffect(() => subscribeTeamWclReport(teamId, setWclReport), [teamId]);
 
   useEffect(() => {
     setTeam(undefined);
@@ -189,6 +201,7 @@ export default function TeamPage() {
         <>
           <OrgManagePanel scopeType="team" scopeId={teamId} members={members} reloadMembers={reloadMembers} />
           <RosterEditor teamId={teamId} roster={team.roster} gamedata={gamedata} onSaved={reloadTeam} />
+          <TeamWclPanel teamId={teamId} team={team} onSaved={reloadTeam} />
         </>
       )}
 
@@ -202,6 +215,27 @@ export default function TeamPage() {
       {activeTab === 'intro' && (
         <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_320px]">
           <div>
+            {wclReport?.reports?.length > 0 && (
+              <div className="mb-6">
+                <SectionTitle ko="WCL 리포트" en={`WCL · ${wclReport.guildName || ''}`} right="warcraftlogs.com" />
+                <Card>
+                  {wclReport.reports.map((r, i) => (
+                    <a
+                      key={r.code}
+                      href={`https://www.warcraftlogs.com/reports/${r.code}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`flex items-center gap-4 p-4 transition hover:bg-surface2 ${i > 0 ? 'border-t border-line' : ''}`}
+                    >
+                      <span className="num w-12 shrink-0 font-mono text-[12px] text-sub">{fmtWclDate(r.startTime)}</span>
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{r.title || r.zone || '로그'}</span>
+                      <span className="shrink-0 text-[12px] text-sub">{r.zone || ''}</span>
+                    </a>
+                  ))}
+                </Card>
+              </div>
+            )}
+
             <SectionTitle ko="정규 로스터" en={`ROSTER · ${rosterCount}명`} />
             <Card>
               {rosterCount > 0 ? (

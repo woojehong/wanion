@@ -16,7 +16,7 @@ export const OAUTH = {
     redirectPath: '/auth/discord/callback',
   },
   wcl: {
-    clientId: '', // TODO: Warcraft Logs v2 client (대표님 등록 후)
+    clientId: '019f8cd6-3bf6-714e-a978-bfbb2a11badb', // registered 2026-07-23 (공개 식별자)
     redirectPath: '/auth/wcl/callback',
   },
 };
