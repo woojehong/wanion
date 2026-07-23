@@ -106,9 +106,9 @@ export function getCaps(raid) {
   const healerCap = raid.healerCap ?? (diff ? diff.defaultHealers : 6);
   return {
     totalCap,
-    tank: TANK_CAP,
-    healer: healerCap,
-    dps: totalCap - TANK_CAP - healerCap,
+    tankCap: TANK_CAP,
+    healerCap,
+    dpsCap: Math.max(0, totalCap - TANK_CAP - healerCap),
   };
 }
 

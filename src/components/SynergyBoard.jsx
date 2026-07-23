@@ -1,4 +1,5 @@
 import { useApp } from '../context/AppContext';
+import { analyzeCoverage } from '../lib/raidAbilities';
 import { MonoLabel } from './ui';
 
 // 시너지 란 전용 클래스 축약명
@@ -62,6 +63,25 @@ export default function SynergyBoard({ apps, guests = [], totalCap = 0 }) {
       });
   };
 
+  // ── 커버리지 판정 (raidAbilities 로직 그대로 — 핵심 자산 #1) ──────
+  const activeMembers = apps.filter((a) => a.status === 'active');
+  const coverage = analyzeCoverage(activeMembers);
+  const ownerNames = (owners) =>
+    owners.map((o) => (
+      <span key={o.id || o.charName} className="font-semibold" style={{ color: o.classColor || undefined }}>
+        {o.charName || o.nickname}
+      </span>
+    ));
+
+  const DebuffRow = ({ label, data }) => (
+    <div className="flex items-start justify-between gap-2 py-1 text-[12px]">
+      <span className={data.present ? 'text-txt' : 'font-semibold text-dps'}>
+        {label}{!data.present && ' — 미보유'}
+      </span>
+      <span className="flex flex-wrap justify-end gap-x-1.5">{ownerNames(data.owners)}</span>
+    </div>
+  );
+
   return (
     <div className="rounded border border-line bg-surface p-4">
       <div className="mb-2 flex items-center justify-between">
@@ -72,6 +92,36 @@ export default function SynergyBoard({ apps, guests = [], totalCap = 0 }) {
       </div>
       <div className="flex flex-wrap gap-1">{chipsFor('buff')}</div>
       <div className="mt-1.5 flex flex-wrap gap-1">{chipsFor('utility')}</div>
+
+      <div className="mt-3 border-t border-line pt-2.5">
+        <MonoLabel>DEBUFF COVERAGE</MonoLabel>
+        <DebuffRow label="물리뎀증 (신비한 손길)" data={coverage.physical} />
+        <DebuffRow label="마법뎀증 (혼돈의 낙인)" data={coverage.magic} />
+      </div>
+
+      {coverage.movement.length > 0 && (
+        <div className="mt-2 border-t border-line pt-2.5">
+          <MonoLabel>MOVEMENT</MonoLabel>
+          {coverage.movement.map((m) => (
+            <div key={m.name} className="flex items-start justify-between gap-2 py-1 text-[12px]">
+              <span className="text-sub">{m.name}</span>
+              <span className="flex flex-wrap justify-end gap-x-1.5">{ownerNames(m.owners)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {coverage.raidCds.length > 0 && (
+        <div className="mt-2 border-t border-line pt-2.5">
+          <MonoLabel>RAID COOLDOWNS · {coverage.raidCds.length}</MonoLabel>
+          {coverage.raidCds.map((c, i) => (
+            <div key={`${c.name}${i}`} className="flex items-start justify-between gap-2 py-1 text-[12px]">
+              <span className="text-sub">{c.name}</span>
+              <span className="flex flex-wrap justify-end gap-x-1.5">{ownerNames(c.owners)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

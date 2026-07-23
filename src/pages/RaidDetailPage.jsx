@@ -8,6 +8,10 @@ import {
   submitApplication,
   cancelApplication,
   approveApplication,
+  updateApplication,
+  fixRoster,
+  updateRaid,
+  fetchSimulation,
 } from '../lib/db';
 import { buildInviteCode } from '../lib/bridge';
 import { getCaps } from '../lib/utils';
@@ -38,6 +42,7 @@ function ApplyModalLite({ raid, onClose }) {
   const [charName, setCharName] = useState('');
   const [server, setServer] = useState(servers.find((s) => s.isDefault)?.ko || servers[0]?.ko || '아즈샤라');
   const [ilvl, setIlvl] = useState('');
+  const [bench, setBench] = useState(false); // 벤치 신청 (정원 무관 예비 인원)
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -66,7 +71,7 @@ function ApplyModalLite({ raid, onClose }) {
     ];
     setBusy(true);
     try {
-      const mode = raid.acceptMode === 'review' ? 'pending' : 'normal';
+      const mode = bench ? 'bench' : raid.acceptMode === 'review' ? 'pending' : 'normal';
       await submitApplication(
         raid.id,
         uid,
@@ -165,12 +170,17 @@ function ApplyModalLite({ raid, onClose }) {
           <input className={inputCls} placeholder={`아이템레벨${raid.minIlvl ? ` (최소 ${raid.minIlvl})` : ''}`}
             value={ilvl} onChange={(e) => setIlvl(e.target.value.replace(/\D/g, ''))} />
 
+          <label className="flex cursor-pointer items-center gap-2 text-[13px] text-sub">
+            <input type="checkbox" checked={bench} onChange={(e) => setBench(e.target.checked)} />
+            벤치로 신청 (정원과 무관한 예비 인원 — 공대장이 필요 시 호출)
+          </label>
+
           {error && <p className="text-[13px] font-semibold text-dps">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button className="btn-ghost" onClick={() => onClose(false)}>취소</button>
             <button className="btn-primary" disabled={busy} onClick={submit}>
-              {busy ? '신청 중…' : raid.acceptMode === 'review' ? '신청 (승인 대기)' : '신청하기'}
+              {busy ? '신청 중…' : bench ? '벤치 신청' : raid.acceptMode === 'review' ? '신청 (승인 대기)' : '신청하기'}
             </button>
           </div>
         </div>
@@ -180,7 +190,9 @@ function ApplyModalLite({ raid, onClose }) {
 }
 
 // ── 로스터 그룹 ──────────────────────────────────────────────────────
-function RoleGroup({ label, dot, cap, members }) {
+const ROLE_KO = { tank: '탱', heal: '힐', dps: '딜' };
+
+function RoleGroup({ label, dot, cap, members, canManage, onDemote, onKick }) {
   return (
     <div className="mb-5 last:mb-0">
       <div className="mb-2 flex items-center gap-2">
@@ -192,16 +204,28 @@ function RoleGroup({ label, dot, cap, members }) {
         {Array.from({ length: Math.max(cap, members.length) }).map((_, i) => {
           const m = members[i];
           return m ? (
-            <div key={m.id} className="flex items-center gap-2.5 rounded border border-line bg-surface2 px-3 py-2.5">
-              <Avatar name={m.charName || m.nickname} color={m.classColor} size="h-7 w-7" />
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-bold" style={{ color: m.classColor }}>
-                  {m.charName || m.nickname}
-                </p>
-                <p className="num truncate text-[11px] text-sub">
-                  {m.className} · {m.specName}{m.ilvl ? ` · ${m.ilvl}` : ''}{m.swap ? ' · 스왑' : ''}
-                </p>
+            <div key={m.id} className="group/slot rounded border border-line bg-surface2 px-3 py-2.5">
+              <div className="flex items-center gap-2.5">
+                <Avatar name={m.charName || m.nickname} color={m.classColor} size="h-7 w-7" />
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] font-bold" style={{ color: m.classColor }}>
+                    {m.charName || m.nickname}
+                  </p>
+                  <p className="num truncate text-[11px] text-sub">
+                    {m.className} · {m.specName}{m.ilvl ? ` · ${m.ilvl}` : ''}
+                    {m.swap && m.swapRoles?.length
+                      ? ` · 스왑(${m.swapRoles.map((r) => ROLE_KO[r]).join('')})`
+                      : ''}
+                  </p>
+                </div>
               </div>
+              {canManage && (
+                <div className="mt-1.5 hidden gap-2 border-t border-line/50 pt-1.5 text-[11px] group-hover/slot:flex">
+                  <button className="text-sub hover:text-txt" onClick={() => onDemote(m, 'wait')}>대기로</button>
+                  <button className="text-sub hover:text-txt" onClick={() => onDemote(m, 'bench')}>벤치로</button>
+                  <button className="ml-auto text-sub hover:text-dps" onClick={() => onKick(m)}>제외</button>
+                </div>
+              )}
             </div>
           ) : (
             <div key={`e${i}`} className="flex items-center justify-center rounded border border-line/60 px-3 py-2.5 text-[13px] text-mute">
@@ -248,6 +272,42 @@ export default function RaidDetailPage() {
   const canManage = raid && (raid.createdBy === uid || isPlatformAdmin);
   const memberCount = byRole.tank.length + byRole.heal.length + byRole.dps.length;
 
+  // 스왑 가능자 (핵심 자산 #2) — 확정 인원 중 역할 전환 가능한 멤버를 역할별로 집계
+  const swapCandidates = useMemo(() => {
+    const map = { tank: [], heal: [], dps: [] };
+    apps
+      .filter((a) => a.status === 'active' && a.swap && a.swapRoles?.length)
+      .forEach((a) => a.swapRoles.forEach((r) => map[r] && map[r].push(a)));
+    return map;
+  }, [apps]);
+  const swapTotal = swapCandidates.tank.length + swapCandidates.heal.length + swapCandidates.dps.length;
+
+  // 승격·강등·제외 (관리자) — 정원 검사는 updateApplication 트랜잭션이 수행
+  const promote = (a) =>
+    updateApplication(raid.id, a.id, { role: a.role, status: a.status }, { status: 'active' })
+      .catch((e) => window.alert(e.message));
+  const demote = (a, status) =>
+    updateApplication(raid.id, a.id, { role: a.role, status: a.status }, { status })
+      .catch((e) => window.alert(e.message));
+  const kick = (a) => {
+    const reason = window.prompt('제외 사유 (취소 기록에 남습니다)', '관리자 제외');
+    if (reason === null) return;
+    cancelApplication(raid.id, a.id, a, reason).catch((e) => window.alert(e.message));
+  };
+
+  // 픽스 — 출발 직전 로스터 잠금 (종료 후 포인트 지급 기준점)
+  const toggleFix = async () => {
+    if (raid.fixed) {
+      if (!window.confirm('픽스를 해제할까요? 출석 포인트 지급 기준이 초기화됩니다.')) return;
+      await updateRaid(raid.id, { fixed: false });
+    } else {
+      const activeIds = apps.filter((a) => a.status === 'active').map((a) => a.id);
+      if (!activeIds.length) return window.alert('확정 인원이 없습니다.');
+      if (!window.confirm(`현재 확정 ${activeIds.length}명으로 로스터를 픽스할까요?`)) return;
+      await fixRoster(raid.id, activeIds);
+    }
+  };
+
   if (raid === undefined) {
     return <main className="mx-auto max-w-6xl px-4 py-16 text-center text-sub">불러오는 중…</main>;
   }
@@ -261,7 +321,13 @@ export default function RaidDetailPage() {
 
   const copyInvite = async () => {
     const active = apps.filter((a) => a.status === 'active');
-    const code = buildInviteCode(raid.id, active);
+    let parties = {};
+    try {
+      parties = await fetchSimulation(raid.id); // 시뮬레이터 배치 저장분 → 파티번호 포함
+    } catch {
+      parties = {};
+    }
+    const code = buildInviteCode(raid.id, active, { parties, guests }); // 손님 포함 (사양 7.1)
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
@@ -310,6 +376,9 @@ export default function RaidDetailPage() {
             )}
             {canManage && (
               <>
+                <button className="btn-primary" onClick={toggleFix}>
+                  {raid.fixed ? '픽스 해제' : '픽스'}
+                </button>
                 <button className="btn-ghost" onClick={() => setSimOpen(true)}>시뮬레이터</button>
                 <button className="btn-ghost" onClick={copyInvite}>
                   {copied ? '복사됨!' : '인게임 초대 코드'}
@@ -324,31 +393,67 @@ export default function RaidDetailPage() {
         <div>
           <SectionTitle ko="로스터" en={`ROSTER · ${memberCount}/${raid.totalCap - (raid.guestParty ? guests.length : 0)}`} right={user ? '' : '로그인하면 명단이 보입니다'} />
           <Card className="p-5">
-            <RoleGroup label="탱커" dot="bg-tank" cap={caps.tankCap} members={byRole.tank} />
-            <RoleGroup label="힐러" dot="bg-heal" cap={caps.healerCap} members={byRole.heal} />
-            <RoleGroup label="딜러" dot="bg-dps" cap={caps.dpsCap} members={byRole.dps} />
+            <RoleGroup label="탱커" dot="bg-tank" cap={caps.tankCap} members={byRole.tank}
+              canManage={canManage} onDemote={demote} onKick={kick} />
+            <RoleGroup label="힐러" dot="bg-heal" cap={caps.healerCap} members={byRole.heal}
+              canManage={canManage} onDemote={demote} onKick={kick} />
+            <RoleGroup label="딜러" dot="bg-dps" cap={caps.dpsCap} members={byRole.dps}
+              canManage={canManage} onDemote={demote} onKick={kick} />
           </Card>
+
+          {swapTotal > 0 && (
+            <Card className="mt-4 p-4">
+              <MonoLabel violet>SWAP CANDIDATES · {swapTotal}</MonoLabel>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                {[
+                  ['tank', '탱커로 전환 가능'],
+                  ['heal', '힐러로 전환 가능'],
+                  ['dps', '딜러로 전환 가능'],
+                ].map(([r, label]) => (
+                  <div key={r}>
+                    <span className="text-[11px] font-semibold text-sub">{label}</span>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {swapCandidates[r].map((a) => (
+                        <span key={a.id} className="chip" style={{ color: a.classColor }} title={`메인 ${a.className} · ${a.specName}`}>
+                          {a.charName || a.nickname}
+                        </span>
+                      ))}
+                      {!swapCandidates[r].length && <span className="text-[12px] text-mute">—</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {(waits.length > 0 || benches.length > 0) && (
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Card className="p-4">
-                <MonoLabel violet>WAITLIST · {waits.length}</MonoLabel>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {waits.map((a) => (
-                    <span key={a.id} className="chip" style={{ color: a.classColor }}>{a.charName || a.nickname}</span>
-                  ))}
-                  {!waits.length && <span className="text-[12px] text-mute">없음</span>}
-                </div>
-              </Card>
-              <Card className="p-4">
-                <MonoLabel violet>BENCH · {benches.length}</MonoLabel>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {benches.map((a) => (
-                    <span key={a.id} className="chip" style={{ color: a.classColor }}>{a.charName || a.nickname}</span>
-                  ))}
-                  {!benches.length && <span className="text-[12px] text-mute">없음</span>}
-                </div>
-              </Card>
+              {[
+                ['WAITLIST', waits, '정원이 비면 관리자가 확정으로 올립니다'],
+                ['BENCH', benches, '정원 무관 예비 인원'],
+              ].map(([title, list, hint]) => (
+                <Card key={title} className="p-4">
+                  <MonoLabel violet>{title} · {list.length}</MonoLabel>
+                  <div className="mt-2 flex flex-col gap-1.5">
+                    {list.map((a) => (
+                      <div key={a.id} className="flex items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: a.classColor }}>
+                          {a.charName || a.nickname}
+                          <span className="ml-1.5 font-normal text-sub">{a.specName} · {ROLE_KO[a.role]}</span>
+                        </span>
+                        {canManage && (
+                          <>
+                            <button className="btn-ghost !px-2 !py-0.5 !text-[11px]" onClick={() => promote(a)}>확정</button>
+                            <button className="text-[11px] text-sub hover:text-dps" onClick={() => kick(a)}>제외</button>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                    {!list.length && <span className="text-[12px] text-mute">없음</span>}
+                  </div>
+                  <p className="mt-2 text-[11px] text-mute">{hint}</p>
+                </Card>
+              ))}
             </div>
           )}
 

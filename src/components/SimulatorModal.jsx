@@ -90,11 +90,56 @@ export default function SimulatorModal({ raid, apps, guests, onClose }) {
     }
   };
 
+  // ── 프리셋 (kgusystem 계승) ────────────────────────────────────────
+  /** 역할 분산 자동 배치 — 탱→힐 라운드로빈 분산 후 딜러·손님으로 5인 채움 */
+  const presetBalanced = () => {
+    const next = {};
+    const parties = Array.from({ length: partyCount }, (_, i) => ({ no: i + 1, size: 0 }));
+    const take = (m) => {
+      const target = parties
+        .filter((p) => p.size < 5)
+        .sort((a, b) => a.size - b.size || a.no - b.no)[0];
+      if (!target) return;
+      next[m.key] = target.no;
+      target.size += 1;
+    };
+    pool.filter((m) => m.role === 'tank').forEach(take);
+    pool.filter((m) => m.role === 'heal').forEach(take);
+    pool.filter((m) => m.role !== 'tank' && m.role !== 'heal').forEach(take);
+    setAssign(next);
+    setSelected(null);
+    setDirty(true);
+  };
+
+  const presetClear = () => {
+    setAssign({});
+    setSelected(null);
+    setDirty(true);
+  };
+
+  // ── 드래그 & 클릭 겸용 배치 ────────────────────────────────────────
+  const onDragStart = (e, key) => {
+    e.dataTransfer.setData('text/plain', key);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const onDropParty = (e, no) => {
+    e.preventDefault();
+    const key = e.dataTransfer.getData('text/plain');
+    if (key && partyMembers(no).length < 5) place(key, no);
+  };
+  const onDropPool = (e) => {
+    e.preventDefault();
+    const key = e.dataTransfer.getData('text/plain');
+    if (key) unplace(key);
+  };
+
   const MemberChip = ({ m, inParty }) => (
     <button
+      draggable
+      onDragStart={(e) => onDragStart(e, m.key)}
       onClick={() => (inParty ? unplace(m.key) : setSelected(selected === m.key ? null : m.key))}
-      title={inParty ? '클릭하면 배치 해제' : '선택 후 파티 슬롯 클릭'}
-      className={`flex w-full items-center gap-1.5 rounded border px-2 py-1 text-left text-[12px] font-bold transition ${
+      title={inParty ? '클릭하면 배치 해제 · 드래그로 이동' : '드래그하거나, 선택 후 파티 슬롯 클릭'}
+      className={`flex w-full cursor-grab items-center gap-1.5 rounded border px-2 py-1 text-left text-[12px] font-bold transition active:cursor-grabbing ${
         selected === m.key ? 'border-violet bg-violet/15' : 'border-line bg-surface2 hover:border-violet-deep'
       }`}
       style={{ color: m.color || '#EDEDF2' }}
@@ -125,10 +170,16 @@ export default function SimulatorModal({ raid, apps, guests, onClose }) {
         </div>
 
         <div className="grid gap-4 p-5 md:grid-cols-[200px_1fr]">
-          {/* 미배치 풀 */}
-          <div>
-            <MonoLabel>POOL · {unassigned.length}</MonoLabel>
-            <div className="mt-2 flex max-h-[420px] flex-col gap-1 overflow-y-auto pr-1">
+          {/* 미배치 풀 (드롭 시 배치 해제) */}
+          <div onDragOver={(e) => e.preventDefault()} onDrop={onDropPool}>
+            <div className="flex items-center justify-between">
+              <MonoLabel>POOL · {unassigned.length}</MonoLabel>
+            </div>
+            <div className="mt-2 flex gap-1.5">
+              <Chip onClick={presetBalanced}>자동 배치</Chip>
+              <Chip onClick={presetClear}>초기화</Chip>
+            </div>
+            <div className="mt-2 flex max-h-[400px] flex-col gap-1 overflow-y-auto pr-1">
               {unassigned.map((m) => <MemberChip key={m.key} m={m} />)}
               {!unassigned.length && <span className="text-[12px] text-mute">전원 배치됨</span>}
             </div>
@@ -144,7 +195,12 @@ export default function SimulatorModal({ raid, apps, guests, onClose }) {
             {Array.from({ length: partyCount }, (_, i) => i + 1).map((no) => {
               const members = partyMembers(no);
               return (
-                <div key={no} className="rounded border border-line bg-surface2/50 p-2.5">
+                <div
+                  key={no}
+                  className="rounded border border-line bg-surface2/50 p-2.5"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => onDropParty(e, no)}
+                >
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className="text-[12px] font-bold text-txt">{no}파티</span>
                     <span className="num font-mono text-[11px] text-sub">{members.length}/5</span>

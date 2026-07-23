@@ -413,12 +413,25 @@ export async function updateApplication(raidId, appId, prev, patch, memoText) {
   await runTransaction(db, async (tx) => {
     const raidRef = doc(db, 'raids', raidId);
     const appRef = appDocRef(raidId, appId);
-    const appSnap = await tx.get(appRef);
+    const [raidSnap, appSnap] = await Promise.all([tx.get(raidRef), tx.get(appRef)]);
     if (!appSnap.exists()) throw new Error('신청서를 찾을 수 없습니다.');
     const cur = appSnap.data();
 
     const before = { role: prev.role ?? cur.role, status: prev.status ?? cur.status };
     const after = { role: patch.role ?? before.role, status: patch.status ?? before.status };
+
+    // 승격(비확정 → 확정) 시 정원 검사 — race 방지의 마지막 방어선
+    const promoting = after.status === 'active' && !(before.status === 'active' && before.role === after.role);
+    if (promoting && raidSnap.exists()) {
+      const raid = raidSnap.data();
+      const caps = getCaps(raid);
+      const capMap = { tank: caps.tankCap, heal: caps.healerCap, dps: caps.dpsCap };
+      const current = (raid.counts && raid.counts[after.role]) || 0;
+      const vacated = before.status === 'active' && before.role === after.role ? 1 : 0;
+      if (current - vacated >= capMap[after.role]) {
+        throw new Error('해당 역할 정원이 가득 찼습니다 — 다른 인원을 먼저 조정해주세요.');
+      }
+    }
 
     tx.update(appRef, { ...patch, updatedAt: serverTimestamp() });
 

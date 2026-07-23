@@ -3,14 +3,15 @@
 // 애드온(P4)의 /wanion invite · /wanion sort · /wanion snap 이 이 포맷을 소비한다.
 //
 // 포맷:
-//   초대  : WANION1;INV;<raidId>;<이름-서버:역할[:파티]>,... ;<체크섬>
+//   초대  : WANION1;INV;<raidId>;<이름-서버:역할[+스왑역할들][:파티]>,... ;<체크섬>
+//           역할코드 T/H/D, 손님은 G. 스왑 예: T+HD = 메인 탱커, 힐·딜 전환 가능
 //   배치  : WANION1;SORT;<raidId>;<이름-서버:파티번호>,... ;<체크섬>
 //   스냅샷: WANIONSNAP1;<raidId>;<이름-서버>,... ;<체크섬>   (게임 → 웹)
 
 const VERSION = 'WANION1';
 const SNAP_VERSION = 'WANIONSNAP1';
-const ROLE_CODE = { tank: 'T', heal: 'H', dps: 'D' };
-const CODE_ROLE = { T: 'tank', H: 'heal', D: 'dps' };
+const ROLE_CODE = { tank: 'T', heal: 'H', dps: 'D', guest: 'G' };
+const CODE_ROLE = { T: 'tank', H: 'heal', D: 'dps', G: 'guest' };
 
 /** 간단 체크섬 — 붙여넣기 훼손 감지용 (보안 목적 아님) */
 export function checksum(payload) {
@@ -32,20 +33,27 @@ function member(app) {
 }
 
 /**
- * [인게임 초대 코드 복사] — 픽스(확정) 멤버 명단.
+ * [인게임 초대 코드 복사] — 픽스(확정) 멤버 + 손님 명단 (사양 7.1: 손님 포함이 핵심 목적).
  * @param raidId  레이드 문서 ID
- * @param apps    status==='active' 인 신청 목록
- * @param parties 선택: { [appId]: 파티번호(1~4) } (시뮬레이터 배치 확정 시)
+ * @param apps    status==='active' 인 신청 목록 (a.swapRoles 있으면 스왑 정보 포함)
+ * @param opts    { parties: { [appId | 'guest:'+guestId]: 파티번호 }, guests: [{id, charName, server}] }
  */
-export function buildInviteCode(raidId, apps, parties = {}) {
-  const list = apps
-    .map((a) => {
-      const base = `${member(a)}:${ROLE_CODE[a.role] || 'D'}`;
-      const p = parties[a.id];
-      return p ? `${base}:${p}` : base;
-    })
-    .join(',');
-  return joinCode([VERSION, 'INV', raidId, list]);
+export function buildInviteCode(raidId, apps, opts = {}) {
+  const { parties = {}, guests = [] } = opts;
+  const tokens = apps.map((a) => {
+    let roleSeg = ROLE_CODE[a.role] || 'D';
+    if (a.swapRoles && a.swapRoles.length) {
+      roleSeg += `+${a.swapRoles.map((r) => ROLE_CODE[r] || '').join('')}`;
+    }
+    const p = parties[a.id];
+    return p ? `${member(a)}:${roleSeg}:${p}` : `${member(a)}:${roleSeg}`;
+  });
+  guests.forEach((g) => {
+    const p = parties[`guest:${g.id}`];
+    const base = `${member(g)}:G`;
+    tokens.push(p ? `${base}:${p}` : base);
+  });
+  return joinCode([VERSION, 'INV', raidId, tokens.join(',')]);
 }
 
 /**
@@ -94,7 +102,13 @@ export function parseBridgeCode(raw) {
     .map((tok) => {
       const [nameServer, a, b] = tok.split(':');
       if (mode === 'SORT') return { nameServer, party: Number(a) || null };
-      return { nameServer, role: CODE_ROLE[a] || 'dps', party: Number(b) || null };
+      // 역할 세그먼트: "T" | "T+HD" (메인+스왑 가능 역할들)
+      const [main, swapsRaw] = (a || 'D').split('+');
+      const swapRoles = (swapsRaw || '')
+        .split('')
+        .map((c) => CODE_ROLE[c])
+        .filter((r) => r && r !== 'guest');
+      return { nameServer, role: CODE_ROLE[main] || 'dps', swapRoles, party: Number(b) || null };
     });
   return { ok: true, mode, raidId, entries };
 }
