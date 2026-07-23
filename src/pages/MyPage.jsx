@@ -176,6 +176,62 @@ function BnetLinkCard({ chars }) {
   );
 }
 
+// ── Discord 연동 (와니온봇 — 코드 발급 후 디코에서 /연동 <코드>) ──────
+function DiscordLinkCard() {
+  const { user, profile, signInGoogle } = useApp();
+  const [busy, setBusy] = useState(false);
+  const [code, setCode] = useState(null);
+  const [err, setErr] = useState('');
+  const linked = !!profile?.discordId;
+
+  const genCode = async () => {
+    if (!user) return signInGoogle();
+    setBusy(true);
+    setErr('');
+    try {
+      const call = httpsCallable(functions, 'discordCreateLinkCode');
+      const res = await call();
+      setCode(res.data.code);
+    } catch (e) {
+      setErr(e.message || '코드 발급에 실패했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card className="mb-6 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <MonoLabel violet>DISCORD {linked ? `· ${profile.discordUsername || '연동됨'}` : '· 와니온봇 연동'}</MonoLabel>
+          <p className="mt-0.5 text-[13px] text-sub">
+            {linked
+              ? '디스코드 계정이 연동됐어요 — 디코에서 /일정 · /신청 · /프로필 을 쓸 수 있고 픽스·출발 알림을 받습니다.'
+              : '와니온봇과 계정을 연결하면 디스코드에서 일정 확인·신청·픽스 알림을 받을 수 있어요. 아래 코드를 디코에 입력하세요.'}
+          </p>
+        </div>
+        {!linked && (
+          <button className="btn-primary" disabled={busy} onClick={genCode}>
+            {busy ? '발급 중…' : '연동 코드 발급'}
+          </button>
+        )}
+      </div>
+
+      {code && (
+        <div className="mt-3 border-t border-line pt-3">
+          <p className="text-[13px] text-sub">
+            디스코드에서 아래 명령을 입력하세요 <span className="text-mute">(15분간 유효)</span>
+          </p>
+          <p className="mt-1.5 font-mono text-[18px] font-extrabold tracking-[0.12em] text-violet-hi">
+            /연동 {code}
+          </p>
+        </div>
+      )}
+      {err && <p className="mt-2 text-[13px] font-semibold text-dps">{err}</p>}
+    </Card>
+  );
+}
+
 function ConnCard({ label, status, sub, linked }) {
   return (
     <Card className="p-4">
@@ -227,6 +283,7 @@ export default function MyPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
       <BnetLinkCard chars={chars} />
+      <DiscordLinkCard />
       <DailyCheckinCard wallet={wallet} />
 
       {/* 프로필 헤더 */}
@@ -273,7 +330,12 @@ export default function MyPage() {
             }
             linked={!!profile?.bnetLinked}
           />
-          <ConnCard label="DISCORD" status="미연동" sub="디코봇 오픈 시 연동 (일정 알림·명령어)" linked={false} />
+          <ConnCard
+            label="DISCORD"
+            status={profile?.discordId ? '연동됨' : '미연동'}
+            sub={profile?.discordId ? (profile.discordUsername || '와니온봇 연동') : '위 카드에서 코드 발급 후 /연동'}
+            linked={!!profile?.discordId}
+          />
           <ConnCard label="WARCRAFT LOGS" status="미연동" sub="연동하면 파스·진도가 자동 집계됩니다 (P3)" linked={false} />
         </div>
       </div>

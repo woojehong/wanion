@@ -483,6 +483,19 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── 디스코드 봇(와니온봇) 내부 데이터 — Functions(Admin SDK) 전용 ──
+    // 연동 매핑·카드채널 바인딩·1회용 연동코드. 클라이언트 접근 전면 차단
+    // (연동 코드 발급은 discordCreateLinkCode Callable이, 소비·매핑은 봇이 수행).
+    match /discordLinks/{discordUserId} {
+      allow read, write: if false;
+    }
+    match /discordChannels/{channelId} {
+      allow read, write: if false;
+    }
+    match /discordLinkCodes/{code} {
+      allow read, write: if false;
+    }
+
     // ── 애드온 브릿지 세션 (P4에서 정의) ────────────────────────────
     match /addonSessions/{code} {
       allow read, write: if false;
