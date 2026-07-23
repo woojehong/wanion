@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { guildById, ALLIANCE, RAIDS } from '../lib/mock';
 import { MonoLabel, SectionTitle, Card, ArtSlot, Segments, KV, Avatar, Dot } from '../components/ui';
+import PostBoard from '../components/PostBoard';
 
 const OFFICERS = [
   { name: '새벽별', role: '길드 마스터', cls: '전사', color: '#C69B6D' },
@@ -88,6 +89,11 @@ export default function GuildPage() {
                 </Link>
               ))}
             </Card>
+          </div>
+
+          <div className="mt-6">
+            <SectionTitle ko="길드 게시판" en="GUILD BOARD · 소속원 전용" />
+            <PostBoard scopeType="guild" scopeId={guildId} />
           </div>
 
           <div className="mt-6">

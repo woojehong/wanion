@@ -8,6 +8,7 @@ import TeamPage from './pages/TeamPage';
 import MyPage from './pages/MyPage';
 import AdminPage from './pages/AdminPage';
 import GuidesPage from './pages/GuidesPage';
+import CommunityPage from './pages/CommunityPage';
 
 export default function App() {
   const { pathname } = useLocation();
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/me" element={<MyPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/guides" element={<GuidesPage />} />
+        <Route path="/community" element={<CommunityPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <footer className="border-t border-line py-6">

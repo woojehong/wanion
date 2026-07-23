@@ -42,6 +42,20 @@ service cloud.firestore {
         || (d.hostType == 'team' && hasRole('team', d.hostId, ['leader', 'officer']))
         || (d.hostType == 'alliance' && hasRole('alliance', d.hostId, ['officer']));
     }
+    // 게시판 스코프 관리자 — global=플랫폼 운영진, guild/team=해당 조직 관리진
+    function isScopeAdmin(scopeType, scopeId) {
+      return isPlatformAdmin()
+        || (scopeType == 'guild' && hasRole('guild', scopeId, ['master', 'officer']))
+        || (scopeType == 'team' && hasRole('team', scopeId, ['leader', 'officer']));
+    }
+    // 게시판 스코프 열람·작성 자격 — global=로그인 유저, guild/team=소속원 전용 (사양 8.4)
+    function isScopeMember(scopeType, scopeId) {
+      return (scopeType == 'global' && signedIn())
+        || (scopeType == 'guild'
+            && (isPlatformAdmin() || hasRole('guild', scopeId, ['master', 'officer', 'member'])))
+        || (scopeType == 'team'
+            && (isPlatformAdmin() || hasRole('team', scopeId, ['leader', 'officer', 'member'])));
+    }
     // counts.{tank|heal|dps}만 ±1 범위로 변경하는 업데이트인지 (신청 트랜잭션용)
     function isCountsOnlyUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['counts'])
@@ -264,35 +278,98 @@ service cloud.firestore {
       }
     }
 
-    // ── Posts (공지/자유/구인 — P1-5에서 스코프 세분화 예정) ─────────
+    // ── Boards (통합 게시판 메타 — 관리형 카테고리 목록, 사양 8.5) ───
+    // boardId: 'global' | 'guild_{id}' | 'team_{id}'
+    match /boards/{boardId} {
+      allow read: if true; // 카테고리 목록은 공개 (글 열람 권한은 posts에서 통제)
+      allow create: if isScopeAdmin(request.resource.data.scopeType, request.resource.data.scopeId);
+      allow update: if isScopeAdmin(resource.data.scopeType, resource.data.scopeId)
+        && request.resource.data.scopeType == resource.data.scopeType
+        && request.resource.data.scopeId == resource.data.scopeId;
+      allow delete: if isPlatformAdmin();
+    }
+
+    // ── Posts (통합 게시판 — 스코프 3층: global | guild | team) ──────
+    // 카테고리는 고정 enum 검증 대신 문자열 + 공지 권한류만 검증 (사양 8.5).
+    // 관리자 전용 카테고리 목록은 boards/{boardId}.adminOnlyCategories가 진실의 원천.
     match /posts/{postId} {
-      allow read: if signedIn();
+      allow read: if isScopeMember(resource.data.scopeType, resource.data.scopeId);
+
       allow create: if signedIn()
         && request.resource.data.authorId == me()
-        && request.resource.data.category in ['notice', 'free', 'recruit']
-        && request.resource.data.commentCount == 0;
+        && request.resource.data.commentCount == 0
+        && request.resource.data.scopeType in ['global', 'guild', 'team']
+        && isScopeMember(request.resource.data.scopeType, request.resource.data.scopeId)
+        // boardId 정직성 — adminOnly 판정에 쓰이므로 위조 불가여야 함
+        && (
+          (request.resource.data.scopeType == 'global' && request.resource.data.boardId == 'global')
+          || (request.resource.data.scopeType != 'global'
+              && request.resource.data.boardId
+                 == request.resource.data.scopeType + '_' + request.resource.data.scopeId)
+        )
+        && (
+          isScopeAdmin(request.resource.data.scopeType, request.resource.data.scopeId)
+          || (
+            // 일반 유저: 고정 불가 + 관리자 전용 카테고리 작성 불가
+            request.resource.data.pinned == false
+            && (
+              (!exists(/databases/$(database)/documents/boards/$(request.resource.data.boardId))
+                && request.resource.data.category != 'notice')
+              || (exists(/databases/$(database)/documents/boards/$(request.resource.data.boardId))
+                && !(request.resource.data.category
+                     in get(/databases/$(database)/documents/boards/$(request.resource.data.boardId)).data.adminOnlyCategories))
+            )
+          )
+        );
+
       allow update: if signedIn() && (
+        // (a) 댓글 트랜잭션의 commentCount ±1
         (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount'])
           && (request.resource.data.commentCount == resource.data.commentCount + 1
               || request.resource.data.commentCount == resource.data.commentCount - 1)
         )
-        || isPlatformAdmin()
-        || (resource.data.authorId == me()
-            && request.resource.data.authorId == resource.data.authorId
-            && request.resource.data.category == resource.data.category)
+        // (b) 작성자 본문 수정 — 스코프·카테고리·고정·카운터 불가침
+        || (
+          resource.data.authorId == me()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['title', 'body', 'updatedAt'])
+        )
+        // (c) 스코프 관리자 — 고정/해제 등. 스코프·작성자 이전은 불가
+        || (
+          isScopeAdmin(resource.data.scopeType, resource.data.scopeId)
+          && request.resource.data.scopeType == resource.data.scopeType
+          && request.resource.data.scopeId == resource.data.scopeId
+          && request.resource.data.authorId == resource.data.authorId
+        )
       );
-      allow delete: if isPlatformAdmin() || (signedIn() && resource.data.authorId == me());
+
+      allow delete: if isScopeAdmin(resource.data.scopeType, resource.data.scopeId)
+        || (signedIn() && resource.data.authorId == me());
 
       match /comments/{commentId} {
-        allow read: if signedIn();
-        allow create: if signedIn() && request.resource.data.authorId == me();
+        allow read: if isScopeMember(
+          get(/databases/$(database)/documents/posts/$(postId)).data.scopeType,
+          get(/databases/$(database)/documents/posts/$(postId)).data.scopeId
+        );
+        allow create: if signedIn()
+          && request.resource.data.authorId == me()
+          && isScopeMember(
+            get(/databases/$(database)/documents/posts/$(postId)).data.scopeType,
+            get(/databases/$(database)/documents/posts/$(postId)).data.scopeId
+          );
         allow update: if signedIn() && (
           isPlatformAdmin()
           || (resource.data.authorId == me()
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['body', 'updatedAt']))
         );
-        allow delete: if isPlatformAdmin() || (signedIn() && resource.data.authorId == me());
+        allow delete: if signedIn() && (
+          resource.data.authorId == me()
+          || isScopeAdmin(
+            get(/databases/$(database)/documents/posts/$(postId)).data.scopeType,
+            get(/databases/$(database)/documents/posts/$(postId)).data.scopeId
+          )
+        );
       }
     }
 

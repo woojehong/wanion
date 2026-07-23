@@ -19,7 +19,17 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { CLASSES, SYNERGIES, SERVERS, SEED_GUILDS, SEED_ZONES, SEED_ALLIANCES, SEED_TEAMS } from './constants';
+import {
+  CLASSES,
+  SYNERGIES,
+  SERVERS,
+  SEED_GUILDS,
+  SEED_ZONES,
+  SEED_ALLIANCES,
+  SEED_TEAMS,
+  DEFAULT_BOARD_CATEGORIES,
+  DEFAULT_ADMIN_ONLY_CATEGORIES,
+} from './constants';
 import { getCaps } from './utils';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -456,6 +466,156 @@ export async function fetchGuides(zoneId, bossId, scopeKey = 'global', sort = 'r
 
 export function deleteGuide(guideId) {
   return deleteDoc(doc(db, 'guides', guideId));
+}
+
+// ── Posts (통합 게시판 — 스코프 3층: global | guild | team) ──────────
+// 카테고리는 boards/{boardId} 문서의 관리형 목록 (하드코딩 금지, 사양 8.5).
+// boardId: 'global' | 'guild_{id}' | 'team_{id}'
+
+export function boardIdOf(scopeType, scopeId) {
+  return scopeType === 'global' ? 'global' : `${scopeType}_${scopeId}`;
+}
+
+/** 게시판 메타(카테고리 목록) — 문서가 없으면 기본값 반환 */
+export async function fetchBoardMeta(scopeType, scopeId) {
+  try {
+    const snap = await getDoc(doc(db, 'boards', boardIdOf(scopeType, scopeId)));
+    if (snap.exists()) {
+      const d = snap.data();
+      return {
+        categories: d.categories?.length ? d.categories : DEFAULT_BOARD_CATEGORIES,
+        adminOnlyCategories: d.adminOnlyCategories || DEFAULT_ADMIN_ONLY_CATEGORIES,
+      };
+    }
+  } catch {
+    // 규칙상 읽기 불가 등 — 기본값으로 폴백
+  }
+  return {
+    categories: DEFAULT_BOARD_CATEGORIES,
+    adminOnlyCategories: DEFAULT_ADMIN_ONLY_CATEGORIES,
+  };
+}
+
+/** 카테고리 목록 저장 — 스코프 관리자 전용 (rules 강제) */
+export function saveBoardMeta(scopeType, scopeId, { categories, adminOnlyCategories }) {
+  return setDoc(
+    doc(db, 'boards', boardIdOf(scopeType, scopeId)),
+    {
+      scopeType,
+      scopeId: scopeType === 'global' ? null : scopeId,
+      categories,
+      adminOnlyCategories,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+/** 내 스코프 역할 조회 — 게시판 관리 버튼 노출 판단용 */
+export async function fetchMyScopeRole(uid, scopeType, scopeId) {
+  if (!uid || scopeType === 'global') return null;
+  try {
+    const snap = await getDoc(doc(db, 'memberships', `${uid}_${scopeType}_${scopeId}`));
+    return snap.exists() ? snap.data().role : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 게시글 목록 — 실시간 불필요, 페이지 단위 getDocs (구독 다이어트) */
+export async function fetchPosts({ scopeType, scopeId = null, category = null, pageSize = 30 }) {
+  const filters = [
+    where('scopeType', '==', scopeType),
+    where('scopeId', '==', scopeType === 'global' ? null : scopeId),
+  ];
+  if (category) filters.push(where('category', '==', category));
+  const q = query(collection(db, 'posts'), ...filters, orderBy('createdAt', 'desc'), limit(pageSize));
+  const snap = await getDocs(q);
+  const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // 고정글(pinned)을 목록 최상단으로 (동일 페이지 내 정렬)
+  return list.sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+}
+
+export async function createPost({ scopeType, scopeId, category, title, body, author, pinned = false }) {
+  const sid = scopeType === 'global' ? null : scopeId;
+  const ref = await addDoc(collection(db, 'posts'), {
+    boardId: boardIdOf(scopeType, sid),
+    scopeType,
+    scopeId: sid,
+    category,
+    title: title.trim(),
+    body,
+    authorId: author.uid,
+    // 작성자 표기 스냅샷 — P2 BNet 연동 후 대표 캐릭터명·클래스컬러로 대체
+    authorName: author.name,
+    authorClassColor: author.classColor || null,
+    pinned: !!pinned,
+    commentCount: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+/** 본인 글 수정 — title/body만 (rules가 그 외 필드 변경 차단) */
+export function updatePost(postId, { title, body }) {
+  return updateDoc(doc(db, 'posts', postId), {
+    title: title.trim(),
+    body,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** 고정/해제 — 스코프 관리자 전용 */
+export function setPostPinned(postId, pinned) {
+  return updateDoc(doc(db, 'posts', postId), { pinned: !!pinned });
+}
+
+/** 게시글 삭제 — 댓글 서브컬렉션까지 청크 배치로 정리 */
+export async function deletePost(postId) {
+  const snap = await getDocs(collection(db, 'posts', postId, 'comments'));
+  const refs = snap.docs.map((d) => d.ref);
+  const CHUNK = 450;
+  for (let i = 0; i < refs.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    refs.slice(i, i + CHUNK).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
+  await deleteDoc(doc(db, 'posts', postId));
+}
+
+/** 댓글 구독 — 글을 펼친 동안에만 (읽기 다이어트) */
+export function subscribeComments(postId, cb) {
+  const q = query(collection(db, 'posts', postId, 'comments'), orderBy('createdAt', 'asc'));
+  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), () => cb([]));
+}
+
+/** 댓글 작성 — commentCount와 원자적 갱신 (±1 규칙 준수) */
+export async function addComment(postId, { authorId, authorName, authorClassColor, body }) {
+  await runTransaction(db, async (tx) => {
+    const postRef = doc(db, 'posts', postId);
+    const postSnap = await tx.get(postRef);
+    if (!postSnap.exists()) throw new Error('게시글을 찾을 수 없습니다.');
+    tx.set(doc(collection(db, 'posts', postId, 'comments')), {
+      authorId,
+      authorName,
+      authorClassColor: authorClassColor || null,
+      body: body.trim(),
+      createdAt: serverTimestamp(),
+    });
+    tx.update(postRef, { commentCount: (postSnap.data().commentCount || 0) + 1 });
+  });
+}
+
+export async function deleteComment(postId, commentId) {
+  await runTransaction(db, async (tx) => {
+    const postRef = doc(db, 'posts', postId);
+    const postSnap = await tx.get(postRef);
+    tx.delete(doc(db, 'posts', postId, 'comments', commentId));
+    if (postSnap.exists()) {
+      tx.update(postRef, { commentCount: Math.max(0, (postSnap.data().commentCount || 0) - 1) });
+    }
+  });
 }
 
 // ── Points (읽기 전용 — 지급·차감은 Cloud Functions 전용) ────────────

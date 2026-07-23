@@ -47,7 +47,11 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "category",
+          "fieldPath": "scopeType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "scopeId",
           "order": "ASCENDING"
         },
         {
@@ -61,11 +65,15 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "category",
+          "fieldPath": "scopeType",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "pinned",
+          "fieldPath": "scopeId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "category",
           "order": "ASCENDING"
         },
         {

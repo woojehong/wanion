@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { teamById, guildById } from '../lib/mock';
 import { MonoLabel, SectionTitle, Card, ArtSlot, Segments, KV, Avatar, Dot } from '../components/ui';
+import PostBoard from '../components/PostBoard';
 
 const ROSTER = [
   { role: '탱커', color: 'bg-tank', members: [
@@ -99,6 +100,11 @@ export default function TeamPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
         {/* 로스터 */}
         <div>
+          <div className="mb-8">
+            <SectionTitle ko="공대 게시판" en="TEAM BOARD · 소속원 전용" />
+            <PostBoard scopeType="team" scopeId={teamId} />
+          </div>
+
           <SectionTitle ko="로스터" en={`ROSTER · ${t.members}명`} right="파스는 시즌 중앙값" />
           <Card>
             {ROSTER.map((grp) => (

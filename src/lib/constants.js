@@ -54,6 +54,18 @@ export const DEFAULT_SUBCATEGORIES = [
   { id: 'yeneung', label: '예능' },
 ];
 
+// ── 통합 게시판 카테고리 (관리형 목록의 기본값) ─────────────────────
+// 스코프(전체/길드/공대)별 boards/{boardId} 문서가 진실의 원천이며,
+// 문서가 없으면 이 기본값을 사용한다. 카테고리 추가·삭제는 코드 수정 없이
+// 각 스코프 관리자가 게시판 설정에서 수행한다.
+export const DEFAULT_BOARD_CATEGORIES = [
+  { id: 'notice', label: '공지' },
+  { id: 'free', label: '자유' },
+  { id: 'recruit', label: '구인구직' },
+  { id: 'trade', label: '거래' },
+];
+export const DEFAULT_ADMIN_ONLY_CATEGORIES = ['notice'];
+
 // ── Classes & specializations (Midnight expansion) ──────────────────
 
 export const CLASSES = [
