@@ -1202,3 +1202,41 @@ export async function markAllNotificationsRead(uid, items) {
 export function deleteNotification(uid, itemId) {
   return deleteDoc(doc(db, 'notifications', uid, 'items', itemId));
 }
+
+// ── BNet 상시검증 · 제명 제안 (생성은 Functions, 판정은 길드 마스터) ──
+
+/** 실제 와우 길드 연결 — 마스터 전용 (rules: guild write) */
+export function saveGuildWowBinding(guildId, { wowRealmSlug, wowGuildSlug }) {
+  return updateDoc(doc(db, 'guilds', guildId), {
+    wowRealmSlug: wowRealmSlug || null,
+    wowGuildSlug: wowGuildSlug || null,
+    wowBoundAt: serverTimestamp(),
+  });
+}
+
+/** 대기 중 제명 제안 목록 (길드 관리 화면) */
+export async function fetchKickProposals(guildId) {
+  const q = query(
+    collection(db, 'kickProposals'),
+    where('guildId', '==', guildId),
+    where('status', '==', 'pending')
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** 유지 — 제안만 무시 처리 (멤버십은 그대로) */
+export function dismissKickProposal(id) {
+  return updateDoc(doc(db, 'kickProposals', id), {
+    status: 'dismissed',
+    decidedAt: serverTimestamp(),
+  });
+}
+
+/** 제명 — 멤버십 삭제 + 제안 제거를 한 배치로 (마스터 권한) */
+export async function resolveKickProposal(proposal) {
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'memberships', `${proposal.uid}_guild_${proposal.guildId}`));
+  batch.delete(doc(db, 'kickProposals', proposal.id));
+  await batch.commit();
+}

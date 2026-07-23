@@ -12,6 +12,7 @@ import {
 } from '../lib/db';
 import { MonoLabel, SectionTitle, Card, ArtSlot, KV, Avatar, Chip } from '../components/ui';
 import PostBoard from '../components/PostBoard';
+import GuildVerifyPanel from '../components/GuildVerifyPanel';
 import { OrgJoinModal, OrgManagePanel, ORG_ROLE_LABELS } from '../components/OrgMembership';
 
 const ADMIN_ROLES = ['master', 'officer'];
@@ -156,7 +157,10 @@ export default function GuildPage() {
       </div>
 
       {activeTab === 'manage' && isMaster && (
-        <OrgManagePanel scopeType="guild" scopeId={guildId} members={members} reloadMembers={reloadMembers} />
+        <>
+          <OrgManagePanel scopeType="guild" scopeId={guildId} members={members} reloadMembers={reloadMembers} />
+          <GuildVerifyPanel guildId={guildId} guild={guild} />
+        </>
       )}
 
       {activeTab === 'board' && isMember && (

@@ -32,6 +32,7 @@ import {
   scheduledProgressDaily,
   scheduledProgressEvening,
 } from './progressJobs.js';
+import { verifyGuildNow, scheduledGuildVerify } from './bnetVerify.js';
 
 setGlobalOptions({ region: 'asia-northeast3', maxInstances: 5 });
 
@@ -44,6 +45,8 @@ export { discordInteractions, onRaidWritten, discordCreateLinkCode };
 export { onOrgApplicationDecided, onRaidFixedNotify, onAppPromoted, onMembershipRoleChanged };
 // ── 프로필 진도 갱신 — 구현은 functions/progressJobs.js ──
 export { refreshMyProgress, scheduledProgressDaily, scheduledProgressEvening };
+// ── BNet 상시 로스터 검증 — 구현은 functions/bnetVerify.js ──
+export { verifyGuildNow, scheduledGuildVerify };
 
 // ── Battle.net OAuth (P2-2) ──────────────────────────────────────────
 // 콜백 = Functions 고정 주소 (사이트 도메인 변경에 면역 — 설계 결정).

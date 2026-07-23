@@ -27,7 +27,7 @@ const DIFF_ORDER = [
 // 앱 토큰 캐시 (웜 인스턴스 내 재사용)
 let tokenCache = { token: null, exp: 0 };
 
-async function getClientToken(secret) {
+export async function getClientToken(secret) {
   const now = Date.now();
   if (tokenCache.token && now < tokenCache.exp - 60_000) return tokenCache.token;
   const basic = Buffer.from(`${BNET_CLIENT_ID}:${secret}`).toString('base64');
