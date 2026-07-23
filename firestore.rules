@@ -29,6 +29,11 @@ service cloud.firestore {
     function isPlatformAdmin() {
       return hasRole('platform', 'platform', ['owner', 'staff']);
     }
+    // 소유자(대표) 단독 권한 — 멤버십 임명·해임, meta 변경 등 최상위 작업 전용.
+    // staff는 운영 보조(관리 화면·삭제 처리 등)만 가능하며 권한 구조 자체는 못 건드린다.
+    function isOwner() {
+      return hasRole('platform', 'platform', ['owner']);
+    }
     // 레이드 host 스코프 관리 권한 (kgusystem useCanEdit 계승)
     function canManageRaid(d) {
       return isPlatformAdmin()
@@ -69,15 +74,16 @@ service cloud.firestore {
     // ── Memberships — 변경은 운영자/Functions 경유 ──────────────────
     match /memberships/{id} {
       allow read: if true;
-      // 부트스트랩: 플랫폼 최초 1회, meta/super가 없을 때만 본인을 owner로 등록 가능
-      allow create: if isPlatformAdmin()
+      // 부트스트랩: 플랫폼 최초 1회, meta/super가 없을 때만 본인을 owner로 등록 가능.
+      // 이후의 모든 멤버십 임명·해임은 소유자(owner) 단독 권한 — staff 불가.
+      allow create: if isOwner()
         || (
           signedIn()
           && id == me() + '_platform_platform'
           && request.resource.data.role == 'owner'
           && !exists(/databases/$(database)/documents/meta/super)
         );
-      allow update, delete: if isPlatformAdmin();
+      allow update, delete: if isOwner();
     }
 
     // ── 조직 엔티티 — 공개 프로필 전략 (비로그인 열람) ──────────────
@@ -109,10 +115,10 @@ service cloud.firestore {
     }
     match /meta/{docId} {
       allow read: if true;
-      allow create: if isPlatformAdmin()
+      allow create: if isOwner()
         || (docId == 'super' && signedIn()
             && !exists(/databases/$(database)/documents/meta/super));
-      allow update, delete: if isPlatformAdmin();
+      allow update, delete: if isOwner();
     }
     match /config/{docId} {
       allow read: if true;
