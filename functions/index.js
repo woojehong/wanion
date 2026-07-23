@@ -15,11 +15,20 @@ import { defineSecret } from 'firebase-functions/params';
 import { randomUUID } from 'node:crypto';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { BLIZZ_CLASSES } from './gamedata.js';
+import {
+  discordInteractions,
+  onRaidWritten,
+  discordCreateLinkCode,
+} from './discord/index.js';
 
 setGlobalOptions({ region: 'asia-northeast3', maxInstances: 5 });
 
 initializeApp();
 const db = getFirestore();
+
+// ── Discord 봇 (와니온봇) — 구현은 functions/discord/*, 여기서는 재수출만 ──
+export { discordInteractions, onRaidWritten, discordCreateLinkCode };
 
 // ── Battle.net OAuth (P2-2) ──────────────────────────────────────────
 // 콜백 = Functions 고정 주소 (사이트 도메인 변경에 면역 — 설계 결정).
@@ -32,22 +41,7 @@ const PROJECT_ID = process.env.GCLOUD_PROJECT || 'raidkorea-f34c9';
 const BNET_CALLBACK_URL = `https://asia-northeast3-${PROJECT_ID}.cloudfunctions.net/bnetCallback`;
 const STATE_TTL_MS = 10 * 60 * 1000;
 
-// Blizzard playable_class id → 와니온 게임데이터 (서버 독립 사본 — 웹 constants와 동기 유지)
-const BLIZZ_CLASSES = {
-  1: { id: 'warrior', name: '전사', color: '#C69B6D' },
-  2: { id: 'paladin', name: '성기사', color: '#F48CBA' },
-  3: { id: 'hunter', name: '사냥꾼', color: '#AAD372' },
-  4: { id: 'rogue', name: '도적', color: '#FFF468' },
-  5: { id: 'priest', name: '사제', color: '#FFFFFF' },
-  6: { id: 'deathknight', name: '죽음의 기사', color: '#C41E3A' },
-  7: { id: 'shaman', name: '주술사', color: '#0070DD' },
-  8: { id: 'mage', name: '마법사', color: '#3FC7EB' },
-  9: { id: 'warlock', name: '흑마법사', color: '#8788EE' },
-  10: { id: 'monk', name: '수도사', color: '#00FF98' },
-  11: { id: 'druid', name: '드루이드', color: '#FF7C0A' },
-  12: { id: 'demonhunter', name: '악마사냥꾼', color: '#A330C9' },
-  13: { id: 'evoker', name: '기원사', color: '#33937F' },
-};
+// BLIZZ_CLASSES는 ./gamedata.js에서 import (디스코드 봇과 단일 소스 공유).
 
 /** 연동 시작 — 1회용 state 발급 + 인가 URL 반환 (웹이 리다이렉트) */
 export const bnetStartLink = onCall(async (request) => {
