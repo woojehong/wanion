@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import {
   fetchTeam,
@@ -7,9 +7,12 @@ import {
   fetchScopeMembers,
   fetchRaidsByHost,
   fetchMyScopeRole,
+  fetchMyOrgApplication,
+  cancelOrgApplication,
 } from '../lib/db';
 import { MonoLabel, SectionTitle, Card, ArtSlot, Segments, KV, Avatar, Chip } from '../components/ui';
 import PostBoard from '../components/PostBoard';
+import { OrgJoinModal, OrgManagePanel } from '../components/OrgMembership';
 
 const ROLE_LABELS = { leader: '공대장', officer: '관리자', member: '공대원' };
 const ADMIN_ROLES = ['leader', 'officer'];
@@ -27,28 +30,36 @@ function fmtRaidDate(ts) {
 
 export default function TeamPage() {
   const { teamId } = useParams();
-  const { uid, isPlatformAdmin } = useApp();
+  const navigate = useNavigate();
+  const { uid, user, profile, isPlatformAdmin, signInGoogle } = useApp();
   const [team, setTeam] = useState(undefined); // undefined=로딩, null=없음
   const [baseGuild, setBaseGuild] = useState(null);
   const [members, setMembers] = useState([]);
   const [raids, setRaids] = useState([]);
   const [myRole, setMyRole] = useState(null);
+  const [myApp, setMyApp] = useState(null);
+  const [joinOpen, setJoinOpen] = useState(false);
   const [tab, setTab] = useState(null);
+
+  const reloadMembers = useCallback(() => {
+    fetchScopeMembers('team', teamId).then(setMembers).catch(() => {});
+  }, [teamId]);
 
   useEffect(() => {
     setTeam(undefined);
     setBaseGuild(null);
     setMembers([]);
     setRaids([]);
+    setMyApp(null);
     fetchTeam(teamId)
       .then((t) => {
         setTeam(t);
         if (t?.baseGuildId) fetchGuild(t.baseGuildId).then(setBaseGuild).catch(() => {});
       })
       .catch(() => setTeam(null));
-    fetchScopeMembers('team', teamId).then(setMembers).catch(() => {});
     fetchRaidsByHost('team', teamId).then(setRaids).catch(() => {});
-  }, [teamId]);
+    reloadMembers();
+  }, [teamId, reloadMembers]);
 
   // 접근 모델 (사양 8.4): 소속원=게시판 디폴트, 외부인=소개 뷰만
   useEffect(() => {
@@ -56,9 +67,30 @@ export default function TeamPage() {
       setMyRole(role);
       setTab((prev) => prev ?? (role || isPlatformAdmin ? 'board' : 'intro'));
     });
+    fetchMyOrgApplication('team', teamId, uid).then(setMyApp);
   }, [uid, teamId, isPlatformAdmin]);
 
   const isMember = !!myRole || isPlatformAdmin;
+  const isLeader = myRole === 'leader' || isPlatformAdmin;
+  const pendingApp = myApp?.status === 'pending';
+
+  const onJoinClick = () => {
+    if (!user) return signInGoogle();
+    if (pendingApp) {
+      if (window.confirm('공대 지원을 취소할까요?')) {
+        cancelOrgApplication('team', teamId, uid).then(() => setMyApp(null)).catch(() => {});
+      }
+      return;
+    }
+    // BNet 하드 게이트 (사양 §4) — 서버 규칙도 동일 조건을 강제한다
+    if (!profile?.bnetLinked) {
+      if (window.confirm('공대 지원에는 Battle.net 연동이 필요합니다.\n마이페이지로 이동할까요?')) {
+        navigate('/me');
+      }
+      return;
+    }
+    setJoinOpen(true);
+  };
 
   // 정규 로스터 (teams.roster — 공격대 관리 페이지에서 편집, 사양 7.5)
   const rosterGroups = useMemo(() => {
@@ -104,11 +136,16 @@ export default function TeamPage() {
               )}
             </div>
           </div>
-          <div className="mt-6 flex gap-2">
-            <button className="btn-primary" title="Battle.net 연동(P2) 후 활성화됩니다" disabled>
-              공대 지원하기
-            </button>
-          </div>
+          {!isMember && (
+            <div className="mt-6 flex flex-col items-start gap-1">
+              <button className={pendingApp ? 'btn-ghost' : 'btn-primary'} onClick={onJoinClick}>
+                {pendingApp ? '승인 대기 중 · 취소' : '공대 지원하기'}
+              </button>
+              {myApp?.status === 'rejected' && (
+                <span className="text-[11px] text-mute">이전 지원이 거절되었습니다 — 재지원 가능</span>
+              )}
+            </div>
+          )}
         </Card>
         <Card className="bg-surface2 p-6">
           <MonoLabel violet>CURRENT PROGRESS</MonoLabel>
@@ -136,11 +173,16 @@ export default function TeamPage() {
         </Card>
       </div>
 
-      {/* 탭 — 게시판은 소속원 전용 노출 */}
+      {/* 탭 — 게시판=소속원, 관리=공대장 전용 노출 */}
       <div className="mt-6 flex gap-1.5">
         <Chip active={activeTab === 'intro'} onClick={() => setTab('intro')}>소개</Chip>
         {isMember && <Chip active={activeTab === 'board'} onClick={() => setTab('board')}>게시판</Chip>}
+        {isLeader && <Chip active={activeTab === 'manage'} onClick={() => setTab('manage')}>관리</Chip>}
       </div>
+
+      {activeTab === 'manage' && isLeader && (
+        <OrgManagePanel scopeType="team" scopeId={teamId} members={members} reloadMembers={reloadMembers} />
+      )}
 
       {activeTab === 'board' && isMember && (
         <div className="mt-5">
@@ -245,6 +287,18 @@ export default function TeamPage() {
             )}
           </aside>
         </div>
+      )}
+
+      {joinOpen && (
+        <OrgJoinModal
+          scopeType="team"
+          scopeId={teamId}
+          orgName={team.name}
+          onClose={(applied) => {
+            setJoinOpen(false);
+            if (applied) fetchMyOrgApplication('team', teamId, uid).then(setMyApp);
+          }}
+        />
       )}
     </main>
   );

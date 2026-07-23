@@ -825,12 +825,13 @@ export function setMainCharacter(uid, ch) {
   });
 }
 
-// ── 길드 가입 신청 (신청→마스터 승인→멤버십 부여) ────────────────────
+// ── 조직 가입/지원 신청 (길드·공대 공용: 신청→최고책임자 승인→멤버십) ─
 
-/** 가입 신청 — 소속 예정 캐릭터 스냅샷 포함. 문서 id = {uid}_{guildId} (길드당 1건) */
-export function applyToGuild(guildId, { uid, displayName, battletag, character, message }) {
-  return setDoc(doc(db, 'guildApplications', `${uid}_${guildId}`), {
-    guildId,
+/** 가입/지원 신청 — 캐릭터 스냅샷 포함. 문서 id = {uid}_{scopeType}_{scopeId} (조직당 1건) */
+export function applyToOrg(scopeType, scopeId, { uid, displayName, battletag, character, message }) {
+  return setDoc(doc(db, 'orgApplications', `${uid}_${scopeType}_${scopeId}`), {
+    scopeType,
+    scopeId,
     uid,
     displayName: displayName || '모험가',
     battletag: battletag || null,
@@ -846,25 +847,26 @@ export function applyToGuild(guildId, { uid, displayName, battletag, character, 
   });
 }
 
-export async function fetchMyGuildApplication(guildId, uid) {
+export async function fetchMyOrgApplication(scopeType, scopeId, uid) {
   if (!uid) return null;
   try {
-    const snap = await getDoc(doc(db, 'guildApplications', `${uid}_${guildId}`));
+    const snap = await getDoc(doc(db, 'orgApplications', `${uid}_${scopeType}_${scopeId}`));
     return snap.exists() ? { id: snap.id, ...snap.data() } : null;
   } catch {
     return null;
   }
 }
 
-export function cancelGuildApplication(guildId, uid) {
-  return deleteDoc(doc(db, 'guildApplications', `${uid}_${guildId}`));
+export function cancelOrgApplication(scopeType, scopeId, uid) {
+  return deleteDoc(doc(db, 'orgApplications', `${uid}_${scopeType}_${scopeId}`));
 }
 
-/** 승인 대기 목록 — 마스터 화면 전용 */
-export async function fetchPendingGuildApplications(guildId) {
+/** 승인 대기 목록 — 최고 책임자 화면 전용 */
+export async function fetchPendingOrgApplications(scopeType, scopeId) {
   const q = query(
-    collection(db, 'guildApplications'),
-    where('guildId', '==', guildId),
+    collection(db, 'orgApplications'),
+    where('scopeType', '==', scopeType),
+    where('scopeId', '==', scopeId),
     where('status', '==', 'pending')
   );
   const snap = await getDocs(q);
@@ -873,20 +875,20 @@ export async function fetchPendingGuildApplications(guildId) {
 
 /**
  * 가입 판정 — 승인 시 신청 상태 갱신 + memberships 생성을 한 배치로.
- * (rules: 둘 다 마스터 권한 — 부분 성공이 구조적으로 불가능)
+ * (rules: 둘 다 최고 책임자 권한 — 부분 성공이 구조적으로 불가능)
  */
-export async function decideGuildApplication(app, accept, decidedBy) {
+export async function decideOrgApplication(app, accept, decidedBy) {
   const batch = writeBatch(db);
-  batch.update(doc(db, 'guildApplications', app.id), {
+  batch.update(doc(db, 'orgApplications', app.id), {
     status: accept ? 'accepted' : 'rejected',
     decidedBy,
     decidedAt: serverTimestamp(),
   });
   if (accept) {
-    batch.set(doc(db, 'memberships', `${app.uid}_guild_${app.guildId}`), {
+    batch.set(doc(db, 'memberships', `${app.uid}_${app.scopeType}_${app.scopeId}`), {
       uid: app.uid,
-      scopeType: 'guild',
-      scopeId: app.guildId,
+      scopeType: app.scopeType,
+      scopeId: app.scopeId,
       role: 'member',
       via: 'application',
       createdAt: serverTimestamp(),
@@ -895,11 +897,11 @@ export async function decideGuildApplication(app, accept, decidedBy) {
   await batch.commit();
 }
 
-/** 길드원 역할 조정 (member↔officer) — 마스터 전용 (rules 강제) */
-export function setGuildMemberRole(uid, guildId, role) {
+/** 소속원 역할 조정 (member↔officer) — 최고 책임자 전용 (rules 강제) */
+export function setOrgMemberRole(uid, scopeType, scopeId, role) {
   return setDoc(
-    doc(db, 'memberships', `${uid}_guild_${guildId}`),
-    { uid, scopeType: 'guild', scopeId: guildId, role, updatedAt: serverTimestamp() },
+    doc(db, 'memberships', `${uid}_${scopeType}_${scopeId}`),
+    { uid, scopeType, scopeId, role, updatedAt: serverTimestamp() },
     { merge: true }
   );
 }
