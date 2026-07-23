@@ -1,9 +1,37 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GUILDS, TEAMS, ALLIANCE } from '../lib/mock';
+import { fetchGuilds, fetchTeams, fetchAlliances, subscribeUpcomingRaids } from '../lib/db';
+import { sortGuilds } from '../lib/utils';
 import { MonoLabel, Segments, ArtSlot, Dot } from '../components/ui';
 
 export default function LandingPage() {
-  const sad = TEAMS[0];
+  const [guilds, setGuilds] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [alliances, setAlliances] = useState([]);
+  const [raidCount, setRaidCount] = useState(0);
+
+  useEffect(() => {
+    fetchGuilds()
+      .then((g) => setGuilds(sortGuilds(g.filter((x) => !x.isNone && !x.isUnion))))
+      .catch(() => {});
+    fetchTeams().then(setTeams).catch(() => {});
+    fetchAlliances().then(setAlliances).catch(() => {});
+    return subscribeUpcomingRaids((rs) => setRaidCount(rs.length));
+  }, []);
+
+  const allianceGuildIds = useMemo(() => {
+    const s = new Set();
+    alliances.forEach((a) => (a.guildIds || []).forEach((id) => s.add(id)));
+    return s;
+  }, [alliances]);
+
+  // 대표 프로그레스 카드 — 진도(WCL/수동)가 있는 공대 우선
+  const featureTeam = useMemo(() => teams.find((t) => t.progress) || teams[0] || null, [teams]);
+  const otherTeams = useMemo(
+    () => teams.filter((t) => t.id !== featureTeam?.id).slice(0, 2),
+    [teams, featureTeam]
+  );
+
   return (
     <div>
       {/* 공개 랜딩 전용 슬림 네비 */}
@@ -44,10 +72,14 @@ export default function LandingPage() {
             </p>
             <div className="mt-7 flex gap-3">
               <Link to="/board" className="btn-primary">파티 찾아보기</Link>
-              <span className="btn-ghost cursor-default">길드 등록 안내</span>
+              <Link to="/me" className="btn-ghost">Battle.net 연동으로 시작</Link>
             </div>
             <div className="mt-8 flex gap-6">
-              {[['등록 길드', GUILDS.length], ['공격대', TEAMS.length + 1], ['이번 주 공대', 12]].map(([k, v]) => (
+              {[
+                ['등록 길드', guilds.length],
+                ['공격대', teams.length],
+                ['모집 중 공대', raidCount],
+              ].map(([k, v]) => (
                 <div key={k}>
                   <div className="num text-[22px] font-extrabold text-txt">{v}</div>
                   <div className="text-[12px] text-sub">{k}</div>
@@ -67,43 +99,72 @@ export default function LandingPage() {
             <MonoLabel violet>LIVE PROGRESS · WARCRAFT LOGS 연동</MonoLabel>
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
-          <div className="rounded border border-line bg-surface p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <MonoLabel>RAID TEAM</MonoLabel>
-                <div className="mt-1 text-[19px] font-bold">{sad.name}</div>
-              </div>
-              <Link to="/team/teamsad" className="text-[12px] text-violet-hi hover:underline">팀 페이지</Link>
-            </div>
-            <div className="mt-5 flex items-baseline gap-3">
-              <span className="num text-[44px] font-extrabold leading-none">
-                <span className="text-violet">{sad.progress.killed}</span>
-                <span className="text-mute"> / {sad.progress.total}</span>
-              </span>
-              <span className="text-[14px] font-semibold text-sub">{sad.progress.raid} {sad.progress.difficulty}</span>
-            </div>
-            <Segments done={sad.progress.killed} total={sad.progress.total} className="mt-4" />
-            <p className="mt-3 text-[12px] text-sub">
-              최근 킬 {sad.progress.lastKill} · {sad.progress.lastKillDate} · KR {sad.progress.rankKr}
-            </p>
-          </div>
-          <div className="flex flex-col gap-4">
-            {[{ n: ALLIANCE.name, d: '공허첨탑 영웅', k: 8, t: 8, s: '올킬 · 격주 운영' }, { n: '스타폴', d: '공허첨탑 신화', k: 3, t: 8, s: '진행 중' }].map((x) => (
-              <div key={x.n} className="rounded border border-line bg-surface p-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[15px] font-bold">{x.n}</span>
-                  <span className="num text-[15px] font-extrabold">
-                    <span className="text-violet">{x.k}</span>
-                    <span className="text-mute">/{x.t}</span>
-                  </span>
+        {featureTeam ? (
+          <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
+            <div className="rounded border border-line bg-surface p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <MonoLabel>RAID TEAM</MonoLabel>
+                  <div className="mt-1 text-[19px] font-bold">{featureTeam.name}</div>
                 </div>
-                <Segments done={x.k} total={x.t} className="mt-3" />
-                <p className="mt-2 text-[12px] text-sub">{x.d} · {x.s}</p>
+                <Link to={`/team/${featureTeam.id}`} className="text-[12px] text-violet-hi hover:underline">팀 페이지</Link>
               </div>
-            ))}
+              {featureTeam.progress ? (
+                <>
+                  <div className="mt-5 flex items-baseline gap-3">
+                    <span className="num text-[44px] font-extrabold leading-none">
+                      <span className="text-violet">{featureTeam.progress.killed}</span>
+                      <span className="text-mute"> / {featureTeam.progress.total}</span>
+                    </span>
+                    <span className="text-[14px] font-semibold text-sub">
+                      {featureTeam.progress.raid} {featureTeam.progress.difficulty}
+                    </span>
+                  </div>
+                  <Segments done={featureTeam.progress.killed} total={featureTeam.progress.total} className="mt-4" />
+                  {featureTeam.progress.lastKill && (
+                    <p className="mt-3 text-[12px] text-sub">최근 킬 {featureTeam.progress.lastKill}</p>
+                  )}
+                </>
+              ) : (
+                <p className="mt-5 text-[13px] leading-relaxed text-sub">
+                  진도 리포트는 공대 관리 페이지에서 Warcraft Logs 길드를 연결하면 표시됩니다.
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-4">
+              {otherTeams.map((t) => (
+                <div key={t.id} className="rounded border border-line bg-surface p-5">
+                  <div className="flex items-center justify-between">
+                    <Link to={`/team/${t.id}`} className="text-[15px] font-bold hover:text-violet-hi">{t.name}</Link>
+                    {t.progress && (
+                      <span className="num text-[15px] font-extrabold">
+                        <span className="text-violet">{t.progress.killed}</span>
+                        <span className="text-mute">/{t.progress.total}</span>
+                      </span>
+                    )}
+                  </div>
+                  {t.progress ? (
+                    <>
+                      <Segments done={t.progress.killed} total={t.progress.total} className="mt-3" />
+                      <p className="mt-2 text-[12px] text-sub">{t.progress.raid} {t.progress.difficulty}</p>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-[12px] text-mute">{t.server || ''} · 리포트 준비 중</p>
+                  )}
+                </div>
+              ))}
+              {!otherTeams.length && (
+                <div className="rounded border border-line bg-surface p-5 text-[12px] text-mute">
+                  더 많은 공격대가 곧 합류합니다.
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded border border-line bg-surface p-10 text-center text-[13px] text-sub">
+            아직 등록된 공격대가 없습니다 — 공대를 만들고 Warcraft Logs를 연결하면 여기 실시간 진도가 표시됩니다.
+          </div>
+        )}
       </section>
 
       {/* 등록 길드 */}
@@ -111,24 +172,35 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 py-14">
           <div className="mb-5">
             <h2 className="text-[22px] font-bold">등록 길드</h2>
-            <MonoLabel violet>FOUNDING GUILDS · INVITE ONLY</MonoLabel>
+            <MonoLabel violet>FOUNDING GUILDS</MonoLabel>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            {GUILDS.map((g) => (
-              <Link key={g.id} to={`/guild/${g.id}`} className="group rounded border border-line bg-surface p-4 transition hover:border-violet-deep">
-                <div className="flex items-center gap-2">
-                  <Dot />
-                  <span className="truncate text-[14px] font-bold group-hover:text-violet-hi">{g.name}</span>
-                </div>
-                <p className="mt-1.5 truncate text-[12px] text-sub">{g.server} · 길드원 {g.members}</p>
-                <div className="mt-2 flex items-center gap-1.5">
-                  <span className="font-mono text-[10px] tracking-[0.06em] text-heal">VERIFIED</span>
-                  {g.alliance && <span className="font-mono text-[10px] tracking-[0.06em] text-violet-hi">KWGU</span>}
-                </div>
-              </Link>
-            ))}
-          </div>
-          <p className="mt-4 text-[12px] text-sub">길드 등록은 현재 초대제로 운영됩니다 — 정식 오픈 시 신청제로 전환됩니다.</p>
+          {guilds.length ? (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+              {guilds.map((g) => (
+                <Link key={g.id} to={`/guild/${g.id}`} className="group rounded border border-line bg-surface p-4 transition hover:border-violet-deep">
+                  <div className="flex items-center gap-2">
+                    {g.logoPath ? (
+                      <img src={g.logoPath} alt="" className="h-5 w-5 shrink-0 rounded bg-ink object-contain" />
+                    ) : (
+                      <Dot color="bg-violet" />
+                    )}
+                    <span className="truncate text-[14px] font-bold group-hover:text-violet-hi" style={{ color: g.color || undefined }}>
+                      {g.name}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 truncate text-[12px] text-sub">{g.server || '아즈샤라'}</p>
+                  {allianceGuildIds.has(g.id) && (
+                    <div className="mt-2 font-mono text-[10px] tracking-[0.06em] text-violet-hi">연합 소속</div>
+                  )}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded border border-line bg-surface p-10 text-center text-[13px] text-sub">
+              등록된 길드가 아직 없습니다.
+            </div>
+          )}
+          <p className="mt-4 text-[12px] text-sub">길드 등록·가입은 각 길드 페이지에서 Battle.net 연동 후 신청할 수 있습니다.</p>
         </div>
       </section>
     </div>

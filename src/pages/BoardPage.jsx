@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { RAIDS, WEEK } from '../lib/mock';
 import { subscribeUpcomingRaids } from '../lib/db';
 import { useApp } from '../context/AppContext';
 import RaidFormModal from '../components/RaidFormModal';
@@ -67,11 +66,33 @@ export default function BoardPage() {
 
   useEffect(() => subscribeUpcomingRaids(setLive), []);
 
-  const demoMode = Array.isArray(live) && live.length === 0;
-  const source = useMemo(
-    () => (live && live.length ? live.map(adaptRaid) : RAIDS),
-    [live]
-  );
+  // 실데이터만 표시 (목업 폴백 제거) — 없으면 빈 상태 안내
+  const source = useMemo(() => (live ? live.map(adaptRaid) : []), [live]);
+
+  // 이번 주 스트립 — 실제 오늘 기준 일~토, 레이드 있는 날에 점 표시
+  const weekStrip = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(today);
+    start.setDate(start.getDate() - start.getDay());
+    const keyOf = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const eventDays = new Set(
+      (live || [])
+        .map((r) => (r.startAt?.toDate ? r.startAt.toDate() : null))
+        .filter(Boolean)
+        .map(keyOf)
+    );
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return {
+        d: d.getDate(),
+        day: '일월화수목금토'[d.getDay()],
+        today: d.getTime() === today.getTime(),
+        event: eventDays.has(keyOf(d)),
+      };
+    });
+  }, [live]);
 
   const list = useMemo(
     () =>
@@ -104,25 +125,19 @@ export default function BoardPage() {
             파티 개설
           </button>
           <div className="text-right">
-            <div className="num text-[20px] font-extrabold text-violet-hi">{RAIDS.filter((r) => r.status === 'recruiting').length}</div>
+            <div className="num text-[20px] font-extrabold text-violet-hi">{source.filter((r) => r.status === 'recruiting').length}</div>
             <MonoLabel>RECRUITING</MonoLabel>
           </div>
           <div className="text-right">
-            <div className="num text-[20px] font-extrabold">{RAIDS.length}</div>
-            <MonoLabel>THIS WEEK</MonoLabel>
+            <div className="num text-[20px] font-extrabold">{source.length}</div>
+            <MonoLabel>UPCOMING</MonoLabel>
           </div>
         </div>
       </div>
 
-      {demoMode && (
-        <div className="mb-4 rounded border border-violet-deep/50 bg-violet/5 px-3 py-2 text-[12px] text-violet-hi">
-          아직 등록된 공대가 없어 데모 데이터를 표시 중입니다 — 운영자 시드·레이드 생성 후 실데이터로 전환됩니다.
-        </div>
-      )}
-
       {/* 주간 스트립 */}
       <div className="mb-5 flex gap-1.5 overflow-x-auto rounded border border-line bg-surface p-2">
-        {WEEK.map((w) => (
+        {weekStrip.map((w) => (
           <div
             key={w.d}
             className={`flex min-w-[64px] flex-1 flex-col items-center rounded px-2 py-1.5 ${

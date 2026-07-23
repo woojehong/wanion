@@ -7,4 +7,6 @@
 
 import { setGlobalOptions } from 'firebase-functions/v2';
 
-setGlobalOptions({ region: 'asia-northeast3', maxInstances: 2 });
+// maxInstances 1 = 함수당 최소 CPU 예약. Cloud Run 'total CPU per region' 쿼터가 낮아
+// 16개 함수 배포가 막히므로 최소로 낮춘다(소규모 커뮤니티엔 충분). 근본 해결은 쿼터 증설.
+setGlobalOptions({ region: 'asia-northeast3', maxInstances: 1 });
