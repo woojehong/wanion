@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   fetchGuilds,
@@ -9,6 +9,7 @@ import {
   removeMembership,
 } from '../../lib/db';
 import { MonoLabel, SectionTitle, Card, Chip, Avatar } from '../../components/ui';
+import OrgCrudPanel from './OrgCrudPanel';
 
 const inputCls =
   'rounded border border-line bg-surface2 px-3 py-2 text-[13px] text-txt outline-none focus:border-violet-deep';
@@ -48,15 +49,17 @@ export default function OrgsTab() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  useEffect(() => {
+  const reloadOrgs = useCallback(() => {
     Promise.all([fetchGuilds(), fetchTeams(), fetchAlliances()]).then(([g, t, a]) => {
       setOrgs({
         guild: g.filter((x) => !x.isNone && !x.isUnion),
         team: t,
         alliance: a,
       });
-    });
+    }).catch(() => {});
   }, []);
+
+  useEffect(() => { reloadOrgs(); }, [reloadOrgs]);
 
   const currentOrgs = orgs[scopeType] || [];
 
@@ -113,6 +116,8 @@ export default function OrgsTab() {
 
   return (
     <div className="flex flex-col gap-4">
+      {isOwner && <OrgCrudPanel scopeType={scopeType} orgs={currentOrgs} onChanged={reloadOrgs} />}
+
       <Card className="p-5">
         <SectionTitle
           ko="조직 · 멤버십"

@@ -231,6 +231,22 @@ export async function fetchAlliances() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+const ORG_COLLECTION = { guild: 'guilds', team: 'teams', alliance: 'alliances' };
+
+/** 조직 생성·수정 (플랫폼 운영자 — rules 강제). id는 소문자 슬러그. */
+export function saveOrg(scopeType, id, data) {
+  const col = ORG_COLLECTION[scopeType];
+  if (!col) throw new Error('지원하지 않는 조직 유형입니다.');
+  return setDoc(doc(db, col, id), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+/** 조직 삭제 (플랫폼 운영자) — 소속·게시판 등 하위 데이터는 별도 정리 필요. */
+export function deleteOrg(scopeType, id) {
+  const col = ORG_COLLECTION[scopeType];
+  if (!col) throw new Error('지원하지 않는 조직 유형입니다.');
+  return deleteDoc(doc(db, col, id));
+}
+
 /** 삭제(아카이브) 레이드 — deleted==true, 종료 내림차순 */
 export async function fetchDeletedRaids(pageSize = 30) {
   const q = query(

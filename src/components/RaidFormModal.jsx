@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { createRaid } from '../lib/db';
+import { createRaid, fetchGuilds, fetchTeams, fetchAlliances } from '../lib/db';
 import { buildRaidTimes } from '../lib/utils';
-import { DIFFICULTIES, DEFAULT_SUBCATEGORIES, SEED_ALLIANCES, SEED_TEAMS, SEED_GUILDS } from '../lib/constants';
+import { DIFFICULTIES, DEFAULT_SUBCATEGORIES } from '../lib/constants';
 import { MonoLabel, Chip } from './ui';
 
 const TIME_PATTERN = /^([01]?\d|2[0-3]):[0-5]\d$/;
@@ -59,22 +59,26 @@ export default function RaidFormModal({ open, onClose }) {
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [orgs, setOrgs] = useState({ guild: [], team: [], alliance: [] });
 
-  // 주최 유형 변경 시 기본값 정렬 — 글로벌=검토, 조직=자동 (사양 7.4)
+  // 실제 조직을 Firestore에서 로드 (시드 하드코딩 제거)
+  useEffect(() => {
+    if (!open) return;
+    Promise.all([fetchGuilds(), fetchTeams(), fetchAlliances()])
+      .then(([g, t, a]) =>
+        setOrgs({ guild: g.filter((x) => !x.isNone && !x.isUnion), team: t, alliance: a })
+      )
+      .catch(() => {});
+  }, [open]);
+
+  const hostList = useMemo(() => orgs[hostType] || [], [orgs, hostType]);
+
+  // 주최 유형/목록 변경 시 기본값 정렬 — 글로벌=검토, 조직=자동 (사양 7.4)
   useEffect(() => {
     setAcceptMode(hostType === 'user' ? 'review' : 'auto');
-    if (hostType === 'alliance') setHostId(SEED_ALLIANCES[0]?.id || '');
-    else if (hostType === 'team') setHostId(SEED_TEAMS[0]?.id || '');
-    else if (hostType === 'guild') setHostId(SEED_GUILDS.find((g) => !g.isNone && !g.isUnion)?.id || '');
-    else setHostId('');
-  }, [hostType]);
-
-  const hostList = useMemo(() => {
-    if (hostType === 'alliance') return SEED_ALLIANCES;
-    if (hostType === 'team') return SEED_TEAMS;
-    if (hostType === 'guild') return SEED_GUILDS.filter((g) => !g.isNone && !g.isUnion);
-    return [];
-  }, [hostType]);
+    const list = orgs[hostType] || [];
+    setHostId(hostType === 'user' ? '' : list[0]?.id || '');
+  }, [hostType, orgs]);
 
   if (!open) return null;
 

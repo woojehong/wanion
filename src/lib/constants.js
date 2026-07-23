@@ -250,12 +250,9 @@ export const SERVERS = [
 // 주의: Firestore는 앞뒤 이중밑줄(__x__) 형식 ID를 예약어로 막으므로 사용 금지.
 export const UNION_GUILD_ID = 'union-badge';
 
+// 실제 운영 조직만 시드 (260723 대표님 확정). 나머지는 관리자 콘솔 조직관리로 추가.
 export const SEED_GUILDS = [
-  { id: 'starfall-forest', name: 'Starfall Forest', color: '#7dd3fc', logoPath: '', isNone: false },
-  { id: 'gyochaero', name: '교차로', color: '#f59e0b', logoPath: '', isNone: false },
-  { id: 'wowfactory', name: '와우팩토리', color: '#34d399', logoPath: '', isNone: false },
-  { id: 'ieyo', name: '이에요', color: '#f472b6', logoPath: '', isNone: false },
-  { id: 'dogs', name: '두부킴의유기견들', color: '#8A70FF', logoPath: '', isNone: false },
+  { id: 'dogs', name: '두부킴의 유기견들', color: '#8A70FF', logoPath: '', isNone: false },
   { id: 'none', name: '소속 없음', color: '#64748b', logoPath: '', isNone: true },
   // 연합 레이드 뱃지. 일반 길드 목록/필터/깃발에는 노출하지 않음.
   { id: UNION_GUILD_ID, name: '연합', badgeName: '연합', color: '#a78bfa', logoPath: '', isUnion: true, isNone: false },
@@ -309,11 +306,11 @@ export const POINTS = {
   GUIDE_PENALTY_THRESHOLD: 3, // 순추천 음수 공략 N개 이상 → 공략 보상 일시중지
 };
 
-// ── 창립 연합·공격대 시드 ────────────────────────────────────────────
+// ── 창립 연합·공격대 시드 (260723 대표님 확정) ──────────────────────
 export const SEED_ALLIANCES = [
-  { id: 'kwgu', name: '한길련', nameEn: 'KOREAN WOW GUILD UNION', desc: '한국 와우 길드들의 연합 레이드', guildIds: ['gyochaero', 'wowfactory', 'ieyo', 'starfall-forest'] },
+  { id: 'kwgu', name: '한국길드연합', nameEn: 'KOREAN GUILD UNION', desc: '한국 와우 길드들의 연합', guildIds: [] },
 ];
 
 export const SEED_TEAMS = [
-  { id: 'teamsad', name: 'TeamSAD', server: '아즈샤라', baseGuildId: 'dogs', desc: '두부킴의유기견들 기반 신화 정공' },
+  { id: 'teamsad', name: '두부킴의 유기견들', server: '아즈샤라', baseGuildId: 'dogs', desc: '두부킴의 유기견들 신화 정공' },
 ];
