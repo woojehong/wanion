@@ -81,7 +81,8 @@ service cloud.firestore {
       }
       match /characters/{charId} {
         allow read: if true;
-        allow write: if signedIn() && me() == uid; // P3: BNet 워커(Admin SDK)가 주 담당
+        // BNet 콜백(Admin SDK) 전용 — 클라이언트가 캐릭터를 위조 등록할 수 없다 (사양 §4 하드 게이트)
+        allow write: if false;
       }
     }
 
@@ -409,6 +410,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
     match /legacyNicknames/{nickname} {
+      allow read, write: if false;
+    }
+
+    // ── BNet OAuth 내부 상태 — Functions(Admin SDK) 전용 ────────────
+    match /bnetStates/{state} {
+      allow read, write: if false;
+    }
+    match /bnetLinks/{bnetSub} {
       allow read, write: if false;
     }
 

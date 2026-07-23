@@ -783,6 +783,30 @@ export async function deleteComment(postId, commentId) {
   });
 }
 
+// ── Battle.net 연동 (캐릭터 쓰기는 Functions 전용 — 클라이언트는 조회·대표 지정만) ──
+
+export function subscribeMyCharacters(uid, cb) {
+  return onSnapshot(
+    collection(db, 'users', uid, 'characters'),
+    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    () => cb([])
+  );
+}
+
+/** 대표 캐릭터 지정 (사양 §4 필수) — 작성자 표기 스냅샷의 원천 */
+export function setMainCharacter(uid, ch) {
+  return updateDoc(doc(db, 'users', uid), {
+    mainCharId: ch.id,
+    mainChar: {
+      name: ch.name,
+      realm: ch.realm || null,
+      classId: ch.classId || null,
+      className: ch.className || null,
+      classColor: ch.classColor || null,
+    },
+  });
+}
+
 // ── Points (읽기 전용 — 지급·차감은 Cloud Functions 전용) ────────────
 
 export function subscribeWallet(uid, cb) {

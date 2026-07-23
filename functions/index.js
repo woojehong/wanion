@@ -9,7 +9,10 @@
 // 완전 새출발 전략 (전원 BNet 재가입, 직책은 관리자 콘솔 수동 임명).
 
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
+import { defineSecret } from 'firebase-functions/params';
+import { randomUUID } from 'node:crypto';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
@@ -17,6 +20,156 @@ setGlobalOptions({ region: 'asia-northeast3', maxInstances: 5 });
 
 initializeApp();
 const db = getFirestore();
+
+// ── Battle.net OAuth (P2-2) ──────────────────────────────────────────
+// 콜백 = Functions 고정 주소 (사이트 도메인 변경에 면역 — 설계 결정).
+// 배틀넷 개발자 포털의 Redirect URL에 BNET_CALLBACK_URL 등록 필요.
+
+const BNET_CLIENT_ID = 'e08ef14078334fe2b1bade0cc1c5b152'; // 공개 식별자
+const BNET_CLIENT_SECRET = defineSecret('BNET_CLIENT_SECRET');
+const SITE_ORIGIN = 'https://woojehong.github.io/wanion'; // wanion.site 이전 시 교체
+const PROJECT_ID = process.env.GCLOUD_PROJECT || 'raidkorea-f34c9';
+const BNET_CALLBACK_URL = `https://asia-northeast3-${PROJECT_ID}.cloudfunctions.net/bnetCallback`;
+const STATE_TTL_MS = 10 * 60 * 1000;
+
+// Blizzard playable_class id → 와니온 게임데이터 (서버 독립 사본 — 웹 constants와 동기 유지)
+const BLIZZ_CLASSES = {
+  1: { id: 'warrior', name: '전사', color: '#C69B6D' },
+  2: { id: 'paladin', name: '성기사', color: '#F48CBA' },
+  3: { id: 'hunter', name: '사냥꾼', color: '#AAD372' },
+  4: { id: 'rogue', name: '도적', color: '#FFF468' },
+  5: { id: 'priest', name: '사제', color: '#FFFFFF' },
+  6: { id: 'deathknight', name: '죽음의 기사', color: '#C41E3A' },
+  7: { id: 'shaman', name: '주술사', color: '#0070DD' },
+  8: { id: 'mage', name: '마법사', color: '#3FC7EB' },
+  9: { id: 'warlock', name: '흑마법사', color: '#8788EE' },
+  10: { id: 'monk', name: '수도사', color: '#00FF98' },
+  11: { id: 'druid', name: '드루이드', color: '#FF7C0A' },
+  12: { id: 'demonhunter', name: '악마사냥꾼', color: '#A330C9' },
+  13: { id: 'evoker', name: '기원사', color: '#33937F' },
+};
+
+/** 연동 시작 — 1회용 state 발급 + 인가 URL 반환 (웹이 리다이렉트) */
+export const bnetStartLink = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated', '로그인이 필요합니다.');
+  const state = randomUUID().replace(/-/g, '');
+  await db.doc(`bnetStates/${state}`).set({ uid, createdAt: Date.now() });
+  const url =
+    'https://oauth.battle.net/authorize' +
+    `?client_id=${BNET_CLIENT_ID}` +
+    `&redirect_uri=${encodeURIComponent(BNET_CALLBACK_URL)}` +
+    '&response_type=code&scope=wow.profile' +
+    `&state=${state}`;
+  return { url };
+});
+
+function redirectToSite(res, params) {
+  const q = new URLSearchParams(params).toString();
+  res.redirect(302, `${SITE_ORIGIN}/#/me?${q}`);
+}
+
+/** OAuth 콜백 — 토큰 교환 → 프로필 조회 → 만렙 캐릭터 전원 자동 등록 (사양 §4) */
+export const bnetCallback = onRequest({ secrets: [BNET_CLIENT_SECRET] }, async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    if (!code || !state) return redirectToSite(res, { bnet: 'error', reason: 'missing-params' });
+
+    // 1) state 검증 (1회용 · 10분 TTL)
+    const stateRef = db.doc(`bnetStates/${state}`);
+    const stateSnap = await stateRef.get();
+    if (!stateSnap.exists) return redirectToSite(res, { bnet: 'error', reason: 'state' });
+    const { uid, createdAt } = stateSnap.data();
+    await stateRef.delete();
+    if (Date.now() - createdAt > STATE_TTL_MS) {
+      return redirectToSite(res, { bnet: 'error', reason: 'expired' });
+    }
+
+    // 2) 토큰 교환
+    const basic = Buffer.from(`${BNET_CLIENT_ID}:${BNET_CLIENT_SECRET.value()}`).toString('base64');
+    const tokenRes = await fetch('https://oauth.battle.net/token', {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${basic}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: String(code),
+        redirect_uri: BNET_CALLBACK_URL,
+      }),
+    });
+    if (!tokenRes.ok) return redirectToSite(res, { bnet: 'error', reason: 'token' });
+    const { access_token: accessToken } = await tokenRes.json();
+
+    // 3) 계정 정보 (battletag + 계정 고유 id)
+    const userRes = await fetch('https://oauth.battle.net/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!userRes.ok) return redirectToSite(res, { bnet: 'error', reason: 'userinfo' });
+    const { sub: bnetSub, battletag } = await userRes.json();
+
+    // 4) 한 배틀넷 계정 = 한 와니온 계정 (부계정 어뷰징 1차 방어)
+    const linkRef = db.doc(`bnetLinks/${bnetSub}`);
+    const linkSnap = await linkRef.get();
+    if (linkSnap.exists && linkSnap.data().uid !== uid) {
+      return redirectToSite(res, { bnet: 'error', reason: 'already-linked' });
+    }
+
+    // 5) WoW 프로필 — 만렙 캐릭터만 전원 자동 등록 (선택제 아님 — 사양 §4 확정)
+    const profRes = await fetch(
+      'https://kr.api.blizzard.com/profile/user/wow?namespace=profile-kr&locale=ko_KR',
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    if (!profRes.ok) return redirectToSite(res, { bnet: 'error', reason: 'profile' });
+    const prof = await profRes.json();
+
+    const maxLevel = Number((await db.doc('config/game').get()).data()?.maxLevel) || 90;
+    const chars = (prof.wow_accounts || [])
+      .flatMap((a) => a.characters || [])
+      .filter((c) => (c.level || 0) >= maxLevel)
+      .map((c) => {
+        const cls = BLIZZ_CLASSES[c.playable_class?.id] || null;
+        return {
+          docId: `${c.realm?.slug || 'unknown'}-${String(c.name || '').toLowerCase()}`,
+          name: c.name,
+          realm: c.realm?.name || c.realm?.slug || '',
+          realmSlug: c.realm?.slug || '',
+          level: c.level || 0,
+          classId: cls?.id || null,
+          className: cls?.name || null,
+          classColor: cls?.color || null,
+          bnetCharId: c.id || null,
+        };
+      });
+
+    // 6) 기록 — 캐릭터는 전량 교체(탈퇴·삭제 캐릭 잔재 방지)
+    const charCol = db.collection(`users/${uid}/characters`);
+    const existing = await charCol.get();
+    const batch = db.batch();
+    existing.docs.forEach((d) => batch.delete(d.ref));
+    chars.forEach(({ docId, ...data }) => {
+      batch.set(charCol.doc(docId), { ...data, verified: true, syncedAt: FieldValue.serverTimestamp() });
+    });
+    batch.set(linkRef, { uid, battletag, linkedAt: FieldValue.serverTimestamp() }, { merge: true });
+    batch.set(
+      db.doc(`users/${uid}`),
+      {
+        bnetLinked: true,
+        battletag: battletag || null,
+        bnetSyncedAt: FieldValue.serverTimestamp(),
+        charCount: chars.length,
+      },
+      { merge: true }
+    );
+    await batch.commit();
+
+    return redirectToSite(res, { bnet: 'linked', chars: String(chars.length) });
+  } catch (e) {
+    console.error('bnetCallback failed', e);
+    return redirectToSite(res, { bnet: 'error', reason: 'internal' });
+  }
+});
 
 // ── 일일 출석 포인트 ─────────────────────────────────────────────────
 

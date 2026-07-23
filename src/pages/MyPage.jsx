@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { httpsCallable } from 'firebase/functions';
 import { ME } from '../lib/mock';
 import { useApp } from '../context/AppContext';
-import { requestDailyCheckin, hasCheckedInToday, subscribeWallet } from '../lib/db';
+import { functions } from '../lib/firebase';
+import {
+  requestDailyCheckin,
+  hasCheckedInToday,
+  subscribeWallet,
+  subscribeMyCharacters,
+  setMainCharacter,
+} from '../lib/db';
 
 // KST 새벽 2시 리셋 기준의 '오늘' 키 (사양 3.1 — 게이머의 하루)
 function checkinDateKey() {
@@ -50,6 +59,94 @@ function DailyCheckinCard() {
 }
 import { MonoLabel, SectionTitle, Card, ArtSlot, Avatar, KV, Chip } from '../components/ui';
 
+// ── Battle.net 연동 + 대표 캐릭터 (P2-2 · 사양 §4 하드 게이트의 열쇠) ─
+function BnetLinkCard() {
+  const { uid, user, profile, signInGoogle } = useApp();
+  const location = useLocation();
+  const [chars, setChars] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(null);
+
+  useEffect(() => (uid ? subscribeMyCharacters(uid, setChars) : undefined), [uid]);
+
+  // 콜백 리다이렉트 결과 배너 (?bnet=linked | error)
+  useEffect(() => {
+    const q = new URLSearchParams(location.search);
+    const bnet = q.get('bnet');
+    if (bnet === 'linked') {
+      setNotice({ ok: true, text: `Battle.net 연동 완료 — 만렙 캐릭터 ${q.get('chars') || 0}개가 등록되었습니다. 대표 캐릭터를 선택해주세요.` });
+    } else if (bnet === 'error') {
+      const reasons = {
+        'already-linked': '이 Battle.net 계정은 이미 다른 와니온 계정에 연동되어 있습니다.',
+        expired: '연동 시간이 초과되었습니다 — 다시 시도해주세요.',
+      };
+      setNotice({ ok: false, text: reasons[q.get('reason')] || '연동에 실패했습니다 — 다시 시도해주세요.' });
+    }
+  }, [location.search]);
+
+  const startLink = async () => {
+    if (!user) return signInGoogle();
+    setBusy(true);
+    try {
+      const call = httpsCallable(functions, 'bnetStartLink');
+      const res = await call();
+      window.location.href = res.data.url;
+    } catch (e) {
+      setNotice({ ok: false, text: e.message || '연동 시작에 실패했습니다.' });
+      setBusy(false);
+    }
+  };
+
+  const linked = !!profile?.bnetLinked;
+  const needMain = linked && !profile?.mainCharId;
+
+  return (
+    <Card className={`mb-6 p-4 ${needMain ? 'border-violet-deep/60' : ''}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <MonoLabel violet>BATTLE.NET {linked ? `· ${profile.battletag || '연동됨'}` : '· 필수 연동'}</MonoLabel>
+          <p className="mt-0.5 text-[13px] text-sub">
+            {linked
+              ? needMain
+                ? '대표 캐릭터를 선택해야 레이드 신청·글 작성이 가능합니다 — 아래에서 선택하세요.'
+                : `만렙 캐릭터 ${chars.length}개 등록 · 대표 캐릭터로 활동 중입니다.`
+              : 'Battle.net을 연동하면 만렙 캐릭터가 전원 자동 등록됩니다 — 연동 없이는 레이드 신청이 불가합니다.'}
+          </p>
+        </div>
+        <button className={linked ? 'btn-ghost' : 'btn-primary'} disabled={busy} onClick={startLink}>
+          {busy ? '이동 중…' : linked ? '다시 동기화' : 'Battle.net 연동'}
+        </button>
+      </div>
+
+      {notice && (
+        <p className={`mt-2 text-[13px] font-semibold ${notice.ok ? 'text-heal' : 'text-dps'}`}>{notice.text}</p>
+      )}
+
+      {linked && chars.length > 0 && (
+        <div className="mt-3 border-t border-line pt-3">
+          <MonoLabel>{needMain ? 'SELECT MAIN CHARACTER' : 'MAIN CHARACTER'}</MonoLabel>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {chars.map((c) => (
+              <Chip
+                key={c.id}
+                active={profile?.mainCharId === c.id}
+                onClick={() => setMainCharacter(uid, c).catch(() => {})}
+                className="!py-1"
+              >
+                <span style={{ color: c.classColor || undefined }} className="font-bold">{c.name}</span>
+                <span className="ml-1 text-mute">{c.className}{c.realm ? ` · ${c.realm}` : ''}</span>
+              </Chip>
+            ))}
+          </div>
+          <p className="mt-1.5 text-[11px] text-mute">
+            대표 캐릭터명이 게시글·공략·댓글의 작성자로 표기됩니다 (작성 시점 스냅샷 — 이후 변경해도 과거 글은 유지).
+          </p>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function ConnCard({ label, status, sub, linked }) {
   return (
     <Card className="p-4">
@@ -69,6 +166,7 @@ export default function MyPage() {
   const tierPct = Math.round((p.tier.progress / p.tier.nextAt) * 100);
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
+      <BnetLinkCard />
       <DailyCheckinCard />
       {/* 프로필 헤더 */}
       <div className="flex flex-wrap items-center gap-5 rounded border border-line bg-surface p-5">

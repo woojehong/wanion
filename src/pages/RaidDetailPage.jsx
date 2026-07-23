@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import {
   subscribeRaid,
@@ -37,9 +37,15 @@ function fmtRange(raid) {
 function ApplyModalLite({ raid, onClose }) {
   const { uid, profile, gamedata } = useApp();
   const { classes, servers } = gamedata;
-  const [classId, setClassId] = useState(classes[0]?.id || '');
+  // 대표 캐릭터 프리필 (BNet 연동 후) — 클래스·이름을 미리 채워 신청 마찰 최소화
+  const mainChar = profile?.mainChar || null;
+  const [classId, setClassId] = useState(
+    mainChar?.classId && classes.some((c) => c.id === mainChar.classId)
+      ? mainChar.classId
+      : classes[0]?.id || ''
+  );
   const [specIds, setSpecIds] = useState([]);
-  const [charName, setCharName] = useState('');
+  const [charName, setCharName] = useState(mainChar?.name || '');
   const [server, setServer] = useState(servers.find((s) => s.isDefault)?.ko || servers[0]?.ko || '아즈샤라');
   const [ilvl, setIlvl] = useState('');
   const [bench, setBench] = useState(false); // 벤치 신청 (정원 무관 예비 인원)
@@ -242,7 +248,8 @@ function RoleGroup({ label, dot, cap, members, canManage, onDemote, onKick }) {
 // ── 페이지 ───────────────────────────────────────────────────────────
 export default function RaidDetailPage() {
   const { raidId } = useParams();
-  const { uid, user, isPlatformAdmin, signInGoogle } = useApp();
+  const navigate = useNavigate();
+  const { uid, user, profile, isPlatformAdmin, signInGoogle } = useApp();
   const [raid, setRaid] = useState(undefined); // undefined=로딩, null=없음
   const [apps, setApps] = useState([]);
   const [guests, setGuests] = useState([]);
@@ -366,7 +373,23 @@ export default function RaidDetailPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             {!user && <button className="btn-primary" onClick={signInGoogle}>로그인 후 신청</button>}
-            {user && !myApp && <button className="btn-primary" onClick={() => setApplyOpen(true)}>신청하기</button>}
+            {user && !myApp && (
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  // BNet 하드 게이트 (사양 §4) — 미연동·대표캐릭 미설정 시 신청 불가
+                  if (!profile?.bnetLinked || !profile?.mainCharId) {
+                    if (window.confirm('레이드 신청에는 Battle.net 연동과 대표 캐릭터 설정이 필요합니다.\n마이페이지로 이동할까요?')) {
+                      navigate('/me');
+                    }
+                    return;
+                  }
+                  setApplyOpen(true);
+                }}
+              >
+                신청하기
+              </button>
+            )}
             {user && myApp && (
               <button
                 className="btn-ghost"
