@@ -1,4 +1,47 @@
+import { useEffect, useState } from 'react';
 import { ME } from '../lib/mock';
+import { useApp } from '../context/AppContext';
+import { requestDailyCheckin, subscribeWallet } from '../lib/db';
+
+// KST 새벽 2시 리셋 기준의 '오늘' 키 (사양 3.1 — 게이머의 하루)
+function checkinDateKey() {
+  const now = new Date(Date.now() - 2 * 3600 * 1000);
+  return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function DailyCheckinCard() {
+  const { uid, user, signInGoogle } = useApp();
+  const [state, setState] = useState('idle'); // idle | done | busy
+  const [wallet, setWallet] = useState(null);
+
+  useEffect(() => (uid ? subscribeWallet(uid, setWallet) : undefined), [uid]);
+
+  const check = async () => {
+    if (!user) return signInGoogle();
+    setState('busy');
+    try {
+      await requestDailyCheckin(uid, checkinDateKey());
+      setState('done');
+    } catch {
+      setState('done'); // 이미 출석(중복 키) — 규칙이 거부해도 UX상 완료 처리
+    }
+  };
+
+  return (
+    <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
+      <div>
+        <MonoLabel violet>DAILY CHECK-IN · KST 02:00 리셋</MonoLabel>
+        <p className="mt-0.5 text-[13px] text-sub">
+          매일 출석으로 포인트를 쌓으세요{wallet ? ` — 현재 잔액 ${Number(wallet.balance || 0).toLocaleString()}P` : ''}
+          <span className="ml-1 text-mute">(지급 자동화는 P2에서 활성화)</span>
+        </p>
+      </div>
+      <button className="btn-primary" disabled={state !== 'idle'} onClick={check}>
+        {state === 'done' ? '오늘 출석 완료' : state === 'busy' ? '처리 중…' : '출석 체크'}
+      </button>
+    </Card>
+  );
+}
 import { MonoLabel, SectionTitle, Card, ArtSlot, Avatar, KV, Chip } from '../components/ui';
 
 function ConnCard({ label, status, sub, linked }) {
@@ -20,6 +63,7 @@ export default function MyPage() {
   const tierPct = Math.round((p.tier.progress / p.tier.nextAt) * 100);
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
+      <DailyCheckinCard />
       {/* 프로필 헤더 */}
       <div className="flex flex-wrap items-center gap-5 rounded border border-line bg-surface p-5">
         <ArtSlot label="아바타 1:1" ratio="1 / 1" className="h-[72px] w-[72px]" />

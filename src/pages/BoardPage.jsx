@@ -4,6 +4,7 @@ import { RAIDS, WEEK } from '../lib/mock';
 import { subscribeUpcomingRaids } from '../lib/db';
 import { useApp } from '../context/AppContext';
 import RaidFormModal from '../components/RaidFormModal';
+import CalendarView from '../components/CalendarView';
 import { getCaps } from '../lib/utils';
 
 // Firestore 레이드 문서 → 보드 로우 형태로 변환
@@ -61,6 +62,7 @@ export default function BoardPage() {
   const [role, setRole] = useState('all');
   const [live, setLive] = useState(null); // null=로딩, []=실데이터 없음
   const [formOpen, setFormOpen] = useState(false);
+  const [view, setView] = useState('board'); // board | calendar
   const { user, signInGoogle } = useApp();
 
   useEffect(() => subscribeUpcomingRaids(setLive), []);
@@ -147,9 +149,21 @@ export default function BoardPage() {
         {ROLE_FILTERS.map((f) => (
           <Chip key={f.id} active={role === f.id} onClick={() => setRole(f.id)}>{f.label}</Chip>
         ))}
-        <span className="ml-auto text-[12px] text-sub">마감 임박순</span>
+        <span className="ml-auto flex items-center gap-1.5">
+          <Chip active={view === 'board'} onClick={() => setView('board')}>보드</Chip>
+          <Chip active={view === 'calendar'} onClick={() => setView('calendar')}>달력</Chip>
+        </span>
       </div>
 
+      {view === 'calendar' && (
+        <CalendarView raids={live && live.length ? live : []} />
+      )}
+
+      {view === 'calendar' && (!live || !live.length) && (
+        <p className="mt-3 text-center text-[12px] text-mute">등록된 실데이터 공대가 아직 없습니다.</p>
+      )}
+
+      {view === 'board' && (<>
       {/* 모집 로우 */}
       <SectionTitle ko="모집 공고" en={`OPEN RECRUITS · ${list.length}`} />
       <div className="flex flex-col gap-3">
@@ -195,6 +209,8 @@ export default function BoardPage() {
           </div>
         )}
       </div>
+      </>)}
+
       <RaidFormModal open={formOpen} onClose={() => setFormOpen(false)} />
     </main>
   );

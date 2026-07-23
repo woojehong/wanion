@@ -13,6 +13,7 @@ import { buildInviteCode } from '../lib/bridge';
 import { getCaps } from '../lib/utils';
 import { MonoLabel, SectionTitle, Card, DDay, ArtSlot, Avatar, KV, Chip, HostBadge } from '../components/ui';
 import SynergyBoard from '../components/SynergyBoard';
+import GuestPanel from '../components/GuestPanel';
 
 const DIFF_LABEL = { normal: '일반', heroic: '영웅', mythic: '신화' };
 const pad = (n) => String(n).padStart(2, '0');
@@ -385,22 +386,7 @@ export default function RaidDetailPage() {
               <KV k="최소 템렙" v={raid.minIlvl ? `${raid.minIlvl}+` : '제한없음'} />
             </div>
           </Card>
-          {raid.guestParty && user && (
-            <Card className="p-5">
-              <MonoLabel violet>GUESTS · {guests.length}</MonoLabel>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {guests.map((g) => (
-                  <span key={g.id} className="chip" style={{ color: g.classColor || undefined }}>
-                    {g.charName}-{g.server}
-                  </span>
-                ))}
-                {!guests.length && <span className="text-[12px] text-mute">등록된 손님 없음</span>}
-              </div>
-              {canManage && (
-                <p className="mt-2 text-[11px] text-mute">손님 등록·업비 관리는 다음 업데이트에서 열립니다.</p>
-              )}
-            </Card>
-          )}
+          {user && <GuestPanel raid={raid} guests={guests} canManage={canManage} />}
         </aside>
       </div>
 
