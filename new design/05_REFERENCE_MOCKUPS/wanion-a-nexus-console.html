@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WANION 시안 A — Nexus Console</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{
+    --bg:#09090D;
+    --surface:#101018;
+    --surface2:#14141F;
+    --border:#1E1E2E;
+    --violet:#8A70FF;
+    --violet-hi:#B9A8FF;
+    --violet-deep:#5B45E0;
+    --text:#EDEDF2;
+    --muted:#8B8B9E;
+    --tank:#60A5FA;
+    --heal:#4ADE80;
+    --dps:#F87171;
+    --mono:'SF Mono','JetBrains Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:#050507;}
+  body{
+    font-family:'Pretendard Variable',Pretendard,system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    padding:48px 24px 96px;
+  }
+  .kicker{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .kicker .dot{color:var(--violet);}
+
+  /* ===== proposal header ===== */
+  .proposal-head{max-width:1360px;margin:0 auto 20px;}
+  .proposal-head h1{
+    font-size:22px;font-weight:800;letter-spacing:-.01em;margin:10px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .proposal-head h1 em{font-style:normal;color:var(--violet-hi);}
+  .proposal-head p{font-size:13px;color:var(--muted);line-height:1.6;}
+  .token-strip{
+    max-width:1360px;margin:18px auto 40px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    border:1px solid var(--border);background:var(--surface);
+    border-radius:8px;padding:12px 16px;
+  }
+  .tk{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);white-space:nowrap;}
+  .tk .sw{width:16px;height:16px;border-radius:4px;border:1px solid rgba(255,255,255,.10);display:inline-block;}
+  .tk-sep{width:1px;height:18px;background:var(--border);}
+
+  /* ===== frames ===== */
+  .frame-label{max-width:1360px;margin:0 auto 12px;display:flex;align-items:baseline;gap:12px;}
+  .frame-label h2{font-size:15px;font-weight:700;white-space:nowrap;}
+  .browser{
+    max-width:1360px;margin:0 auto 64px;
+    border:1px solid var(--border);border-radius:12px;overflow:hidden;
+    background:var(--bg);
+    box-shadow:0 24px 64px rgba(0,0,0,.5);
+  }
+  .browser-bar{
+    height:44px;display:flex;align-items:center;gap:8px;padding:0 16px;
+    background:var(--surface2);border-bottom:1px solid var(--border);
+  }
+  .traffic{display:flex;gap:7px;margin-right:8px;}
+  .traffic i{width:11px;height:11px;border-radius:50%;background:#26263A;display:block;}
+  .urlbox{
+    flex:0 1 420px;height:26px;margin:0 auto;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    background:var(--bg);border:1px solid var(--border);border-radius:6px;
+    font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.03em;white-space:nowrap;
+  }
+  .urlbox .lock{color:var(--violet);font-size:10px;}
+
+  /* ===== app shell ===== */
+  .shell{display:flex;width:1280px;min-height:820px;margin:0 auto;background:var(--bg);}
+
+  /* sidebar */
+  .sidebar{
+    width:230px;flex:0 0 230px;
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;
+    padding:22px 0 16px;
+  }
+  .logo{padding:0 20px 20px;border-bottom:1px solid var(--border);}
+  .logo .wordmark{display:flex;align-items:baseline;gap:8px;white-space:nowrap;}
+  .logo .en{font-size:21px;font-weight:900;letter-spacing:.06em;color:var(--text);}
+  .logo .en b{color:var(--violet);}
+  .logo .ko{font-size:13px;font-weight:700;color:var(--muted);}
+  .logo .tagline{margin-top:5px;font-family:var(--mono);font-size:9px;letter-spacing:.3em;color:var(--violet-hi);text-transform:uppercase;white-space:nowrap;}
+  .nav{flex:1;padding:8px 12px 0;overflow:hidden;}
+  .nav-group{margin-top:18px;}
+  .nav-head{
+    font-family:var(--mono);font-size:9px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--muted);opacity:.75;padding:0 10px 8px;white-space:nowrap;
+  }
+  .nav a{
+    display:flex;align-items:center;gap:10px;
+    height:36px;padding:0 10px;border-radius:8px;
+    font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    border:1px solid transparent;
+  }
+  .nav a+a{margin-top:2px;}
+  .nav a:hover{color:var(--text);background:var(--surface2);}
+  .nav a.active{
+    color:var(--text);
+    background:rgba(138,112,255,.10);
+    border:1px solid rgba(138,112,255,.35);
+  }
+  .nav a.active .ni{color:var(--violet-hi);}
+  .ni{width:16px;height:16px;flex:0 0 16px;color:var(--muted);display:inline-flex;}
+  .ni svg{width:16px;height:16px;}
+  .nav .badge-n{
+    margin-left:auto;font-family:var(--mono);font-size:9.5px;
+    background:rgba(138,112,255,.16);color:var(--violet-hi);
+    border:1px solid rgba(138,112,255,.3);
+    padding:1px 6px;border-radius:99px;
+  }
+  .usercard{
+    margin:14px 12px 0;padding:12px;
+    background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+    display:flex;align-items:center;gap:10px;min-width:0;
+  }
+  .avatar{
+    width:34px;height:34px;flex:0 0 34px;border-radius:8px;
+    background:linear-gradient(135deg,var(--violet-deep),var(--violet));
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:800;color:#fff;
+  }
+  .usercard .uc-meta{min-width:0;}
+  .usercard .uc-name{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;white-space:nowrap;}
+  .usercard .verified{
+    font-size:9px;font-weight:800;color:var(--heal);
+    border:1px solid rgba(74,222,128,.35);background:rgba(74,222,128,.08);
+    padding:0 4px;border-radius:4px;letter-spacing:.02em;white-space:nowrap;
+  }
+  .usercard .uc-role{
+    margin-top:3px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;
+    color:var(--violet-hi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .usercard .uc-more{margin-left:auto;color:var(--muted);font-size:14px;flex:0 0 auto;}
+
+  /* ===== main ===== */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .topbar{
+    height:60px;flex:0 0 60px;display:flex;align-items:center;gap:14px;
+    padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg);
+  }
+  .topbar .page-title{font-size:15px;font-weight:800;white-space:nowrap;}
+  .topbar .page-sub{font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+  .search{
+    margin-left:auto;width:280px;height:32px;
+    display:flex;align-items:center;gap:8px;padding:0 12px;
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    color:var(--muted);font-size:12.5px;white-space:nowrap;
+  }
+  .search .slash{
+    margin-left:auto;font-family:var(--mono);font-size:9.5px;border:1px solid var(--border);
+    border-radius:4px;padding:1px 5px;color:var(--muted);
+  }
+  .icon-btn{
+    width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface);display:flex;align-items:center;justify-content:center;
+    color:var(--muted);position:relative;
+  }
+  .icon-btn .ping{
+    position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;
+    background:var(--violet);border:2px solid var(--bg);
+  }
+
+  .content{flex:1;display:flex;gap:24px;padding:24px 28px 20px;min-width:0;}
+  .col-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;}
+
+  .section-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .section-head h3{font-size:14px;font-weight:800;white-space:nowrap;}
+  .section-head .en-sub{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+  .section-head .more{margin-left:auto;font-size:11.5px;color:var(--muted);text-decoration:none;white-space:nowrap;}
+  .section-head .more b{color:var(--violet-hi);font-weight:600;}
+
+  /* stat tiles */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .stat{
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:14px 16px 13px;min-width:0;position:relative;overflow:hidden;
+  }
+  .stat::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:2px;background:var(--border);border-radius:2px;}
+  .stat.hot::before{background:var(--violet);}
+  .stat .s-label{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stat .s-value{margin-top:6px;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1;white-space:nowrap;}
+  .stat.hot .s-value{color:var(--violet-hi);}
+  .stat .s-unit{font-size:12px;font-weight:600;color:var(--muted);margin-left:2px;}
+  .stat .s-foot{margin-top:8px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stat .s-foot .up{color:var(--heal);}
+
+  /* weekly strip */
+  .weekly{
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:14px 16px 15px;
+  }
+  .week-row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px;}
+  .day{
+    border:1px solid var(--border);border-radius:8px;background:var(--surface2);
+    padding:10px 6px 9px;text-align:center;min-width:0;position:relative;
+  }
+  .day .dow{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+  .day .dnum{margin-top:5px;font-size:16px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;}
+  .day .devt{margin-top:7px;height:5px;display:flex;justify-content:center;gap:3px;}
+  .day .devt i{width:5px;height:5px;border-radius:50%;background:var(--violet);display:block;}
+  .day .devt i.ghost{background:transparent;}
+  .day.dim .dnum{color:var(--muted);}
+  .day.sun .dow{color:#B96A6A;}
+  .day.sat .dow{color:#5F86C9;}
+  .day.today{
+    border-color:var(--violet);
+    background:rgba(138,112,255,.08);
+    box-shadow:0 0 0 1px rgba(138,112,255,.45),0 0 18px rgba(138,112,255,.18);
+  }
+  .day.today .dnum{color:var(--violet-hi);}
+  .day.today .today-tag{
+    position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:8px;letter-spacing:.18em;color:#fff;
+    background:var(--violet-deep);border-radius:4px;padding:1px 6px;white-space:nowrap;
+  }
+
+  /* focus card */
+  .focus{
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:20px;position:relative;overflow:hidden;
+  }
+  .focus::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--violet);}
+  .focus-top{display:flex;align-items:flex-start;gap:14px;}
+  .focus .f-badges{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+  .chip{
+    font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+    border:1px solid var(--border);border-radius:99px;padding:3px 9px;color:var(--muted);white-space:nowrap;
+  }
+  .chip.violet{color:var(--violet-hi);border-color:rgba(138,112,255,.4);background:rgba(138,112,255,.08);}
+  .focus .f-title{font-size:21px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .focus .f-meta{margin-top:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .focus .f-meta b{color:var(--text);font-weight:700;}
+  .focus .f-meta .m-sep{width:3px;height:3px;border-radius:50%;background:var(--border);}
+  .dday{
+    margin-left:auto;flex:0 0 auto;text-align:center;
+    border:1px solid rgba(138,112,255,.4);background:rgba(138,112,255,.08);
+    border-radius:8px;padding:10px 16px;
+  }
+  .dday .dd-num{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--violet-hi);letter-spacing:.02em;white-space:nowrap;}
+  .dday .dd-cap{margin-top:3px;font-family:var(--mono);font-size:8px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+
+  .rolebars{margin-top:18px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .rb{min-width:0;}
+  .rb .rb-head{display:flex;align-items:baseline;gap:6px;white-space:nowrap;}
+  .rb .rb-role{font-size:12px;font-weight:700;}
+  .rb .rb-count{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em;}
+  .rb .rb-count b{color:var(--text);font-weight:600;}
+  .rb .rb-track{margin-top:7px;height:5px;background:var(--surface2);border:1px solid var(--border);border-radius:99px;overflow:hidden;}
+  .rb .rb-fill{height:100%;border-radius:99px;}
+  .rb.tank .rb-role{color:var(--tank);} .rb.tank .rb-fill{background:var(--tank);width:0%;}
+  .rb.heal .rb-role{color:var(--heal);} .rb.heal .rb-fill{background:var(--heal);width:0%;}
+  .rb.dps .rb-role{color:var(--dps);} .rb.dps .rb-fill{background:var(--dps);width:0%;}
+
+  .focus-actions{margin-top:18px;display:flex;align-items:center;gap:10px;}
+  .btn{
+    height:38px;padding:0 22px;border-radius:8px;border:1px solid transparent;
+    font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn-primary{
+    background:var(--violet);color:#fff;
+    box-shadow:0 0 20px rgba(138,112,255,.28);
+  }
+  .btn-primary:hover{background:var(--violet-hi);}
+  .btn-ghost{background:transparent;color:var(--muted);border-color:var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:#2A2A40;}
+  .focus-note{margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted);white-space:nowrap;}
+  .focus-note b{color:var(--violet-hi);font-weight:600;}
+
+  /* secondary upcoming row */
+  .up-item{
+    display:flex;align-items:center;gap:12px;
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:12px 16px;min-width:0;
+  }
+  .up-item+.up-item{margin-top:8px;}
+  .up-item .u-date{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em;flex:0 0 92px;white-space:nowrap;}
+  .up-item .u-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .up-item .u-org{font-size:11.5px;color:var(--muted);white-space:nowrap;flex:0 0 auto;}
+  .up-item .u-state{
+    margin-left:auto;flex:0 0 auto;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+    border-radius:99px;padding:3px 9px;white-space:nowrap;
+  }
+  .u-state.ok{color:var(--heal);border:1px solid rgba(74,222,128,.35);background:rgba(74,222,128,.06);}
+  .u-state.wait{color:var(--violet-hi);border:1px solid rgba(138,112,255,.4);background:rgba(138,112,255,.08);}
+
+  /* right rail : live feed */
+  .rail{width:300px;flex:0 0 300px;display:flex;flex-direction:column;gap:20px;min-width:0;}
+  .feed{
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:16px;flex:1;display:flex;flex-direction:column;min-width:0;
+  }
+  .feed-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .feed-head .live-dot{width:7px;height:7px;border-radius:50%;background:var(--violet);box-shadow:0 0 8px rgba(138,112,255,.7);}
+  .feed-head h3{font-size:13px;font-weight:800;white-space:nowrap;}
+  .feed-head .en-sub{font-family:var(--mono);font-size:8.5px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase;white-space:nowrap;margin-left:auto;}
+  .feed-list{margin-top:10px;position:relative;}
+  .feed-list::before{content:'';position:absolute;left:4px;top:8px;bottom:8px;width:1px;background:var(--border);}
+  .fe{position:relative;padding:0 0 18px 22px;min-width:0;}
+  .fe:last-child{padding-bottom:4px;}
+  .fe::before{
+    content:'';position:absolute;left:0;top:5px;width:9px;height:9px;border-radius:50%;
+    background:var(--surface);border:2px solid var(--border);
+  }
+  .fe.hot::before{border-color:var(--violet);background:rgba(138,112,255,.25);}
+  .fe .fe-time{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--muted);white-space:nowrap;}
+  .fe .fe-text{margin-top:4px;font-size:12.5px;line-height:1.55;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .fe .fe-text b{font-weight:700;color:var(--violet-hi);}
+  .fe .fe-text .r-tank{color:var(--tank);font-weight:600;}
+  .fe .fe-text .r-heal{color:var(--heal);font-weight:600;}
+  .fe .fe-text .r-dps{color:var(--dps);font-weight:600;}
+  .fe .fe-tag{
+    display:inline-block;margin-top:6px;font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:2px 7px;white-space:nowrap;
+  }
+  .feed-more{
+    margin-top:auto;padding-top:12px;border-top:1px solid var(--border);
+    text-align:center;font-size:11.5px;color:var(--muted);white-space:nowrap;
+  }
+  .feed-more b{color:var(--violet-hi);font-weight:600;}
+
+  .rail-mini{
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;
+  }
+  .rail-mini h3{font-size:13px;font-weight:800;white-space:nowrap;}
+  .rail-mini .rm-sub{font-family:var(--mono);font-size:8.5px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase;margin-top:3px;white-space:nowrap;}
+  .charline{display:flex;align-items:center;gap:10px;margin-top:12px;min-width:0;}
+  .charline .c-ava{width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--muted);}
+  .charline .c-name{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .charline .c-spec{font-size:10.5px;color:var(--muted);white-space:nowrap;}
+  .charline .c-ilvl{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--violet-hi);white-space:nowrap;flex:0 0 auto;}
+
+  .app-footer{
+    height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 28px;border-top:1px solid var(--border);
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;white-space:nowrap;
+  }
+  .app-footer b{color:var(--violet-hi);font-weight:600;}
+
+  /* ===== AI ART SLOTS ===== */
+  .artslot{
+    border:1px dashed var(--violet-deep);
+    border-radius:8px;
+    background:repeating-linear-gradient(45deg,rgba(91,69,224,.07) 0,rgba(91,69,224,.07) 1px,transparent 1px,transparent 7px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    text-align:center;min-width:0;
+  }
+  .artslot .as-mark{
+    font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--violet);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:94%;
+  }
+  .artslot .as-hint{
+    font-size:10.5px;color:var(--muted);line-height:1.45;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92%;
+  }
+  .focus-grid{display:flex;gap:18px;align-items:center;}
+  .focus-body{flex:1;min-width:0;}
+  .as-keyart{width:236px;flex:0 0 236px;aspect-ratio:16/9;padding:10px;}
+  .as-avatar{
+    width:34px;height:34px;flex:0 0 34px;padding:0;gap:0;
+    font-family:var(--mono);font-size:11px;color:var(--violet);
+  }
+  .as-avatar-sm{width:30px;height:30px;flex:0 0 30px;}
+  .as-empty{margin-top:12px;padding:12px 10px;flex-direction:row;gap:12px;justify-content:center;flex-wrap:wrap;}
+  .as-keyart-m{width:100%;aspect-ratio:16/9;padding:10px;margin-bottom:14px;}
+
+  /* =================== MOBILE =================== */
+  .phone-wrap{display:flex;justify-content:center;margin:0 auto 40px;}
+  .phone{
+    width:390px;border-radius:44px;background:#000;
+    border:1px solid #26263A;padding:10px;
+    box-shadow:0 24px 64px rgba(0,0,0,.55);
+  }
+  .phone-screen{
+    position:relative;border-radius:36px;overflow:hidden;background:var(--bg);
+    display:flex;flex-direction:column;min-height:780px;
+  }
+  .notch{
+    position:absolute;top:10px;left:50%;transform:translateX(-50%);
+    width:120px;height:28px;border-radius:99px;background:#000;z-index:30;
+  }
+  .m-status{
+    height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 26px 6px;font-family:var(--mono);font-size:11px;color:var(--text);letter-spacing:.04em;
+  }
+  .m-header{
+    display:flex;align-items:center;gap:10px;padding:10px 18px 12px;
+    border-bottom:1px solid var(--border);
+  }
+  .m-header .m-logo{font-size:16px;font-weight:900;letter-spacing:.06em;white-space:nowrap;}
+  .m-header .m-logo b{color:var(--violet);}
+  .m-header .m-logo-ko{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;}
+  .m-header .icon-btn{margin-left:auto;width:30px;height:30px;}
+  .m-header .avatar{width:30px;height:30px;flex:0 0 30px;font-size:12px;border-radius:7px;}
+  .m-body{flex:1;overflow:hidden;padding:16px 16px 8px;display:flex;flex-direction:column;gap:16px;}
+
+  .m-hello{padding:0 2px;}
+  .m-hello .h-line{font-size:17px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .m-hello .h-line b{color:var(--violet-hi);}
+  .m-hello .h-sub{margin-top:4px;font-family:var(--mono);font-size:8.5px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+
+  .m-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .m-stats .stat{padding:12px 14px;}
+  .m-stats .stat .s-value{font-size:22px;}
+
+  .m-week{
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 12px 13px;
+  }
+  .m-week .m-week-head{display:flex;align-items:baseline;gap:8px;padding:0 2px;}
+  .m-week .m-week-head h3{font-size:12.5px;font-weight:800;white-space:nowrap;}
+  .m-week .m-week-head .en-sub{font-family:var(--mono);font-size:8px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+  .m-week .m-week-head .rng{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap;}
+  .m-week-scroll{margin-top:10px;display:flex;gap:6px;overflow-x:auto;padding:8px 2px 2px;scrollbar-width:none;}
+  .m-week-scroll::-webkit-scrollbar{display:none;}
+  .m-week-scroll .day{flex:0 0 46px;padding:9px 4px 8px;}
+  .m-week-scroll .day .dnum{font-size:14px;}
+
+  .m-focus{padding:16px;}
+  .m-focus .f-title{font-size:16.5px;}
+  .m-focus .rolebars{margin-top:14px;gap:8px;}
+  .m-focus .focus-actions{margin-top:14px;}
+  .m-focus .btn{height:36px;padding:0 16px;font-size:12.5px;}
+  .m-focus .dday{padding:7px 11px;}
+  .m-focus .dday .dd-num{font-size:16px;}
+  .m-focus .f-meta{font-size:11.5px;gap:10px;}
+
+  .m-feed{padding:14px;}
+  .m-feed .fe{padding-bottom:14px;}
+  .m-feed .fe .fe-text{font-size:12px;}
+
+  .tabbar{
+    flex:0 0 76px;border-top:1px solid var(--border);background:var(--surface);
+    display:flex;align-items:flex-start;padding-top:9px;
+  }
+  .tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-size:10px;font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap;
+  }
+  .tab .ti{width:20px;height:20px;display:flex;align-items:center;justify-content:center;}
+  .tab .ti svg{width:19px;height:19px;}
+  .tab.active{color:var(--violet-hi);}
+  .tab.active .ti{color:var(--violet);}
+  .tab .t-dot{position:relative;}
+  .tab .t-dot::after{
+    content:'';position:absolute;top:-1px;right:-3px;width:6px;height:6px;border-radius:50%;
+    background:var(--violet);border:1.5px solid var(--surface);
+  }
+  .home-indicator{
+    height:20px;display:flex;align-items:center;justify-content:center;background:var(--surface);
+  }
+  .home-indicator i{width:120px;height:4px;border-radius:99px;background:#33334A;display:block;}
+</style>
+</head>
+<body>
+
+<!-- ============ PROPOSAL HEADER ============ -->
+<header class="proposal-head">
+  <div class="kicker">WANION PROPOSAL <span class="dot">A</span> / 05 · MADE BY HUJE WORKSHOP</div>
+  <h1>WANION 시안 A — <em>Nexus Console</em> · 콘솔형 대시보드</h1>
+  <p>로그인 직후 만나는 공대장의 관제 콘솔 — 좌측 내비게이션, 주간 스트립, 오늘의 포커스 레이드, 실시간 피드를 한 화면에 집약한 앱 셸 구조.</p>
+</header>
+
+<div class="token-strip">
+  <span class="tk"><i class="sw" style="background:#09090D"></i>BG #09090D</span>
+  <span class="tk"><i class="sw" style="background:#101018"></i>SURFACE #101018</span>
+  <span class="tk"><i class="sw" style="background:#1E1E2E"></i>BORDER #1E1E2E</span>
+  <span class="tk"><i class="sw" style="background:#8A70FF"></i>후제 바이올렛 #8A70FF</span>
+  <span class="tk"><i class="sw" style="background:#B9A8FF"></i>HIGHLIGHT #B9A8FF</span>
+  <span class="tk-sep"></span>
+  <span class="tk">FONT · PRETENDARD</span>
+  <span class="tk-sep"></span>
+  <span class="tk">RADIUS · 8PX</span>
+  <span class="tk-sep"></span>
+  <span class="tk">ROLE · <i class="sw" style="background:#60A5FA;width:10px;height:10px"></i><i class="sw" style="background:#4ADE80;width:10px;height:10px"></i><i class="sw" style="background:#F87171;width:10px;height:10px"></i></span>
+</div>
+
+<!-- ============ DESKTOP FRAME ============ -->
+<div class="frame-label">
+  <h2>데스크톱 · 1280</h2>
+  <span class="kicker">LOGGED-IN HOME / APP SHELL</span>
+</div>
+
+<div class="browser">
+  <div class="browser-bar">
+    <div class="traffic"><i></i><i></i><i></i></div>
+    <div class="urlbox"><span class="lock">&#9679;</span> wanion.site/home</div>
+    <div style="width:66px"></div>
+  </div>
+
+  <div class="shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="wordmark"><span class="en">RE<b>CO</b></span><span class="ko">와니온</span></div>
+        <div class="tagline">RAID OPERATIONS</div>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-group">
+          <div class="nav-head">MY RAIDS</div>
+          <a href="#" class="active">
+            <span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></span>
+            홈
+          </a>
+          <a href="#">
+            <span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>
+            내 일정
+            <span class="badge-n">2</span>
+          </a>
+          <a href="#">
+            <span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6M9 16h6M9 8h2"/><rect x="5" y="3" width="14" height="18" rx="2"/></svg></span>
+            신청 현황
+            <span class="badge-n">1</span>
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-head">COMMUNITY</div>
+          <a href="#">
+            <span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+            파티 찾기
+          </a>
+          <a href="#">
+            <span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5c0 4.5 3.4 8 8 9.5 4.6-1.5 8-5 8-9.5v-5L12 3z"/></svg></span>
+            길드
+          </a>
+          <a href="#">
+            <span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.5"/><path d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5"/><path d="M15 14.5c2.2.3 4 2 4.5 4.5"/></svg></span>
+            공격대
+          </a>
+          <a href="#">
+            <span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7.5 8 11 15.5M16.5 8 13 15.5M8.5 6h7"/></svg></span>
+            연합
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-head">ACCOUNT</div>
+          <a href="#">
+            <span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
+            알림
+            <span class="badge-n">3</span>
+          </a>
+          <a href="#">
+            <span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3H9.8L9.4 5.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4.4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg></span>
+            설정
+          </a>
+        </div>
+      </nav>
+
+      <div class="usercard">
+        <div class="artslot as-avatar" title="AI ART · 후제 아바타 일러스트 1:1 — 다크 바이올렛, 공허 테마">◆</div>
+        <div class="uc-meta">
+          <div class="uc-name">후제 <span class="verified">✓ 인증</span></div>
+          <div class="uc-role">무소속 공대장 · FREE LEADER</div>
+        </div>
+        <div class="uc-more">⋯</div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="topbar">
+        <span class="page-title">홈</span>
+        <span class="page-sub">NEXUS CONSOLE</span>
+        <div class="search">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          레이드 · 길드 · 파티 검색
+          <span class="slash">/</span>
+        </div>
+        <div class="icon-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+          <span class="ping"></span>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- LEFT/CENTER COLUMN -->
+        <div class="col-main">
+
+          <!-- STAT TILES -->
+          <section>
+            <div class="stats">
+              <div class="stat hot">
+                <div class="s-label">이번 주 공대</div>
+                <div class="s-value">2<span class="s-unit">건</span></div>
+                <div class="s-foot">THIS WEEK · 목 / 토</div>
+              </div>
+              <div class="stat">
+                <div class="s-label">신청 중</div>
+                <div class="s-value">1<span class="s-unit">건</span></div>
+                <div class="s-foot">PENDING · 승인 대기</div>
+              </div>
+              <div class="stat">
+                <div class="s-label">내 캐릭터</div>
+                <div class="s-value">3<span class="s-unit">개</span></div>
+                <div class="s-foot">ROSTER · 본캐 1 / 부캐 2</div>
+              </div>
+              <div class="stat">
+                <div class="s-label">파스 평균</div>
+                <div class="s-value">92.4</div>
+                <div class="s-foot">PARSE AVG · <span class="up">▲ 1.8</span> 지난주 대비</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- WEEKLY STRIP -->
+          <section class="weekly">
+            <div class="section-head" style="margin-bottom:0;">
+              <h3>주간 일정</h3>
+              <span class="en-sub">WEEKLY · 7/19 – 7/25</span>
+              <a class="more" href="#">전체 캘린더 <b>→</b></a>
+            </div>
+            <div class="week-row">
+              <div class="day dim sun">
+                <div class="dow">일 SUN</div><div class="dnum">19</div>
+                <div class="devt"><i class="ghost"></i></div>
+              </div>
+              <div class="day dim">
+                <div class="dow">월 MON</div><div class="dnum">20</div>
+                <div class="devt"><i class="ghost"></i></div>
+              </div>
+              <div class="day dim">
+                <div class="dow">화 TUE</div><div class="dnum">21</div>
+                <div class="devt"><i class="ghost"></i></div>
+              </div>
+              <div class="day today">
+                <span class="today-tag">TODAY</span>
+                <div class="dow">수 WED</div><div class="dnum">22</div>
+                <div class="devt"><i class="ghost"></i></div>
+              </div>
+              <div class="day">
+                <div class="dow">목 THU</div><div class="dnum">23</div>
+                <div class="devt"><i></i></div>
+              </div>
+              <div class="day">
+                <div class="dow">금 FRI</div><div class="dnum">24</div>
+                <div class="devt"><i class="ghost"></i></div>
+              </div>
+              <div class="day sat">
+                <div class="dow">토 SAT</div><div class="dnum">25</div>
+                <div class="devt"><i></i></div>
+              </div>
+            </div>
+            <div class="artslot as-empty">
+              <span class="as-mark">◆ AI ART · 일정 없는 날 미니 일러스트 1:1</span>
+              <span class="as-hint">오늘(7/22)은 일정 없음 — 쉬는 캐릭터 미니 컷 · 다크 바이올렛, 공허 테마</span>
+            </div>
+          </section>
+
+          <!-- FOCUS CARD -->
+          <section class="focus">
+            <div class="focus-grid">
+              <div class="artslot as-keyart">
+                <span class="as-mark">◆ AI ART · 레이드 키아트 16:9</span>
+                <span class="as-hint">공허첨탑 키아트 — 다크 바이올렛, 공허 테마</span>
+              </div>
+              <div class="focus-body">
+            <div class="focus-top">
+              <div style="min-width:0;flex:1;">
+                <div class="f-badges">
+                  <span class="chip violet">NEXT RAID</span>
+                  <span class="chip">신화 MYTHIC</span>
+                  <span class="chip">8인 확장 20인</span>
+                </div>
+                <div class="f-title">공허첨탑 정기 공대</div>
+                <div class="f-meta">
+                  <span><b>7/23 (목)</b> 20:00 – 23:00</span>
+                  <span class="m-sep"></span>
+                  <span>주최 <b>한길련 연합</b></span>
+                  <span class="m-sep"></span>
+                  <span>서버 <b>아즈샤라</b></span>
+                </div>
+              </div>
+              <div class="dday">
+                <div class="dd-num">D-1</div>
+                <div class="dd-cap">REMAIN</div>
+              </div>
+            </div>
+
+            <div class="rolebars">
+              <div class="rb tank">
+                <div class="rb-head"><span class="rb-role">탱커</span><span class="rb-count"><b>0</b> / 2</span></div>
+                <div class="rb-track"><div class="rb-fill"></div></div>
+              </div>
+              <div class="rb heal">
+                <div class="rb-head"><span class="rb-role">힐러</span><span class="rb-count"><b>0</b> / 4</span></div>
+                <div class="rb-track"><div class="rb-fill"></div></div>
+              </div>
+              <div class="rb dps">
+                <div class="rb-head"><span class="rb-role">딜러</span><span class="rb-count"><b>0</b> / 14</span></div>
+                <div class="rb-track"><div class="rb-fill"></div></div>
+              </div>
+            </div>
+
+            <div class="focus-actions">
+              <button class="btn btn-primary">신청하기</button>
+              <button class="btn btn-ghost">상세 보기</button>
+              <span class="focus-note">모집 시작 <b>20:00</b> · 선착순 아님 · 승인제</span>
+            </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- UPCOMING LIST -->
+          <section>
+            <div class="section-head">
+              <h3>다가오는 일정</h3>
+              <span class="en-sub">UPCOMING</span>
+              <a class="more" href="#">내 일정 전체 <b>→</b></a>
+            </div>
+            <div class="up-item">
+              <span class="u-date">7/25 (토) 21:00</span>
+              <span class="u-name">굴단의 심장 영웅 격파팟</span>
+              <span class="u-org">스타폴 길드</span>
+              <span class="u-state ok">확정 CONFIRMED</span>
+            </div>
+            <div class="up-item">
+              <span class="u-date">7/27 (월) 20:30</span>
+              <span class="u-name">공허첨탑 신화 트라이 — 밤까마귀 글로벌 파티</span>
+              <span class="u-org">무소속</span>
+              <span class="u-state wait">승인 대기</span>
+            </div>
+          </section>
+        </div>
+
+        <!-- RIGHT RAIL -->
+        <aside class="rail">
+          <div class="feed">
+            <div class="feed-head">
+              <span class="live-dot"></span>
+              <h3>라이브 피드</h3>
+              <span class="en-sub">LIVE FEED</span>
+            </div>
+            <div class="feed-list">
+              <div class="fe hot">
+                <div class="fe-time">20:41</div>
+                <div class="fe-text"><b>두부킴</b> 님이 <span class="r-dps">딜러</span>로 신청했습니다</div>
+                <span class="fe-tag">공허첨탑 정기 공대</span>
+              </div>
+              <div class="fe">
+                <div class="fe-time">20:33</div>
+                <div class="fe-text"><b>스타폴</b> — 신규 길드원 2명이 합류했습니다</div>
+                <span class="fe-tag">GUILD</span>
+              </div>
+              <div class="fe">
+                <div class="fe-time">19:58</div>
+                <div class="fe-text"><b>TeamSAD</b> 공격대가 공허첨탑 신화 <b>5/8</b> 달성 🎉</div>
+                <span class="fe-tag">PROGRESS</span>
+              </div>
+              <div class="fe">
+                <div class="fe-time">19:12</div>
+                <div class="fe-text">무소속 공대장 <b>밤까마귀</b> 님이 글로벌 파티를 개설했습니다</div>
+                <span class="fe-tag">GLOBAL PARTY</span>
+              </div>
+              <div class="fe">
+                <div class="fe-time">18:47</div>
+                <div class="fe-text"><b>한길련 연합</b> — 7/23 공대 공지가 갱신되었습니다</div>
+                <span class="fe-tag">ALLIANCE</span>
+              </div>
+            </div>
+            <div class="feed-more">피드 전체 보기 <b>→</b></div>
+          </div>
+
+          <div class="rail-mini">
+            <h3>내 캐릭터</h3>
+            <div class="rm-sub">MY ROSTER · 3 CHARACTERS</div>
+            <div class="charline">
+              <div class="c-ava">후</div>
+              <div style="min-width:0;">
+                <div class="c-name">후제 <span class="c-spec">· 수호 드루이드</span></div>
+              </div>
+              <span class="c-ilvl">iLv 489</span>
+            </div>
+            <div class="charline">
+              <div class="c-ava">달</div>
+              <div style="min-width:0;">
+                <div class="c-name">달빛후제 <span class="c-spec">· 조화 드루이드</span></div>
+              </div>
+              <span class="c-ilvl">iLv 482</span>
+            </div>
+            <div class="charline">
+              <div class="c-ava">숲</div>
+              <div style="min-width:0;">
+                <div class="c-name">숲지기후제 <span class="c-spec">· 회복 드루이드</span></div>
+              </div>
+              <span class="c-ilvl">iLv 476</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="app-footer">
+        <span><b>WANION</b> — MADE BY 후제공방</span>
+        <span>SERVER TIME 20:44 KST · v0.1 BETA</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE FRAME ============ -->
+<div class="frame-label" style="justify-content:center;">
+  <h2>모바일 · 390</h2>
+  <span class="kicker">BOTTOM TAB SHELL</span>
+</div>
+
+<div class="phone-wrap">
+  <div class="phone">
+    <div class="phone-screen">
+      <div class="notch"></div>
+      <div class="m-status">
+        <span>20:44</span>
+        <span>5G ▮▮▮ 100%</span>
+      </div>
+
+      <div class="m-header">
+        <span class="m-logo">RE<b>CO</b></span>
+        <span class="m-logo-ko">와니온</span>
+        <div class="icon-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+          <span class="ping"></span>
+        </div>
+        <div class="artslot as-avatar as-avatar-sm" title="AI ART · 후제 아바타 일러스트 1:1 — 다크 바이올렛, 공허 테마">◆</div>
+      </div>
+
+      <div class="m-body">
+        <div class="m-hello">
+          <div class="h-line"><b>후제</b> 님, 내일 공대가 기다립니다</div>
+          <div class="h-sub">WED · JUL 22 · NEXUS CONSOLE</div>
+        </div>
+
+        <!-- condensed stats -->
+        <div class="m-stats">
+          <div class="stat hot">
+            <div class="s-label">이번 주 공대</div>
+            <div class="s-value">2<span class="s-unit">건</span></div>
+            <div class="s-foot">목 / 토</div>
+          </div>
+          <div class="stat">
+            <div class="s-label">파스 평균</div>
+            <div class="s-value">92.4</div>
+            <div class="s-foot"><span class="up">▲ 1.8</span> WEEKLY</div>
+          </div>
+        </div>
+
+        <!-- weekly scroll -->
+        <div class="m-week">
+          <div class="m-week-head">
+            <h3>주간 일정</h3>
+            <span class="en-sub">WEEKLY</span>
+            <span class="rng">7/19–25</span>
+          </div>
+          <div class="m-week-scroll">
+            <div class="day dim sun"><div class="dow">일</div><div class="dnum">19</div><div class="devt"><i class="ghost"></i></div></div>
+            <div class="day dim"><div class="dow">월</div><div class="dnum">20</div><div class="devt"><i class="ghost"></i></div></div>
+            <div class="day dim"><div class="dow">화</div><div class="dnum">21</div><div class="devt"><i class="ghost"></i></div></div>
+            <div class="day today"><span class="today-tag">TODAY</span><div class="dow">수</div><div class="dnum">22</div><div class="devt"><i class="ghost"></i></div></div>
+            <div class="day"><div class="dow">목</div><div class="dnum">23</div><div class="devt"><i></i></div></div>
+            <div class="day"><div class="dow">금</div><div class="dnum">24</div><div class="devt"><i class="ghost"></i></div></div>
+            <div class="day sat"><div class="dow">토</div><div class="dnum">25</div><div class="devt"><i></i></div></div>
+          </div>
+          <div class="artslot as-empty" style="padding:10px 8px;">
+            <span class="as-mark">◆ AI ART · 일정 없는 날 미니 일러스트 1:1</span>
+            <span class="as-hint">오늘은 일정 없음 · 다크 바이올렛, 공허 테마</span>
+          </div>
+        </div>
+
+        <!-- focus card -->
+        <section class="focus m-focus">
+          <div class="artslot as-keyart-m">
+            <span class="as-mark">◆ AI ART · 레이드 키아트 16:9</span>
+            <span class="as-hint">공허첨탑 키아트 — 다크 바이올렛, 공허 테마</span>
+          </div>
+          <div class="focus-top">
+            <div style="min-width:0;flex:1;">
+              <div class="f-badges">
+                <span class="chip violet">NEXT RAID</span>
+                <span class="chip">신화</span>
+              </div>
+              <div class="f-title">공허첨탑 정기 공대</div>
+              <div class="f-meta">
+                <span><b>7/23 (목)</b> 20:00–23:00</span>
+                <span class="m-sep"></span>
+                <span>주최 <b>한길련 연합</b></span>
+              </div>
+            </div>
+            <div class="dday">
+              <div class="dd-num">D-1</div>
+              <div class="dd-cap">REMAIN</div>
+            </div>
+          </div>
+          <div class="rolebars">
+            <div class="rb tank">
+              <div class="rb-head"><span class="rb-role">탱커</span><span class="rb-count"><b>0</b>/2</span></div>
+              <div class="rb-track"><div class="rb-fill"></div></div>
+            </div>
+            <div class="rb heal">
+              <div class="rb-head"><span class="rb-role">힐러</span><span class="rb-count"><b>0</b>/4</span></div>
+              <div class="rb-track"><div class="rb-fill"></div></div>
+            </div>
+            <div class="rb dps">
+              <div class="rb-head"><span class="rb-role">딜러</span><span class="rb-count"><b>0</b>/14</span></div>
+              <div class="rb-track"><div class="rb-fill"></div></div>
+            </div>
+          </div>
+          <div class="focus-actions">
+            <button class="btn btn-primary" style="flex:1;justify-content:center;">신청하기</button>
+            <button class="btn btn-ghost">상세</button>
+          </div>
+        </section>
+
+        <!-- feed -->
+        <div class="feed m-feed">
+          <div class="feed-head">
+            <span class="live-dot"></span>
+            <h3>라이브 피드</h3>
+            <span class="en-sub">LIVE</span>
+          </div>
+          <div class="feed-list">
+            <div class="fe hot">
+              <div class="fe-time">20:41</div>
+              <div class="fe-text"><b>두부킴</b> 님이 <span class="r-dps">딜러</span>로 신청했습니다</div>
+            </div>
+            <div class="fe">
+              <div class="fe-time">20:33</div>
+              <div class="fe-text"><b>스타폴</b> — 신규 길드원 2명 합류</div>
+            </div>
+            <div class="fe">
+              <div class="fe-time">19:58</div>
+              <div class="fe-text"><b>TeamSAD</b> 공허첨탑 신화 <b>5/8</b> 달성 🎉</div>
+            </div>
+            <div class="fe">
+              <div class="fe-time">19:12</div>
+              <div class="fe-text">무소속 공대장 <b>밤까마귀</b> 님이 글로벌 파티 개설</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB BAR -->
+      <div class="tabbar">
+        <a class="tab active" href="#">
+          <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></span>
+          홈
+        </a>
+        <a class="tab" href="#">
+          <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+          파티
+        </a>
+        <a class="tab" href="#">
+          <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>
+          일정
+        </a>
+        <a class="tab" href="#">
+          <span class="ti t-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
+          알림
+        </a>
+        <a class="tab" href="#">
+          <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6.5 8-6.5s7.2 2.5 8 6.5"/></svg></span>
+          내정보
+        </a>
+      </div>
+      <div class="home-indicator"><i></i></div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;" class="kicker">WANION — MADE BY 후제공방 · PROPOSAL A / NEXUS CONSOLE</div>
+
+</body>
+</html>
