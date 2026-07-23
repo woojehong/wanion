@@ -12,16 +12,16 @@ WANION 본체와 분리된 로컬 브랜딩 연구 폴더입니다.
 
 ## 바로 보기
 
-`03-comparison/overview.html`을 Chrome으로 열면 5개 방향을 한 번에 비교할 수 있습니다.
+`03-comparison/overview.html`을 Chrome으로 열면 5개 방향의 요약표를 한 화면에서 보고, 탭으로 각 상세안을 확인할 수 있습니다.
 
 ## 1차 후보
 
-1. RAID DESK — 모아(MOA)
-2. THE BATON — 릴리(LILI)
-3. RAID SCORE — 템포(TEMPO)
-4. SWITCHBOARD — 피코(PICO)
-5. WANE INDEX — 베인(VANE)
+5개 방향은 로고·도형·레이아웃 비교안이며 캐릭터 후보 수가 아닙니다. 캐릭터는 아래 두 개만 사용합니다.
 
-`COMMON FLAG — 반(BAN)`은 초기 탐색안으로 보존했지만, `wanion`의 어원과 주간 레이드 주기를 반영한 WANE INDEX가 활성 비교안으로 교체되었다.
+- **WANI / 와니** — 2번 아이보리 암컷 족제비, 메인 캐릭터
+- **NION / 니온** — 6번 검은 까마귀, Discord 봇이자 curse 기록관
+- `WANI + NION = WANION`
+
+검은 담비·달나방·두루미·딱따구리·까치는 탐색 아카이브이며 실제 캐릭터 체계에서는 사용하지 않습니다.
 
 현재 전략 추천은 **RAID DESK**입니다. 최종 선택 전까지 모든 안은 동등한 탐색안으로 보존합니다.

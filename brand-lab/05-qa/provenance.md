@@ -21,6 +21,12 @@
 - `pico-character-sheet.png` — 1차 시안
 - `pico-character-sheet-v2.png` — 색상 규칙을 적용한 비교 페이지용 시안
 - `vane-character-sheet.png` — WANE INDEX 월상 주기 방향의 검은 달나방 시안
+- `nion-character-sheet-v2.png` — 광택·SD 비례를 줄이고 2×2 정사각 규격으로 다시 만든 WANE INDEX 비교용 시안
+- `oni-raven-character-sheet.png` — 5개 방향과 별개의 여섯 번째 CURSE KEEPER 까마귀 콘셉트
+- `wani-female-weasel-character-sheet.png` — 2번 아이보리 족제비 시안을 기반으로 재설계한 최종 WANI 방향
+- `nion-raven-character-sheet.png` — 6번 까마귀 시안을 NION 이름으로 채택한 캐릭터 시스템용 사본
+
+`vane-character-sheet.png`는 archived v1이며 활성 비교 페이지에서 사용하지 않는다. 활성 이름은 NION이다. NION v2와 ONI에는 생성 모델이 만든 미세한 명암 변화가 남아 있어 최종 평면 벡터로 주장하지 않으며, 방향 선택 후 수작업 재정제 대상이다.
 - `ban-character-sheet.png`
 
 공통 제약: 텍스트·로고·워터마크·그라데이션·발광·WoW 문양·판타지 장비 금지. 모든 이미지는 콘셉트 탐색용이며 최종 마스터가 아니다.
