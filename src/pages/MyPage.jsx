@@ -322,7 +322,7 @@ export default function MyPage() {
               ))}
               {memberships && !memberships.length && (
                 <div className="p-8 text-center text-[13px] text-sub">
-                  아직 소속이 없습니다 — 길드 가입 신청 기능이 곧 열립니다.
+                  아직 소속이 없습니다 — 길드 페이지에서 가입 신청을 해보세요.
                 </div>
               )}
               {!memberships && <p className="p-8 text-center text-[13px] text-mute">불러오는 중…</p>}

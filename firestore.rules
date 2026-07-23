@@ -42,6 +42,13 @@ service cloud.firestore {
         || (d.hostType == 'team' && hasRole('team', d.hostId, ['leader', 'officer']))
         || (d.hostType == 'alliance' && hasRole('alliance', d.hostId, ['officer']));
     }
+    // 조직의 최고 책임자 — 멤버십(가입 승인·승격·제명) 관리 권한의 기준
+    // kgu 계승: 길드원 관리는 마스터 전용 (officer는 레이드·게시판 운영만)
+    function isScopeMaster(scopeType, scopeId) {
+      return isPlatformAdmin()
+        || (scopeType == 'guild' && hasRole('guild', scopeId, ['master']))
+        || (scopeType == 'team' && hasRole('team', scopeId, ['leader']));
+    }
     // 게시판 스코프 관리자 — global=플랫폼 운영진, guild/team=해당 조직 관리진
     function isScopeAdmin(scopeType, scopeId) {
       return isPlatformAdmin()
@@ -86,19 +93,72 @@ service cloud.firestore {
       }
     }
 
-    // ── Memberships — 변경은 운영자/Functions 경유 ──────────────────
+    // ── Memberships ─────────────────────────────────────────────────
+    // 최상위(플랫폼 역할·마스터 임명)는 소유자 전용.
+    // 조직 단위 일반 멤버십(member/officer)은 해당 조직 마스터에게 위임 —
+    // 가입 승인·승격/강등·제명이 코드 수정 없이 화면에서 이뤄진다.
     match /memberships/{id} {
       allow read: if true;
       // 부트스트랩: 플랫폼 최초 1회, meta/super가 없을 때만 본인을 owner로 등록 가능.
-      // 이후의 모든 멤버십 임명·해임은 소유자(owner) 단독 권한 — staff 불가.
       allow create: if isOwner()
         || (
           signedIn()
           && id == me() + '_platform_platform'
           && request.resource.data.role == 'owner'
           && !exists(/databases/$(database)/documents/meta/super)
+        )
+        // 조직 마스터: 자기 조직에 member/officer 등록 (id 정합 강제)
+        || (
+          signedIn()
+          && id == request.resource.data.uid + '_' + request.resource.data.scopeType + '_' + request.resource.data.scopeId
+          && isScopeMaster(request.resource.data.scopeType, request.resource.data.scopeId)
+          && request.resource.data.role in ['member', 'officer']
         );
-      allow update, delete: if isOwner();
+      allow update: if isOwner()
+        // 조직 마스터: member↔officer 역할 조정만 (마스터 승계·스코프 이전 불가)
+        || (
+          isScopeMaster(resource.data.scopeType, resource.data.scopeId)
+          && resource.data.role in ['member', 'officer']
+          && request.resource.data.role in ['member', 'officer']
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.scopeType == resource.data.scopeType
+          && request.resource.data.scopeId == resource.data.scopeId
+        );
+      allow delete: if isOwner()
+        // 조직 마스터: member/officer 제명 (마스터는 소유자만 해임 가능)
+        || (
+          isScopeMaster(resource.data.scopeType, resource.data.scopeId)
+          && resource.data.role in ['member', 'officer']
+        )
+        // 본인 탈퇴 (최고 책임자는 승계 없이는 탈퇴 불가)
+        || (
+          signedIn()
+          && resource.data.uid == me()
+          && !(resource.data.role in ['owner', 'master', 'leader'])
+        );
+    }
+
+    // ── 길드 가입 신청 (새출발 재입주의 관문) ────────────────────────
+    // 문서 id = {uid}_{guildId} — 길드당 1건. BNet 연동은 서버 규칙으로 강제.
+    match /guildApplications/{appId} {
+      allow read: if signedIn() && (
+        resource.data.uid == me()
+        || isScopeAdmin('guild', resource.data.guildId)
+      );
+      allow create: if signedIn()
+        && appId == me() + '_' + request.resource.data.guildId
+        && request.resource.data.uid == me()
+        && request.resource.data.status == 'pending'
+        && get(/databases/$(database)/documents/users/$(me())).data.bnetLinked == true;
+      // 판정은 마스터 전용 (승인 시 memberships 생성과 한 배치 — 권한 일치 필요)
+      allow update: if isScopeMaster('guild', resource.data.guildId)
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'rejected']
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.guildId == resource.data.guildId;
+      allow delete: if isPlatformAdmin()
+        || (signedIn() && resource.data.uid == me())
+        || isScopeMaster('guild', resource.data.guildId);
     }
 
     // ── 조직 엔티티 — 공개 프로필 전략 (비로그인 열람) ──────────────
