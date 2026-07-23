@@ -27,6 +27,11 @@ import {
   onAppPromoted,
   onMembershipRoleChanged,
 } from './notifications.js';
+import {
+  refreshMyProgress,
+  scheduledProgressDaily,
+  scheduledProgressEvening,
+} from './progressJobs.js';
 
 setGlobalOptions({ region: 'asia-northeast3', maxInstances: 5 });
 
@@ -37,6 +42,8 @@ const db = getFirestore();
 export { discordInteractions, onRaidWritten, discordCreateLinkCode };
 // ── 알림 센터 트리거 — 구현은 functions/notifications.js ──
 export { onOrgApplicationDecided, onRaidFixedNotify, onAppPromoted, onMembershipRoleChanged };
+// ── 프로필 진도 갱신 — 구현은 functions/progressJobs.js ──
+export { refreshMyProgress, scheduledProgressDaily, scheduledProgressEvening };
 
 // ── Battle.net OAuth (P2-2) ──────────────────────────────────────────
 // 콜백 = Functions 고정 주소 (사이트 도메인 변경에 면역 — 설계 결정).

@@ -12,7 +12,7 @@ import {
   fetchMyMemberships,
   fetchLedger,
 } from '../lib/db';
-import { MonoLabel, SectionTitle, Card, Avatar, Chip } from '../components/ui';
+import { MonoLabel, SectionTitle, Card, Avatar, Chip, Segments } from '../components/ui';
 
 const SCOPE_KO = { platform: '플랫폼', guild: '길드', team: '공대', alliance: '연합' };
 const ROLE_KO = {
@@ -232,6 +232,61 @@ function DiscordLinkCard() {
   );
 }
 
+// ── 레이드 진도 (사양 7.2) — 블리자드 캐릭터 진도 자동/수동 갱신 ──────
+function ProgressCard() {
+  const { user, profile, signInGoogle } = useApp();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const prog = profile?.progress || null;
+  const last = profile?.progressRefreshedAt || 0;
+  const cooldownLeft = Math.max(0, 10 * 60 * 1000 - (Date.now() - last));
+
+  if (!profile?.bnetLinked) return null;
+
+  const refresh = async () => {
+    if (!user) return signInGoogle();
+    setBusy(true);
+    setErr('');
+    try {
+      const call = httpsCallable(functions, 'refreshMyProgress');
+      await call(); // 결과(users.progress)는 프로필 구독으로 자동 반영
+    } catch (e) {
+      setErr(e.message || '갱신에 실패했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card className="mb-6 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <MonoLabel violet>RAID PROGRESS</MonoLabel>
+          {prog ? (
+            <>
+              <p className="mt-0.5 text-[14px] font-bold text-txt">
+                {prog.name} <span className="text-violet-hi">{prog.difficulty}</span>{' '}
+                <span className="num text-sub">{prog.killed}/{prog.total}</span>
+              </p>
+              {prog.lastKill && <p className="text-[12px] text-sub">최근 처치: {prog.lastKill}</p>}
+            </>
+          ) : (
+            <p className="mt-0.5 text-[13px] text-sub">
+              아직 진도 정보가 없어요 — [지금 갱신]으로 대표 캐릭터의 최신 레이드 진도를 불러옵니다.
+            </p>
+          )}
+        </div>
+        <button className="btn-ghost" disabled={busy || cooldownLeft > 0} onClick={refresh}>
+          {busy ? '갱신 중…' : cooldownLeft > 0 ? `${Math.ceil(cooldownLeft / 60000)}분 후 가능` : '지금 갱신'}
+        </button>
+      </div>
+      {prog && prog.total > 0 && <Segments done={prog.killed} total={prog.total} className="mt-3" />}
+      <p className="mt-2 text-[11px] text-mute">매일 새벽 2시 자동 갱신 · 레이드 당일 저녁 추가 갱신 (KST)</p>
+      {err && <p className="mt-2 text-[13px] font-semibold text-dps">{err}</p>}
+    </Card>
+  );
+}
+
 function ConnCard({ label, status, sub, linked }) {
   return (
     <Card className="p-4">
@@ -284,6 +339,7 @@ export default function MyPage() {
     <main className="mx-auto max-w-6xl px-4 py-8">
       <BnetLinkCard chars={chars} />
       <DiscordLinkCard />
+      <ProgressCard />
       <DailyCheckinCard wallet={wallet} />
 
       {/* 프로필 헤더 */}
