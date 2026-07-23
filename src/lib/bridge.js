@@ -13,11 +13,13 @@ const SNAP_VERSION = 'WANIONSNAP1';
 const ROLE_CODE = { tank: 'T', heal: 'H', dps: 'D', guest: 'G' };
 const CODE_ROLE = { T: 'tank', H: 'heal', D: 'dps', G: 'guest' };
 
-/** 간단 체크섬 — 붙여넣기 훼손 감지용 (보안 목적 아님) */
+/** 간단 체크섬 — 붙여넣기 훼손 감지용 (보안 목적 아님).
+ *  ★ UTF-8 바이트 기준 — 인게임 애드온(Lua, 바이트 네이티브)과 동일 결과를 보장(한글 캐릭명 호환). */
 export function checksum(payload) {
+  const bytes = new TextEncoder().encode(payload);
   let sum = 0;
-  for (let i = 0; i < payload.length; i += 1) {
-    sum = (sum * 31 + payload.charCodeAt(i)) % 1679615; // 36^4 - 1
+  for (let i = 0; i < bytes.length; i += 1) {
+    sum = (sum * 31 + bytes[i]) % 1679615; // 36^4 - 1
   }
   return sum.toString(36).padStart(4, '0');
 }

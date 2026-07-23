@@ -1,0 +1,9 @@
+## Interface: 120000
+## Title: 와니온 어시스트
+## Notes: WANION 인게임 브릿지 — 초대·파티배치·스냅샷을 버튼으로 (웹 코드 붙여넣기)
+## Author: 후제공방
+## Version: 1.0.0
+## SavedVariables: WanionAssistDB
+## IconTexture: Interface\Icons\INV_Misc_GroupNeedMore
+
+WanionAssist.lua
