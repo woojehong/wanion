@@ -25,6 +25,12 @@
 - `oni-raven-character-sheet.png` — 5개 방향과 별개의 여섯 번째 CURSE KEEPER 까마귀 콘셉트
 - `wani-female-weasel-character-sheet.png` — 2번 아이보리 족제비 시안을 기반으로 재설계한 최종 WANI 방향
 - `nion-raven-character-sheet.png` — 6번 까마귀 시안을 NION 이름으로 채택한 캐릭터 시스템용 사본
+- `nion-adult-black-bird-v2.png` — 대표님이 지정한 검은 새 원본을 직접 참조해 머리 비율·눈매·의상을 성숙하게 다듬은 NION 활성 시안
+- `wani-urban-female-v2.png` — WANI를 선정성이 아닌 도회적 전문성과 조용한 세련미 중심으로 다시 다듬은 활성 시안
+- `wani-canonical.png` — 여러 포즈 없이 WANI 한 명만 표시한 단일 대표 이미지
+- `nion-canonical.png` — 여러 포즈 없이 NION 한 명만 표시한 단일 대표 이미지
+
+`*-character-sheet.png`, `*-v2.png` 파일은 제작 과정 기록용 탐색 아카이브다. 활성 캐릭터 표시는 `wani-canonical.png`, `nion-canonical.png` 두 파일만 사용한다.
 
 `vane-character-sheet.png`는 archived v1이며 활성 비교 페이지에서 사용하지 않는다. 활성 이름은 NION이다. NION v2와 ONI에는 생성 모델이 만든 미세한 명암 변화가 남아 있어 최종 평면 벡터로 주장하지 않으며, 방향 선택 후 수작업 재정제 대상이다.
 - `ban-character-sheet.png`
