@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { RAIDS, WEEK } from '../lib/mock';
 import { subscribeUpcomingRaids } from '../lib/db';
+import { useApp } from '../context/AppContext';
+import RaidFormModal from '../components/RaidFormModal';
 import { getCaps } from '../lib/utils';
 
 // Firestore 레이드 문서 → 보드 로우 형태로 변환
@@ -58,6 +60,8 @@ export default function BoardPage() {
   const [diff, setDiff] = useState('전체');
   const [role, setRole] = useState('all');
   const [live, setLive] = useState(null); // null=로딩, []=실데이터 없음
+  const [formOpen, setFormOpen] = useState(false);
+  const { user, signInGoogle } = useApp();
 
   useEffect(() => subscribeUpcomingRaids(setLive), []);
 
@@ -90,7 +94,13 @@ export default function BoardPage() {
           <h1 className="mt-1 text-[26px] font-extrabold">지금 모집 중인 공격대</h1>
           <p className="mt-1 text-[13px] text-sub">소속이 없어도 공대장이 될 수 있습니다 — 누구나 파티를 열고, 전국에서 모집하세요.</p>
         </div>
-        <div className="flex gap-5">
+        <div className="flex items-center gap-5">
+          <button
+            className="btn-primary"
+            onClick={() => (user ? setFormOpen(true) : signInGoogle())}
+          >
+            파티 개설
+          </button>
           <div className="text-right">
             <div className="num text-[20px] font-extrabold text-violet-hi">{RAIDS.filter((r) => r.status === 'recruiting').length}</div>
             <MonoLabel>RECRUITING</MonoLabel>
@@ -185,6 +195,7 @@ export default function BoardPage() {
           </div>
         )}
       </div>
+      <RaidFormModal open={formOpen} onClose={() => setFormOpen(false)} />
     </main>
   );
 }

@@ -19,7 +19,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { CLASSES, SYNERGIES, SERVERS, SEED_GUILDS, SEED_ZONES } from './constants';
+import { CLASSES, SYNERGIES, SERVERS, SEED_GUILDS, SEED_ZONES, SEED_ALLIANCES, SEED_TEAMS } from './constants';
 import { getCaps } from './utils';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -54,6 +54,14 @@ export async function seedInitialData() {
   SEED_GUILDS.forEach((g) => {
     const { id, ...rest } = g;
     batch.set(doc(db, 'guilds', id), { ...rest, createdAt: serverTimestamp() }, { merge: true });
+  });
+  SEED_ALLIANCES.forEach((a) => {
+    const { id, ...rest } = a;
+    batch.set(doc(db, 'alliances', id), { ...rest, createdAt: serverTimestamp() }, { merge: true });
+  });
+  SEED_TEAMS.forEach((t) => {
+    const { id, ...rest } = t;
+    batch.set(doc(db, 'teams', id), { ...rest, createdAt: serverTimestamp() }, { merge: true });
   });
   SEED_ZONES.forEach((z) => {
     const { id, bosses, ...rest } = z;

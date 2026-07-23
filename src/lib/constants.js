@@ -296,3 +296,12 @@ export const POINTS = {
   ],
   GUIDE_PENALTY_THRESHOLD: 3, // 순추천 음수 공략 N개 이상 → 공략 보상 일시중지
 };
+
+// ── 창립 연합·공격대 시드 ────────────────────────────────────────────
+export const SEED_ALLIANCES = [
+  { id: 'kwgu', name: '한길련', nameEn: 'KOREAN WOW GUILD UNION', desc: '한국 와우 길드들의 연합 레이드', guildIds: ['gyochaero', 'wowfactory', 'ieyo', 'starfall-forest'] },
+];
+
+export const SEED_TEAMS = [
+  { id: 'teamsad', name: 'TeamSAD', server: '아즈샤라', baseGuildId: 'dogs', desc: '두부킴의유기견들 기반 신화 정공' },
+];
