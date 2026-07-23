@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
+import { httpsCallable } from 'firebase/functions';
 import { ME } from '../lib/mock';
 import { useApp } from '../context/AppContext';
-import { requestDailyCheckin, subscribeWallet } from '../lib/db';
+import { functions } from '../lib/firebase';
+import { requestDailyCheckin, hasCheckedInToday, subscribeWallet } from '../lib/db';
+
+const SCOPE_KO = { guild: '길드', team: '공대', alliance: '연합' };
+const ROLE_LABEL_KO = {
+  master: '길드 마스터', officer: '관리자', leader: '공대장', member: '멤버',
+};
 
 // KST 새벽 2시 리셋 기준의 '오늘' 키 (사양 3.1 — 게이머의 하루)
 function checkinDateKey() {
@@ -15,6 +22,12 @@ function DailyCheckinCard() {
   const [wallet, setWallet] = useState(null);
 
   useEffect(() => (uid ? subscribeWallet(uid, setWallet) : undefined), [uid]);
+
+  // 오늘 이미 출석했으면 버튼을 완료 상태로
+  useEffect(() => {
+    if (!uid) return;
+    hasCheckedInToday(uid, checkinDateKey()).then((done) => done && setState('done'));
+  }, [uid]);
 
   const check = async () => {
     if (!user) return signInGoogle();
@@ -32,8 +45,8 @@ function DailyCheckinCard() {
       <div>
         <MonoLabel violet>DAILY CHECK-IN · KST 02:00 리셋</MonoLabel>
         <p className="mt-0.5 text-[13px] text-sub">
-          매일 출석으로 포인트를 쌓으세요{wallet ? ` — 현재 잔액 ${Number(wallet.balance || 0).toLocaleString()}P` : ''}
-          <span className="ml-1 text-mute">(지급 자동화는 P2에서 활성화)</span>
+          매일 출석하면 +10P{wallet ? ` — 현재 잔액 ${Number(wallet.balance || 0).toLocaleString()}P` : ''}
+          <span className="ml-1 text-mute">(지급은 몇 초 내 자동 반영)</span>
         </p>
       </div>
       <button className="btn-primary" disabled={state !== 'idle'} onClick={check}>
@@ -43,6 +56,91 @@ function DailyCheckinCard() {
   );
 }
 import { MonoLabel, SectionTitle, Card, ArtSlot, Avatar, KV, Chip } from '../components/ui';
+
+// ── 병합 브릿지 (P2-1) — 한길련 옛 계정을 새 계정에 연결 ─────────────
+function LegacyClaimCard() {
+  const { user, profile, signInGoogle } = useApp();
+  const [open, setOpen] = useState(false);
+  const [nickname, setNickname] = useState('');
+  const [pin, setPin] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState(null);
+
+  // 이미 병합된 계정이면 노출하지 않음
+  if (profile?.legacyId && !result) return null;
+
+  const inputCls =
+    'w-full rounded border border-line bg-surface2 px-3 py-2 text-[14px] text-txt outline-none focus:border-violet-deep';
+
+  const submit = async () => {
+    if (!user) return signInGoogle();
+    setError('');
+    if (!nickname.trim()) return setError('한길련에서 쓰던 닉네임을 입력해주세요.');
+    if (!/^\d{4}$/.test(pin)) return setError('PIN은 숫자 4자리입니다.');
+    setBusy(true);
+    try {
+      const call = httpsCallable(functions, 'claimLegacy');
+      const res = await call({ nickname: nickname.trim(), pin });
+      setResult(res.data);
+    } catch (e) {
+      setError(e.message || '병합에 실패했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (result) {
+    return (
+      <Card className="mb-6 border-violet-deep/60 p-4">
+        <MonoLabel violet>LEGACY MERGED</MonoLabel>
+        <p className="mt-1 text-[14px] font-bold text-txt">
+          「{result.nickname}」 계정 병합 완료 — 어서 오세요, 다시 만나서 반갑습니다!
+        </p>
+        {result.memberships?.length > 0 && (
+          <p className="mt-1 text-[13px] text-sub">
+            복귀 소속:{' '}
+            {result.memberships
+              .map((m) => `${SCOPE_KO[m.scopeType] || m.scopeType} ${m.scopeId} · ${ROLE_LABEL_KO[m.role] || m.role}`)
+              .join(' / ')}
+          </p>
+        )}
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="mb-6 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <MonoLabel violet>LEGACY BRIDGE · 한길련</MonoLabel>
+          <p className="mt-0.5 text-[13px] text-sub">
+            옛 한길련 계정이 있다면 닉네임+PIN으로 병합하세요 — 길드 소속과 직책이 그대로 복원됩니다.
+          </p>
+        </div>
+        {!open && (
+          <button className="btn-ghost" onClick={() => (user ? setOpen(true) : signInGoogle())}>
+            옛 계정 가져오기
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+          <input className={`${inputCls} !w-44`} placeholder="옛 닉네임" value={nickname} maxLength={12}
+            onChange={(e) => setNickname(e.target.value)} />
+          <input className={`${inputCls} !w-28`} placeholder="PIN 4자리" value={pin} maxLength={4}
+            type="password" inputMode="numeric"
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+          <button className="btn-primary !px-3 !py-2 !text-[13px]" disabled={busy} onClick={submit}>
+            {busy ? '확인 중…' : '병합'}
+          </button>
+          <button className="btn-ghost !px-3 !py-2 !text-[13px]" onClick={() => setOpen(false)}>닫기</button>
+          {error && <p className="w-full text-[13px] font-semibold text-dps">{error}</p>}
+        </div>
+      )}
+    </Card>
+  );
+}
 
 function ConnCard({ label, status, sub, linked }) {
   return (
@@ -64,6 +162,7 @@ export default function MyPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
       <DailyCheckinCard />
+      <LegacyClaimCard />
       {/* 프로필 헤더 */}
       <div className="flex flex-wrap items-center gap-5 rounded border border-line bg-surface p-5">
         <ArtSlot label="아바타 1:1" ratio="1 / 1" className="h-[72px] w-[72px]" />

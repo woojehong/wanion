@@ -808,6 +808,15 @@ export async function fetchLedger(uid, pageSize = 20) {
  * 일일 출석 체크 — 클라이언트는 출석 문서 생성만 담당.
  * 문서 ID(uid_YYYYMMDD)가 중복 방지 키이며, 포인트 지급은 Functions 트리거가 수행.
  */
+export async function hasCheckedInToday(uid, dateKey) {
+  try {
+    const snap = await getDoc(doc(db, 'dailyCheckins', `${uid}_${dateKey}`));
+    return snap.exists();
+  } catch {
+    return false;
+  }
+}
+
 export function requestDailyCheckin(uid, dateKey) {
   return setDoc(doc(db, 'dailyCheckins', `${uid}_${dateKey}`), {
     uid,
