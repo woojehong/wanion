@@ -161,6 +161,93 @@ export async function fetchRaidsByHost(hostType, hostId, pageSize = 5) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+// ── Admin console (플랫폼 운영자 전용 — rules가 권한 강제) ──────────
+
+/** 전체 던전 목록 (비활성 포함) — 게임데이터 도구용 */
+export async function fetchAllZones() {
+  const snap = await getDocs(collection(db, 'zones'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export function saveZone(zoneId, data) {
+  return setDoc(doc(db, 'zones', zoneId), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+export function saveBoss(zoneId, bossId, data) {
+  const ref = bossId
+    ? doc(db, 'zones', zoneId, 'bosses', bossId)
+    : doc(collection(db, 'zones', zoneId, 'bosses'));
+  return setDoc(ref, data, { merge: true });
+}
+
+export function deleteBoss(zoneId, bossId) {
+  return deleteDoc(doc(db, 'zones', zoneId, 'bosses', bossId));
+}
+
+/** 네임드 순서 일괄 저장 — 위/아래 이동 후 order 재부여 */
+export async function reorderBosses(zoneId, orderedIds) {
+  const batch = writeBatch(db);
+  orderedIds.forEach((id, i) => {
+    batch.set(doc(db, 'zones', zoneId, 'bosses', id), { order: i + 1 }, { merge: true });
+  });
+  await batch.commit();
+}
+
+/** 최근 가입 유저 — 검색은 클라이언트 필터 (P1 규모 전제) */
+export async function fetchRecentUsers(pageSize = 50) {
+  const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(pageSize));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** 멤버십 임명/변경 — 소유자(owner) 전용 (rules 강제) */
+export function upsertMembership(uid, scopeType, scopeId, role) {
+  return setDoc(doc(db, 'memberships', `${uid}_${scopeType}_${scopeId}`), {
+    uid,
+    scopeType,
+    scopeId,
+    role,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+export function removeMembership(uid, scopeType, scopeId) {
+  return deleteDoc(doc(db, 'memberships', `${uid}_${scopeType}_${scopeId}`));
+}
+
+export async function fetchGuilds() {
+  const snap = await getDocs(collection(db, 'guilds'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function fetchTeams() {
+  const snap = await getDocs(collection(db, 'teams'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function fetchAlliances() {
+  const snap = await getDocs(collection(db, 'alliances'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** 삭제(아카이브) 레이드 — deleted==true, 종료 내림차순 */
+export async function fetchDeletedRaids(pageSize = 30) {
+  const q = query(
+    collection(db, 'raids'),
+    where('deleted', '==', true),
+    orderBy('endAt', 'desc'),
+    limit(pageSize)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** 레이드 로그 뷰어 — Functions가 기록, 운영자만 열람 (rules) */
+export async function fetchRaidLogs(raidId) {
+  const snap = await getDocs(collection(db, 'raids', raidId, 'logs'));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 // ── Raids ────────────────────────────────────────────────────────────
 
 /**
