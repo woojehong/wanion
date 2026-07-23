@@ -603,3 +603,14 @@ export async function fetchSimulation(raidId) {
   const snap = await getDoc(doc(db, 'raids', raidId, 'sim', 'main'));
   return snap.exists() ? snap.data().assignment || {} : {};
 }
+
+/** 내 투표 조회 (익명 보장 — 규칙상 본인 표만 읽기 가능) */
+export async function fetchMyGuideVote(guideId, uid) {
+  if (!uid) return 0;
+  try {
+    const snap = await getDoc(doc(db, 'guides', guideId, 'votes', uid));
+    return snap.exists() ? snap.data().value : 0;
+  } catch {
+    return 0;
+  }
+}

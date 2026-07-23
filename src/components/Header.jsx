@@ -4,6 +4,7 @@ import { Avatar } from './ui';
 
 const MENU = [
   { to: '/board', label: '파티 찾기' },
+  { to: '/guides', label: '공략' },
   { to: '/guild/starfall', label: '길드' },
   { to: '/team/teamsad', label: '공격대' },
   { to: '/me', label: '마이페이지' },

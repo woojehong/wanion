@@ -7,6 +7,7 @@ import GuildPage from './pages/GuildPage';
 import TeamPage from './pages/TeamPage';
 import MyPage from './pages/MyPage';
 import AdminPage from './pages/AdminPage';
+import GuidesPage from './pages/GuidesPage';
 
 export default function App() {
   const { pathname } = useLocation();
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/team/:teamId" element={<TeamPage />} />
         <Route path="/me" element={<MyPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/guides" element={<GuidesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <footer className="border-t border-line py-6">
