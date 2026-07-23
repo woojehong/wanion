@@ -465,6 +465,17 @@ service cloud.firestore {
       allow update, delete: if isPlatformAdmin();
     }
 
+    // ── 알림 센터 — 생성은 Functions 전용, 본인만 읽기·읽음처리·삭제 ──
+    // 위조 방지: 남의 알림 생성 불가. 읽음처리는 read 필드를 true로 바꾸는 것만 허용.
+    match /notifications/{uid}/items/{itemId} {
+      allow read: if signedIn() && me() == uid;
+      allow create: if false; // Functions(Admin SDK) 전용
+      allow update: if signedIn() && me() == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+        && request.resource.data.read == true;
+      allow delete: if signedIn() && me() == uid;
+    }
+
     // ── 레거시(kgusystem 이관) 대기 데이터 — 클라이언트 접근 전면 금지 ──
     // Admin SDK(마이그레이션 스크립트)와 P2 병합 브릿지 Functions만 접근한다.
     // legacyNicknames에는 구 시스템 인증 식별자가 포함되므로 절대 공개 금지.

@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Avatar } from './ui';
+import NotificationBell from './NotificationBell';
 
 const MENU = [
   { to: '/board', label: '파티 찾기' },
@@ -63,6 +64,7 @@ export default function Header() {
               <Link to="/board" className="btn-primary hidden whitespace-nowrap !px-3 !py-1.5 !text-[13px] sm:inline-flex">
                 파티 개설
               </Link>
+              <NotificationBell />
               <Link to="/me" className="flex items-center gap-2">
                 <Avatar name={displayName || 'W'} size="h-7 w-7" />
                 <span className="hidden max-w-[96px] truncate text-[13px] font-semibold text-txt sm:inline">

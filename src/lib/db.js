@@ -1071,3 +1071,31 @@ export async function fetchMyGuideVote(guideId, uid) {
     return 0;
   }
 }
+
+// ── 알림 센터 (생성은 Cloud Functions 전용 — 클라이언트는 구독·읽음처리·삭제만) ──
+
+/** 최근 알림 구독 — 헤더 벨. 미읽음 카운트는 이 목록에서 파생(비정규화 카운터 불필요) */
+export function subscribeNotifications(uid, cb, max = 30) {
+  const q = query(
+    collection(db, 'notifications', uid, 'items'),
+    orderBy('createdAt', 'desc'),
+    limit(max)
+  );
+  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), () => cb([]));
+}
+
+export function markNotificationRead(uid, itemId) {
+  return updateDoc(doc(db, 'notifications', uid, 'items', itemId), { read: true });
+}
+
+export async function markAllNotificationsRead(uid, items) {
+  const unread = (items || []).filter((i) => !i.read);
+  if (!unread.length) return;
+  const batch = writeBatch(db);
+  unread.forEach((i) => batch.update(doc(db, 'notifications', uid, 'items', i.id), { read: true }));
+  await batch.commit();
+}
+
+export function deleteNotification(uid, itemId) {
+  return deleteDoc(doc(db, 'notifications', uid, 'items', itemId));
+}

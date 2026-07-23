@@ -21,6 +21,12 @@ import {
   onRaidWritten,
   discordCreateLinkCode,
 } from './discord/index.js';
+import {
+  onOrgApplicationDecided,
+  onRaidFixedNotify,
+  onAppPromoted,
+  onMembershipRoleChanged,
+} from './notifications.js';
 
 setGlobalOptions({ region: 'asia-northeast3', maxInstances: 5 });
 
@@ -29,6 +35,8 @@ const db = getFirestore();
 
 // ── Discord 봇 (와니온봇) — 구현은 functions/discord/*, 여기서는 재수출만 ──
 export { discordInteractions, onRaidWritten, discordCreateLinkCode };
+// ── 알림 센터 트리거 — 구현은 functions/notifications.js ──
+export { onOrgApplicationDecided, onRaidFixedNotify, onAppPromoted, onMembershipRoleChanged };
 
 // ── Battle.net OAuth (P2-2) ──────────────────────────────────────────
 // 콜백 = Functions 고정 주소 (사이트 도메인 변경에 면역 — 설계 결정).
