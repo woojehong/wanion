@@ -5,3 +5,8 @@ dist
 .DS_Store
 *.log
 .firebase
+
+# migration secrets & artifacts (P1-7)
+scripts/migrate/sa-*.json
+scripts/migrate/out/
+scripts/migrate/node_modules/

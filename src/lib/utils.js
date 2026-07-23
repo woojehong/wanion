@@ -1,5 +1,12 @@
 import { DIFFICULTIES, TANK_CAP, SERVERS, UNION_GUILD_ID } from './constants';
 
+// ── Role normalization ──────────────────────────────────────────────
+// CLASSES 특성 데이터는 'healer', 신청·counts·필터 체계는 'heal'을 쓴다.
+// 신청서를 만드는 지점에서 반드시 이 함수를 거쳐 'heal'로 통일한다.
+export function normalizeRole(role) {
+  return role === 'healer' ? 'heal' : role;
+}
+
 // ── Class / spec lookups ────────────────────────────────────────────
 
 export function getClass(classes, classId) {

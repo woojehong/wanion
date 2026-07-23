@@ -402,6 +402,16 @@ service cloud.firestore {
       allow update, delete: if isPlatformAdmin();
     }
 
+    // ── 레거시(kgusystem 이관) 대기 데이터 — 클라이언트 접근 전면 금지 ──
+    // Admin SDK(마이그레이션 스크립트)와 P2 병합 브릿지 Functions만 접근한다.
+    // legacyNicknames에는 구 시스템 인증 식별자가 포함되므로 절대 공개 금지.
+    match /legacyUsers/{legacyId} {
+      allow read, write: if false;
+    }
+    match /legacyNicknames/{nickname} {
+      allow read, write: if false;
+    }
+
     // ── 애드온 브릿지 세션 (P4에서 정의) ────────────────────────────
     match /addonSessions/{code} {
       allow read, write: if false;

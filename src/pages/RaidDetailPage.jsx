@@ -14,7 +14,7 @@ import {
   fetchSimulation,
 } from '../lib/db';
 import { buildInviteCode } from '../lib/bridge';
-import { getCaps } from '../lib/utils';
+import { getCaps, normalizeRole } from '../lib/utils';
 import { MonoLabel, SectionTitle, Card, DDay, ArtSlot, Avatar, KV, Chip, HostBadge } from '../components/ui';
 import SynergyBoard from '../components/SynergyBoard';
 import GuestPanel from '../components/GuestPanel';
@@ -61,12 +61,13 @@ function ApplyModalLite({ raid, onClose }) {
       return setError(`아이템 레벨(${ilvl || '미입력'})이 최소 요구치(${raid.minIlvl})보다 낮습니다.`);
     }
     const mainSpec = cls.specs.find((s) => s.id === specIds[0]);
+    const mainRole = normalizeRole(mainSpec.role);
     const swapRoles = [
       ...new Set(
         specIds
           .map((sid) => cls.specs.find((s) => s.id === sid))
-          .filter((s) => s && s.role !== mainSpec.role)
-          .map((s) => s.role)
+          .filter((s) => s && normalizeRole(s.role) !== mainRole)
+          .map((s) => normalizeRole(s.role))
       ),
     ];
     setBusy(true);
@@ -89,8 +90,8 @@ function ApplyModalLite({ raid, onClose }) {
           specId: mainSpec.id,
           specName: mainSpec.name,
           allSpecNames: specIds.map((sid) => cls.specs.find((s) => s.id === sid)?.name).filter(Boolean),
-          role: mainSpec.role,
-          range: mainSpec.role === 'dps' ? mainSpec.range || null : null,
+          role: mainRole, // 'heal'로 정규화 — counts·필터·로스터 체계와 일치
+          range: mainRole === 'dps' ? mainSpec.range || null : null,
           ilvl: Number(ilvl) || 0,
           leaderCapable: false,
           isGuildMaster: false,
@@ -160,7 +161,7 @@ function ApplyModalLite({ raid, onClose }) {
                 return (
                   <Chip key={s.id} active={idx >= 0} onClick={() => toggleSpec(s.id)}>
                     {idx === 0 && '★ '}{s.name}
-                    <span className="text-mute"> · {s.role === 'tank' ? '탱' : s.role === 'heal' ? '힐' : '딜'}</span>
+                    <span className="text-mute"> · {ROLE_KO[normalizeRole(s.role)] || '딜'}</span>
                   </Chip>
                 );
               })}
