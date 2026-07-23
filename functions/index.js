@@ -8,9 +8,10 @@
 // 참고: 한길련 병합 브릿지(claimLegacy)는 260723 대표님 결정으로 폐기 —
 // 완전 새출발 전략 (전원 BNet 재가입, 직책은 관리자 콘솔 수동 임명).
 
+// ★ 전역 옵션(리전·maxInstances)을 함수 모듈 import보다 먼저 적용 — 반드시 최상단.
+import './globalOpts.js';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
-import { setGlobalOptions } from 'firebase-functions/v2';
 import { defineSecret } from 'firebase-functions/params';
 import { randomUUID } from 'node:crypto';
 import { initializeApp } from 'firebase-admin/app';
@@ -35,7 +36,7 @@ import {
 import { verifyGuildNow, scheduledGuildVerify } from './bnetVerify.js';
 import { refreshTeamWclReport } from './wcl.js';
 
-setGlobalOptions({ region: 'asia-northeast3', maxInstances: 5 });
+// 전역 옵션은 ./globalOpts.js에서 이미 설정됨 (import 시점).
 
 initializeApp();
 const db = getFirestore();
@@ -211,8 +212,18 @@ export const onDailyCheckin = onDocumentCreated('dailyCheckins/{checkinId}', asy
   }
 
   const configSnap = await db.doc('config/points').get();
-  const amount = Number(configSnap.data()?.daily) || 10;
-  const season = Number(configSnap.data()?.season) || 1;
+  const cfg = configSnap.data() || {};
+
+  // ★ 포인트 전면 잠금 (시즌 시작 전) — config/points.enabled === true 일 때만 지급.
+  // 대표님이 "시작!" 하기 전엔 출석을 기록만 하고 포인트는 일절 적립하지 않는다.
+  // 활성화: config/points 문서에 { enabled: true } 설정 (관리자).
+  if (cfg.enabled !== true) {
+    await snap.ref.set({ paid: false, heldReason: 'season-not-started' }, { merge: true });
+    return;
+  }
+
+  const amount = Number(cfg.daily) || 10;
+  const season = Number(cfg.season) || 1;
 
   const ledgerRef = db.doc(`pointLedger/daily_${uid}_${dateKey}`);
   await db.runTransaction(async (tx) => {
