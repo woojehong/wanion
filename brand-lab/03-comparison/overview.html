@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WANION Brand Directions</title>
+<style>
+:root{--bg:#09090d;--panel:#111116;--line:#292832;--text:#f1f0f5;--sub:#a09da9;--mute:#6e6b77;--v:#8a70ff;--vh:#b9a8ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,"Noto Sans KR",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit}.mast{min-height:440px;padding:80px max(24px,calc((100vw - 1240px)/2));display:grid;grid-template-columns:1.1fr .9fr;gap:80px;align-items:end;border-bottom:1px solid var(--line)}
+.kicker,.label{font:600 10px ui-monospace,monospace;letter-spacing:.16em;color:var(--vh)}h1{margin:18px 0;font-size:clamp(46px,7vw,92px);line-height:.9;letter-spacing:-.06em}h1 span{color:var(--v)}.mast p{max-width:650px;color:var(--sub);line-height:1.8}
+.lockup{justify-self:end;text-align:right}.lockup b{font-size:26px;letter-spacing:.18em}.lockup span{display:block;margin-top:12px;color:var(--mute);font:600 10px ui-monospace,monospace;letter-spacing:.25em}
+.tabs{position:sticky;top:0;z-index:10;display:flex;gap:6px;overflow:auto;padding:12px max(20px,calc((100vw - 1240px)/2));background:rgba(9,9,13,.96);border-bottom:1px solid var(--line)}
+.tabs button{flex:0 0 auto;border:1px solid var(--line);background:transparent;color:var(--sub);padding:10px 14px;font-size:11px;cursor:pointer}.tabs button.active{border-color:var(--v);background:#1d1929;color:var(--vh)}
+.direction{display:none;width:min(1240px,calc(100% - 32px));margin:52px auto 90px}.direction.active{display:block}.head{display:flex;justify-content:space-between;gap:30px;margin-bottom:28px}.num{color:var(--v);font:600 12px ui-monospace,monospace}.head h2{margin:8px 0;font-size:40px;letter-spacing:-.04em}.head p{max-width:620px;color:var(--sub);line-height:1.7}.rank{align-self:start;border:1px solid var(--line);padding:10px 14px;color:var(--vh);font:600 10px ui-monospace,monospace}
+.board{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);background:var(--panel)}.cell{min-height:280px;padding:30px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}.cell:nth-child(2n){border-right:0}.cell.character{padding:0;overflow:hidden}.cell.character img{width:100%;height:100%;min-height:520px;display:block;object-fit:cover}.label{display:block;margin-bottom:28px;color:var(--mute)}
+.mark-wrap{display:flex;align-items:center;gap:34px}.mark{width:150px;height:150px;flex:0 0 auto}.wordmark b{font-size:34px;letter-spacing:.14em}.wordmark small{display:block;margin-top:14px;color:var(--mute);font:600 9px ui-monospace,monospace;letter-spacing:.2em}
+.shape-row,.emoji-row{display:flex;gap:12px;flex-wrap:wrap}.shape{width:58px;height:58px;border:1px solid var(--line);display:grid;place-items:center}.shape i{display:block;background:var(--v)}.emoji{min-width:70px;padding:10px;border:1px solid var(--line);text-align:center}.emoji b{display:block;color:var(--vh);font-size:18px}.emoji span{display:block;margin-top:6px;color:var(--mute);font-size:9px}
+.voice{display:grid;gap:10px}.bubble{max-width:88%;padding:12px 14px;border-left:2px solid var(--v);background:#17161d;color:var(--sub);font-size:12px;line-height:1.6}.bubble:nth-child(2n){margin-left:12%}.rules{display:grid;grid-template-columns:1fr 1fr;gap:20px}.rules div{border-top:1px solid var(--line);padding-top:14px}.rules strong{display:block;font-size:12px}.rules span{display:block;margin-top:6px;color:var(--mute);font-size:10px;line-height:1.6}
+.recommend{margin-top:28px;padding:24px;border:1px solid #4d426c;background:#15121e;color:var(--sub);line-height:1.7}.recommend b{color:var(--vh)}
+footer{padding:40px;text-align:center;border-top:1px solid var(--line);color:var(--mute);font:600 9px ui-monospace,monospace;letter-spacing:.16em}
+@media(max-width:800px){.mast{grid-template-columns:1fr;min-height:auto;padding-top:60px;gap:40px}.lockup{justify-self:start;text-align:left}.direction{margin-top:36px}.head{display:block}.rank{display:inline-block;margin-top:10px}.board{grid-template-columns:1fr}.cell,.cell:nth-child(2n){border-right:0}.mark-wrap{align-items:flex-start}.mark{width:110px;height:110px}.wordmark b{font-size:23px}.rules{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="mast">
+  <div><span class="kicker">WANION BRAND LAB · ROUND 01</span><h1>ONE SYSTEM.<br><span>FIVE WORLDS.</span></h1><p>레이드를 더 잘 운영하게 만드는 브랜드. 다섯 안은 색만 바꾼 변형이 아니라 서로 다른 조형·캐릭터·말투를 가진 완결된 후보입니다.</p></div>
+  <div class="lockup"><b>WANION</b><span>RUN BY STUDIO HOOJE</span></div>
+</header>
+<nav class="tabs">
+  <button class="active" data-target="desk">01 RAID DESK</button><button data-target="baton">02 THE BATON</button><button data-target="score">03 RAID SCORE</button><button data-target="switch">04 SWITCHBOARD</button><button data-target="wane">05 WANE INDEX</button>
+</nav>
+
+<main>
+<section class="direction active" id="desk">
+  <div class="head"><div><span class="num">DIRECTION 01</span><h2>RAID DESK</h2><p>여러 사람의 시간과 역할을 한눈에 정렬하는 운영 데스크. WANION의 제품 기능을 가장 솔직하게 브랜드로 바꾼 안입니다.</p></div><span class="rank">STRATEGY PICK · 01</span></div>
+  <div class="board">
+    <div class="cell"><span class="label">SYMBOL & WORDMARK</span><div class="mark-wrap">
+      <svg class="mark" viewBox="0 0 160 160" aria-label="Raid Desk mark"><path d="M22 37h93l16 16-16 16H22zM22 75h66l16 16-16 16H22zM22 113h93l16 16-16 16H22z" fill="#8a70ff"/><rect x="129" y="27" width="9" height="118" fill="#f1f0f5"/></svg>
+      <div class="wordmark"><b>WANION</b><small>RUN BY STUDIO HOOJE</small></div></div>
+    </div>
+    <div class="cell character"><img src="../02-concepts/01-raid-desk/moa-character-sheet.png" alt="검은 담비 모아 캐릭터 시트"></div>
+    <div class="cell"><span class="label">ROSTER BARS</span><div class="shape-row"><span class="shape"><i style="width:35px;height:6px"></i></span><span class="shape"><i style="width:24px;height:6px"></i></span><span class="shape"><i style="width:43px;height:6px"></i></span><span class="shape"><i style="width:16px;height:6px"></i></span><span class="shape"><i style="width:38px;height:6px"></i></span></div><span class="label" style="margin-top:30px">OPERATION EMOJI</span><div class="emoji-row"><span class="emoji"><b>▰</b><span>준비</span></span><span class="emoji"><b>▱</b><span>미정</span></span><span class="emoji"><b>●</b><span>확정</span></span><span class="emoji"><b>↳</b><span>대기</span></span><span class="emoji"><b>!</b><span>확인</span></span></div></div>
+    <div class="cell"><span class="label">MOA BOT VOICE</span><div class="voice"><div class="bubble">모집이 열렸어요. 현재 힐러 1자리가 비어 있어요.</div><div class="bubble">출발 30분 전입니다. 준비 상태를 확인해 주세요.</div><div class="bubble">스왑 요청 1건이 있어요. 공대장 확인이 필요합니다.</div></div><div class="recommend"><b>추천 이유</b><br>운영 기능, 작은 아이콘, Discord 알림, 애드온까지 가장 흔들림 없이 확장됩니다.</div></div>
+  </div>
+</section>
+
+<section class="direction" id="baton">
+  <div class="head"><div><span class="num">DIRECTION 02</span><h2>THE BATON</h2><p>모집부터 결과까지 판단과 차례가 끊기지 않게 이어지는 인계의 브랜드입니다.</p></div><span class="rank">EVENT FLOW</span></div>
+  <div class="board">
+    <div class="cell"><span class="label">SYMBOL & WORDMARK</span><div class="mark-wrap">
+      <svg class="mark" viewBox="0 0 160 160"><path d="M28 38l43 84 17-31 17 31 28-84" fill="none" stroke="#8a70ff" stroke-width="16" stroke-linecap="square"/><path d="M73 85l14-25 14 25" fill="none" stroke="#f1f0f5" stroke-width="7"/></svg>
+      <div class="wordmark"><b>WANION</b><small>RUN BY STUDIO HOOJE</small></div></div>
+    </div>
+    <div class="cell character"><img src="../02-concepts/02-the-baton/lili-character-sheet.png" alt="흰족제비 릴리 캐릭터 시트"></div>
+    <div class="cell"><span class="label">HANDOFF MARKS</span><div class="shape-row"><span class="shape">╱ ╲</span><span class="shape">╱╲</span><span class="shape">╲ ╱</span><span class="shape">╱·╱</span><span class="shape">╲·╲</span></div><span class="label" style="margin-top:30px">FLOW EMOJI</span><div class="emoji-row"><span class="emoji"><b>↗</b><span>시작</span></span><span class="emoji"><b>≫</b><span>전달</span></span><span class="emoji"><b>Ⅱ</b><span>대기</span></span><span class="emoji"><b>✓</b><span>완료</span></span><span class="emoji"><b>⌁</b><span>변경</span></span></div></div>
+    <div class="cell"><span class="label">LILI BOT VOICE</span><div class="voice"><div class="bubble">일정을 넘겨받았어요. 다음 확인은 공대장 차례예요.</div><div class="bubble">두 분의 응답이 아직 전달되지 않았어요.</div><div class="bubble">모든 확인이 끝났어요. 출발 단계로 넘길게요.</div></div><div class="recommend"><b>강점</b><br>알림과 체크인 흐름이 명확합니다. 스포츠·물류처럼 보이지 않도록 절제가 필요합니다.</div></div>
+  </div>
+</section>
+
+<section class="direction" id="score">
+  <div class="head"><div><span class="num">DIRECTION 03</span><h2>RAID SCORE</h2><p>각자의 준비와 타이밍을 하나의 큐로 조율하는 가장 침착하고 프리미엄한 안입니다.</p></div><span class="rank">PREMIUM TONE</span></div>
+  <div class="board">
+    <div class="cell"><span class="label">SYMBOL & WORDMARK</span><div class="mark-wrap">
+      <svg class="mark" viewBox="0 0 160 160"><path d="M34 37v75M65 55v68M96 28v95M127 46v66" stroke="#8a70ff" stroke-width="12"/><path d="M34 112l31 15 31-4 31-11" fill="none" stroke="#f1f0f5" stroke-width="6"/></svg>
+      <div class="wordmark"><b>WANION</b><small>RUN BY STUDIO HOOJE</small></div></div>
+    </div>
+    <div class="cell character"><img src="../02-concepts/03-raid-score/tempo-character-sheet.png" alt="검은 두루미 템포 캐릭터 시트"></div>
+    <div class="cell"><span class="label">CUE BARS</span><div class="shape-row"><span class="shape">Ⅰ</span><span class="shape">Ⅱ</span><span class="shape">Ⅲ</span><span class="shape">Ⅳ</span><span class="shape">∥</span></div><span class="label" style="margin-top:30px">CUE EMOJI</span><div class="emoji-row"><span class="emoji"><b>Ⅰ</b><span>대기</span></span><span class="emoji"><b>Ⅱ</b><span>확인</span></span><span class="emoji"><b>Ⅲ</b><span>준비</span></span><span class="emoji"><b>Ⅳ</b><span>출발</span></span><span class="emoji"><b>•</b><span>호출</span></span></div></div>
+    <div class="cell"><span class="label">TEMPO BOT VOICE</span><div class="voice"><div class="bubble">다음 큐는 22:00입니다.</div><div class="bubble">힐러 응답이 맞지 않았어요. 한 번 더 확인할게요.</div><div class="bubble">전원 준비. 출발 큐를 기다립니다.</div></div><div class="recommend"><b>강점</b><br>가장 세련되고 문화적인 인상입니다. 음악 서비스로 오인되지 않게 운영 용어를 유지해야 합니다.</div></div>
+  </div>
+</section>
+
+<section class="direction" id="switch">
+  <div class="head"><div><span class="num">DIRECTION 04</span><h2>SWITCHBOARD</h2><p>빠진 자리와 상태 전환을 즉시 발견하는 관제형 브랜드입니다.</p></div><span class="rank">CONTROL SYSTEM</span></div>
+  <div class="board">
+    <div class="cell"><span class="label">SYMBOL & WORDMARK</span><div class="mark-wrap">
+      <svg class="mark" viewBox="0 0 160 160"><path d="M32 30h88M32 30v100h96M128 62v68" fill="none" stroke="#f1f0f5" stroke-width="8"/><rect x="48" y="50" width="16" height="45" fill="#8a70ff"/><rect x="76" y="68" width="16" height="45" fill="#8a70ff"/><rect x="104" y="42" width="16" height="45" fill="#8a70ff"/></svg>
+      <div class="wordmark"><b>WANION</b><small>RUN BY STUDIO HOOJE</small></div></div>
+    </div>
+    <div class="cell character"><img src="../02-concepts/04-switchboard/pico-character-sheet-v2.png" alt="검은 딱따구리 피코 캐릭터 시트"></div>
+    <div class="cell"><span class="label">POSITION TABS</span><div class="shape-row"><span class="shape">IN</span><span class="shape">OUT</span><span class="shape">HOLD</span><span class="shape">SWAP</span><span class="shape">LOCK</span></div><span class="label" style="margin-top:30px">STATUS EMOJI</span><div class="emoji-row"><span class="emoji"><b>▣</b><span>참여</span></span><span class="emoji"><b>□</b><span>불참</span></span><span class="emoji"><b>Ⅱ</b><span>보류</span></span><span class="emoji"><b>⇄</b><span>교체</span></span><span class="emoji"><b>■</b><span>확정</span></span></div></div>
+    <div class="cell"><span class="label">PICO BOT VOICE</span><div class="voice"><div class="bubble">자리를 잠갔어요.</div><div class="bubble">딜러 2명이 HOLD 상태입니다.</div><div class="bubble">교체 요청이 들어왔어요. 공대장 확인이 필요합니다.</div></div><div class="recommend"><b>강점</b><br>스왑·결원 관리와 가장 직접적입니다. 차가운 B2B 도구처럼 보이지 않게 캐릭터 온도가 중요합니다.</div></div>
+  </div>
+</section>
+
+<section class="direction" id="flag">
+  <div class="head"><div><span class="num">DIRECTION 05</span><h2>COMMON FLAG</h2><p>서로 다른 길드와 사람들이 한 일정 아래 잠시 모이는 공동체 중심의 안입니다.</p></div><span class="rank">COMMUNITY</span></div>
+  <div class="board">
+    <div class="cell"><span class="label">SYMBOL & WORDMARK</span><div class="mark-wrap">
+      <svg class="mark" viewBox="0 0 160 160"><path d="M75 25v115" stroke="#f1f0f5" stroke-width="8"/><path d="M79 38h55v34H79zM21 80h50v34H21z" fill="#8a70ff"/><path d="M75 114l-18 18" stroke="#f1f0f5" stroke-width="8"/></svg>
+      <div class="wordmark"><b>WANION</b><small>RUN BY STUDIO HOOJE</small></div></div>
+    </div>
+    <div class="cell character"><img src="../02-concepts/05-common-flag/ban-character-sheet.png" alt="까치 반 캐릭터 시트"></div>
+    <div class="cell"><span class="label">GATHER STRIPS</span><div class="shape-row"><span class="shape"><i style="width:8px;height:42px"></i></span><span class="shape"><i style="width:16px;height:32px"></i></span><span class="shape"><i style="width:25px;height:22px"></i></span><span class="shape"><i style="width:35px;height:12px"></i></span><span class="shape"><i style="width:45px;height:6px"></i></span></div><span class="label" style="margin-top:30px">GATHER EMOJI</span><div class="emoji-row"><span class="emoji"><b>⚑</b><span>모집</span></span><span class="emoji"><b>▮</b><span>합류</span></span><span class="emoji"><b>▯</b><span>빈자리</span></span><span class="emoji"><b>—</b><span>마감</span></span><span class="emoji"><b>＋</b><span>지원</span></span></div></div>
+    <div class="cell"><span class="label">BAN BOT VOICE</span><div class="voice"><div class="bubble">같이 갈 자리가 열렸어요.</div><div class="bubble">오늘 모인 인원은 18명입니다.</div><div class="bubble">두 자리만 더 모이면 출발할 수 있어요.</div></div><div class="recommend"><b>강점</b><br>커뮤니티와 캠페인에 강합니다. 길드 문장이나 e스포츠 팀처럼 보이지 않게 비대칭을 유지합니다.</div></div>
+  </div>
+</section>
+
+<section class="direction" id="wane">
+  <div class="head"><div><span class="num">DIRECTION 05</span><h2>WANE INDEX</h2><p>레이드는 달과 같습니다. 모집으로 차오르고, 명단이 완성되면 만월에 닿고, 출발과 기록을 지나 기운 뒤 다음 주기에 다시 시작합니다. WANION의 고어 어원을 주간 운영 체계로 전환한 방향입니다.</p></div><span class="rank">ORIGIN STORY</span></div>
+  <div class="board">
+    <div class="cell"><span class="label">SYMBOL &amp; WORDMARK</span><div class="mark-wrap">
+      <svg class="mark" viewBox="0 0 160 160" aria-label="Wane Index mark">
+        <circle cx="80" cy="80" r="52" fill="#8a70ff"/>
+        <circle cx="101" cy="67" r="52" fill="#111116"/>
+        <path d="M34 128h92" stroke="#f1f0f5" stroke-width="7"/>
+        <path d="M48 121v14M69 121v14M91 121v14M112 121v14" stroke="#8a70ff" stroke-width="5"/>
+      </svg>
+      <div class="wordmark"><b>WANION</b><small>RUN BY STUDIO HOOJE</small></div></div>
+    </div>
+    <div class="cell character"><img src="../02-concepts/06-wane-index/vane-character-sheet.png" alt="검은 달나방 베인 캐릭터 시트"></div>
+    <div class="cell"><span class="label">WEEKLY PHASE INDEX</span>
+      <div class="shape-row">
+        <span class="shape" title="모집"><i style="width:10px;height:10px;border-radius:50%"></i></span>
+        <span class="shape" title="구성"><i style="width:22px;height:22px;border-radius:50%"></i></span>
+        <span class="shape" title="확정"><i style="width:38px;height:38px;border-radius:50%"></i></span>
+        <span class="shape" title="출발"><i style="width:28px;height:38px;border-radius:50% 0 0 50%"></i></span>
+        <span class="shape" title="기록"><i style="width:8px;height:38px;border-radius:100% 0 0 100%"></i></span>
+      </div>
+      <span class="label" style="margin-top:30px">PHASE LANGUAGE</span>
+      <div class="emoji-row"><span class="emoji"><b>○</b><span>모집</span></span><span class="emoji"><b>◔</b><span>구성</span></span><span class="emoji"><b>●</b><span>확정</span></span><span class="emoji"><b>◕</b><span>출발</span></span><span class="emoji"><b>◑</b><span>기록</span></span></div>
+    </div>
+    <div class="cell"><span class="label">VANE BOT VOICE</span><div class="voice">
+      <div class="bubble">이번 주기가 시작됐어요. 모집을 열었습니다.</div>
+      <div class="bubble">명단이 거의 찼어요. 힐러 한 자리가 남았습니다.</div>
+      <div class="bubble">이번 주기는 마무리됐어요. 기록을 남기고 다음 주기를 준비합니다.</div>
+    </div><div class="recommend"><b>스토리 강점</b><br>이름의 어원, 주간 캘린더, 복수 파티의 진행 상태를 하나의 시각 언어로 묶습니다. 달은 장식이 아니라 운영 인덱스이며, 저주·오컬트·블랙메탈 인상은 외부 표현에서 배제합니다.</div></div>
+  </div>
+</section>
+</main>
+<footer>WANION BRAND LAB · LOCAL EXPLORATION ONLY · RUN BY STUDIO HOOJE</footer>
+<script>
+const buttons=[...document.querySelectorAll(".tabs button")],sections=[...document.querySelectorAll(".direction")];
+buttons.forEach(b=>b.addEventListener("click",()=>{buttons.forEach(x=>x.classList.remove("active"));sections.forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.target).classList.add("active");scrollTo({top:document.querySelector(".tabs").offsetTop,behavior:"smooth"})}));
+</script>
+</body>
+</html>
