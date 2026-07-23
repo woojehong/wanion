@@ -12,6 +12,7 @@ import {
 } from '../lib/db';
 import { MonoLabel, SectionTitle, Card, ArtSlot, Segments, KV, Avatar, Chip } from '../components/ui';
 import PostBoard from '../components/PostBoard';
+import RosterEditor from '../components/RosterEditor';
 import { OrgJoinModal, OrgManagePanel } from '../components/OrgMembership';
 
 const ROLE_LABELS = { leader: '공대장', officer: '관리자', member: '공대원' };
@@ -31,7 +32,7 @@ function fmtRaidDate(ts) {
 export default function TeamPage() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { uid, user, profile, isPlatformAdmin, signInGoogle } = useApp();
+  const { uid, user, profile, isPlatformAdmin, signInGoogle, gamedata } = useApp();
   const [team, setTeam] = useState(undefined); // undefined=로딩, null=없음
   const [baseGuild, setBaseGuild] = useState(null);
   const [members, setMembers] = useState([]);
@@ -43,6 +44,10 @@ export default function TeamPage() {
 
   const reloadMembers = useCallback(() => {
     fetchScopeMembers('team', teamId).then(setMembers).catch(() => {});
+  }, [teamId]);
+
+  const reloadTeam = useCallback(() => {
+    fetchTeam(teamId).then((t) => t && setTeam(t)).catch(() => {});
   }, [teamId]);
 
   useEffect(() => {
@@ -181,7 +186,10 @@ export default function TeamPage() {
       </div>
 
       {activeTab === 'manage' && isLeader && (
-        <OrgManagePanel scopeType="team" scopeId={teamId} members={members} reloadMembers={reloadMembers} />
+        <>
+          <OrgManagePanel scopeType="team" scopeId={teamId} members={members} reloadMembers={reloadMembers} />
+          <RosterEditor teamId={teamId} roster={team.roster} gamedata={gamedata} onSaved={reloadTeam} />
+        </>
       )}
 
       {activeTab === 'board' && isMember && (

@@ -12,6 +12,9 @@ import {
   fixRoster,
   updateRaid,
   fetchSimulation,
+  duplicateRaid,
+  applyRosterToRaid,
+  fetchTeam,
 } from '../lib/db';
 import { buildInviteCode } from '../lib/bridge';
 import { getCaps, normalizeRole } from '../lib/utils';
@@ -245,6 +248,57 @@ function RoleGroup({ label, dot, cap, members, canManage, onDemote, onKick }) {
   );
 }
 
+// ── 복사 모달 (과거 레이드 → 새 날짜, 사양 7.6) ──────────────────────
+function CopyRaidModal({ raid, uid, onClose }) {
+  const navigate = useNavigate();
+  const [dateKey, setDateKey] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async () => {
+    if (!dateKey) return setError('새 날짜를 선택해주세요.');
+    setBusy(true);
+    setError('');
+    try {
+      const newId = await duplicateRaid(raid, dateKey, uid);
+      onClose();
+      navigate(`/raid/${newId}`);
+    } catch (e) {
+      setError(e.message || '복사에 실패했습니다.');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="mt-16 w-full max-w-sm rounded border border-line bg-surface p-5" onClick={(e) => e.stopPropagation()}>
+        <MonoLabel violet>COPY RAID</MonoLabel>
+        <h2 className="text-[18px] font-extrabold">레이드 복사</h2>
+        <p className="mt-1 text-[12px] text-sub">
+          "{raid.title}"의 설정(제목·난이도·정원·수락방식 등)을 그대로 새 날짜로 복사합니다. 신청·손님·픽스는 초기화돼요.
+        </p>
+        <label className="mt-4 block">
+          <span className="mb-1.5 block text-[12px] font-semibold text-sub">새 날짜</span>
+          <input
+            type="date"
+            className="w-full rounded border border-line bg-surface2 px-3 py-2 text-[14px] text-txt outline-none focus:border-violet-deep"
+            value={dateKey}
+            onChange={(e) => setDateKey(e.target.value)}
+          />
+        </label>
+        <p className="mt-1.5 text-[11px] text-mute">시간대는 원본과 동일하게 적용됩니다.</p>
+        {error && <p className="mt-2 text-[13px] font-semibold text-dps">{error}</p>}
+        <div className="mt-4 flex justify-end gap-2">
+          <button className="btn-ghost" onClick={onClose}>취소</button>
+          <button className="btn-primary" disabled={busy} onClick={submit}>
+            {busy ? '복사 중…' : '복사하기'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── 페이지 ───────────────────────────────────────────────────────────
 export default function RaidDetailPage() {
   const { raidId } = useParams();
@@ -256,6 +310,8 @@ export default function RaidDetailPage() {
   const [applyOpen, setApplyOpen] = useState(false);
   const [simOpen, setSimOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [team, setTeam] = useState(null); // 팀 호스트 레이드의 정규 로스터 출처
 
   useEffect(() => subscribeRaid(raidId, setRaid), [raidId]);
   useEffect(() => (user ? subscribeApps(raidId, setApps) : setApps([])), [raidId, user]);
@@ -263,6 +319,11 @@ export default function RaidDetailPage() {
     () => (user && raid?.guestParty ? subscribeGuests(raidId, setGuests) : setGuests([])),
     [raidId, user, raid?.guestParty]
   );
+  // 팀 호스트 레이드면 정규 로스터 붙여넣기용으로 팀 문서 로드
+  useEffect(() => {
+    if (raid?.hostType === 'team' && raid.hostId) fetchTeam(raid.hostId).then(setTeam).catch(() => setTeam(null));
+    else setTeam(null);
+  }, [raid?.hostType, raid?.hostId]);
 
   const caps = raid ? getCaps(raid) : { tankCap: 2, healerCap: 4, dpsCap: 14 };
   const byRole = useMemo(() => {
@@ -301,6 +362,19 @@ export default function RaidDetailPage() {
     const reason = window.prompt('제외 사유 (취소 기록에 남습니다)', '관리자 제외');
     if (reason === null) return;
     cancelApplication(raid.id, a.id, a, reason).catch((e) => window.alert(e.message));
+  };
+
+  // 정규 로스터 원클릭 붙여넣기 (사양 7.5) — 팀 호스트 레이드 전용
+  const pasteRoster = async () => {
+    const roster = Array.isArray(team?.roster) ? team.roster : [];
+    if (!roster.length) return;
+    if (!window.confirm(`정규 로스터 ${roster.length}명을 이 레이드에 붙여넣을까요? (역할별 정원 초과분은 대기로)`)) return;
+    try {
+      const { added } = await applyRosterToRaid(raid, roster);
+      window.alert(`정규 로스터 ${added}명을 반영했습니다. 실제 신청자와 겹치는 인원은 자동 제외됩니다.`);
+    } catch (e) {
+      window.alert(e.message || '붙여넣기에 실패했습니다.');
+    }
   };
 
   // 픽스 — 출발 직전 로스터 잠금 (종료 후 포인트 지급 기준점)
@@ -404,9 +478,13 @@ export default function RaidDetailPage() {
                   {raid.fixed ? '픽스 해제' : '픽스'}
                 </button>
                 <button className="btn-ghost" onClick={() => setSimOpen(true)}>시뮬레이터</button>
+                {raid.hostType === 'team' && Array.isArray(team?.roster) && team.roster.length > 0 && (
+                  <button className="btn-ghost" onClick={pasteRoster}>정규 로스터</button>
+                )}
                 <button className="btn-ghost" onClick={copyInvite}>
                   {copied ? '복사됨!' : '인게임 초대 코드'}
                 </button>
+                <button className="btn-ghost" onClick={() => setCopyOpen(true)}>복사</button>
               </>
             )}
           </div>
@@ -526,6 +604,7 @@ export default function RaidDetailPage() {
 
       {applyOpen && <ApplyModalLite raid={raid} onClose={() => setApplyOpen(false)} />}
       {simOpen && <SimulatorModal raid={raid} apps={apps} guests={guests} onClose={() => setSimOpen(false)} />}
+      {copyOpen && <CopyRaidModal raid={raid} uid={uid} onClose={() => setCopyOpen(false)} />}
     </main>
   );
 }

@@ -30,7 +30,7 @@ import {
   DEFAULT_BOARD_CATEGORIES,
   DEFAULT_ADMIN_ONLY_CATEGORIES,
 } from './constants';
-import { getCaps } from './utils';
+import { getCaps, buildRaidTimes } from './utils';
 
 // ─────────────────────────────────────────────────────────────────────
 // WANION db layer — kgusystem 엔진 계승 + 두 가지 구조 개선:
@@ -304,6 +304,32 @@ export async function createRaid(data, createdBy) {
     createdAt: serverTimestamp(),
   });
   return ref.id;
+}
+
+/**
+ * 과거 레이드 복사 → 새 날짜 (사양 7.6).
+ * 설정값(제목·난이도·정원·주최·수락모드·손님파티 플래그 등)만 계승하고,
+ * 신청·손님·counts·픽스는 초기화한다. 시각은 원본의 HH:mm을 새 날짜에 그대로 적용.
+ */
+export async function duplicateRaid(raid, newDateKey, createdBy) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const s = raid.startAt?.toDate ? raid.startAt.toDate() : new Date(raid.startAt);
+  const e = raid.endAt?.toDate ? raid.endAt.toDate() : new Date(raid.endAt);
+  const { startAt, endAt } = buildRaidTimes(
+    newDateKey,
+    `${pad(s.getHours())}:${pad(s.getMinutes())}`,
+    `${pad(e.getHours())}:${pad(e.getMinutes())}`
+  );
+  const CARRY = [
+    'title', 'difficulty', 'totalCap', 'healerCap', 'minIlvl', 'description',
+    'subCategory', 'hostType', 'hostId', 'hostName', 'leader', 'leaderNoGuild',
+    'allowedGuilds', 'waitGuilds', 'allowNoGuild', 'acceptMode', 'guestParty',
+  ];
+  const data = { dateKey: newDateKey, startAt, endAt };
+  CARRY.forEach((k) => {
+    if (raid[k] !== undefined) data[k] = raid[k];
+  });
+  return createRaid(data, createdBy);
 }
 
 export function updateRaid(raidId, data) {
@@ -1025,6 +1051,83 @@ export async function assertNoGuests(raidId) {
 
 export function saveTeamRoster(teamId, roster) {
   return updateDoc(doc(db, 'teams', teamId), { roster, rosterUpdatedAt: serverTimestamp() });
+}
+
+/**
+ * 정규 로스터 원클릭 붙여넣기 (사양 7.5) — 로스터 멤버를 예약(active) 신청으로 채운다.
+ *  - 역할별 정원까지 active, 초과분은 wait
+ *  - 실제 신청자(같은 캐릭명)와 중복되면 건너뜀
+ *  - 재실행 시 기존 로스터 예약(via==='roster')을 갈아끼워 멱등하게 동작
+ *  - counts는 최종 확정 인원으로 재계산 (관리자 권한 업데이트 — rules 허용)
+ * 트랜잭션이 아닌 배치(관리자 단발 작업) — 신청 쿼리가 트랜잭션에서 불가하기 때문.
+ */
+export async function applyRosterToRaid(raid, roster) {
+  const raidId = raid.id;
+  const list = Array.isArray(roster) ? roster : [];
+  const snap = await getDocs(collection(db, 'raids', raidId, 'apps'));
+  const existing = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+  const isRosterRes = (a) => a.isReservation && a.via === 'roster';
+  const keep = existing.filter((a) => !isRosterRes(a)); // 실제 신청자 + 기타
+  const caps = getCaps(raid);
+  const capMap = { tank: caps.tankCap, heal: caps.healerCap, dps: caps.dpsCap };
+
+  // 유지되는 확정 인원 기준으로 잔여 정원 계산
+  const cnt = { tank: 0, heal: 0, dps: 0 };
+  keep.filter((a) => a.status === 'active').forEach((a) => {
+    if (cnt[a.role] != null) cnt[a.role] += 1;
+  });
+  const takenNames = new Set(keep.map((a) => (a.charName || '').trim().toLowerCase()));
+
+  const batch = writeBatch(db);
+  // 이전 로스터 예약 제거 (멱등)
+  existing.filter(isRosterRes).forEach((a) => batch.delete(doc(db, 'raids', raidId, 'apps', a.id)));
+
+  let added = 0;
+  list.forEach((m) => {
+    const name = (m.charName || '').trim();
+    if (!name) return;
+    const role = m.role;
+    if (!capMap[role]) return; // 역할 미지정 스킵
+    if (takenNames.has(name.toLowerCase())) return; // 실제 신청자와 중복 회피
+    takenNames.add(name.toLowerCase());
+    const status = cnt[role] < capMap[role] ? 'active' : 'wait';
+    if (status === 'active') cnt[role] += 1;
+    added += 1;
+    const appId = `roster_${name}`.replace(/[^\w가-힣]/g, '_').slice(0, 90);
+    batch.set(doc(db, 'raids', raidId, 'apps', appId), {
+      userId: appId,
+      nickname: name,
+      guildId: m.guildId || 'none',
+      guildName: m.guildName || '무소속',
+      guildColor: m.guildColor || '#64748b',
+      charName: name,
+      server: m.server || '아즈샤라',
+      classId: m.classId || null,
+      className: m.className || null,
+      classColor: m.classColor || null,
+      specId: m.specId || null,
+      specName: m.specName || null,
+      allSpecNames: m.specName ? [m.specName] : [],
+      role,
+      range: null,
+      ilvl: 0,
+      leaderCapable: !!m.leader,
+      isGuildMaster: false,
+      swap: false,
+      swapRoles: [],
+      seq: Date.now(),
+      isReservation: true,
+      via: 'roster',
+      status,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  });
+
+  batch.update(doc(db, 'raids', raidId), { counts: cnt });
+  await batch.commit();
+  return { added };
 }
 
 // ── 플랫폼 부트스트랩 (최초 1회 — meta/super 없을 때만 규칙이 허용) ──
