@@ -96,6 +96,71 @@ export async function fetchBosses(zoneId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+// ── Organizations (길드·공대·연합 공개 프로필) ──────────────────────
+
+export async function fetchGuild(guildId) {
+  const snap = await getDoc(doc(db, 'guilds', guildId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+export async function fetchTeam(teamId) {
+  const snap = await getDoc(doc(db, 'teams', teamId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+/** 길드가 소속된 연합 — alliances.guildIds 배열 기준 */
+export async function fetchAllianceOfGuild(guildId) {
+  const snap = await getDocs(
+    query(collection(db, 'alliances'), where('guildIds', 'array-contains', guildId))
+  );
+  const d = snap.docs[0];
+  return d ? { id: d.id, ...d.data() } : null;
+}
+
+/**
+ * 스코프 소속원 목록 — memberships(scopeType, scopeId) + users 프로필 조인.
+ * 조직 규모(수십 명) 전제의 단발 조회로, 구독하지 않는다.
+ */
+export async function fetchScopeMembers(scopeType, scopeId) {
+  const snap = await getDocs(
+    query(
+      collection(db, 'memberships'),
+      where('scopeType', '==', scopeType),
+      where('scopeId', '==', scopeId)
+    )
+  );
+  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const users = await Promise.all(
+    rows.map(async (m) => {
+      try {
+        const u = await getDoc(doc(db, 'users', m.uid));
+        return u.exists() ? u.data() : null;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return rows.map((m, i) => ({
+    ...m,
+    displayName: users[i]?.displayName || '모험가',
+    photoURL: users[i]?.photoURL || null,
+  }));
+}
+
+/** 호스트(길드·공대·연합·개인)의 최근 레이드 — endAt 내림차순 단발 조회 */
+export async function fetchRaidsByHost(hostType, hostId, pageSize = 5) {
+  const q = query(
+    collection(db, 'raids'),
+    where('deleted', '==', false),
+    where('hostType', '==', hostType),
+    where('hostId', '==', hostId),
+    orderBy('endAt', 'desc'),
+    limit(pageSize)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 // ── Raids ────────────────────────────────────────────────────────────
 
 /**

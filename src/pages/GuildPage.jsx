@@ -1,59 +1,109 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { guildById, ALLIANCE, RAIDS } from '../lib/mock';
-import { MonoLabel, SectionTitle, Card, ArtSlot, Segments, KV, Avatar, Dot } from '../components/ui';
+import { useApp } from '../context/AppContext';
+import {
+  fetchGuild,
+  fetchAllianceOfGuild,
+  fetchScopeMembers,
+  fetchRaidsByHost,
+  fetchMyScopeRole,
+} from '../lib/db';
+import { MonoLabel, SectionTitle, Card, ArtSlot, KV, Avatar, Chip } from '../components/ui';
 import PostBoard from '../components/PostBoard';
 
-const OFFICERS = [
-  { name: '새벽별', role: '길드 마스터', cls: '전사', color: '#C69B6D' },
-  { name: '달그림자', role: '관리자', cls: '흑마법사', color: '#8788EE' },
-  { name: '서리엄니', role: '관리자', cls: '기원사', color: '#33937F' },
-];
+const ROLE_LABELS = { master: '길드 마스터', officer: '관리자', member: '길드원' };
+const ADMIN_ROLES = ['master', 'officer'];
+
+function fmtRaidDate(ts) {
+  const d = ts?.toDate ? ts.toDate() : null;
+  if (!d) return '';
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
 
 export default function GuildPage() {
   const { guildId } = useParams();
-  const g = guildById(guildId);
-  if (!g) {
+  const { uid, isPlatformAdmin } = useApp();
+  const [guild, setGuild] = useState(undefined); // undefined=로딩, null=없음
+  const [alliance, setAlliance] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [raids, setRaids] = useState([]);
+  const [myRole, setMyRole] = useState(null);
+  const [tab, setTab] = useState(null); // null=역할 판정 전 → intro|board
+
+  useEffect(() => {
+    setGuild(undefined);
+    setAlliance(null);
+    setMembers([]);
+    setRaids([]);
+    fetchGuild(guildId).then(setGuild).catch(() => setGuild(null));
+    fetchAllianceOfGuild(guildId).then(setAlliance).catch(() => {});
+    fetchScopeMembers('guild', guildId).then(setMembers).catch(() => {});
+    fetchRaidsByHost('guild', guildId).then(setRaids).catch(() => {});
+  }, [guildId]);
+
+  // 접근 모델 (사양 8.4): 소속원=게시판 디폴트, 외부인=소개 뷰만
+  useEffect(() => {
+    fetchMyScopeRole(uid, 'guild', guildId).then((role) => {
+      setMyRole(role);
+      setTab((prev) => prev ?? (role || isPlatformAdmin ? 'board' : 'intro'));
+    });
+  }, [uid, guildId, isPlatformAdmin]);
+
+  const isMember = !!myRole || isPlatformAdmin;
+  const officers = useMemo(
+    () => members.filter((m) => ADMIN_ROLES.includes(m.role)),
+    [members]
+  );
+
+  if (guild === undefined) {
+    return <main className="mx-auto max-w-6xl px-4 py-16 text-center text-[13px] text-mute">불러오는 중…</main>;
+  }
+  if (!guild || guild.isNone || guild.isUnion) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-16 text-center text-sub">
         등록되지 않은 길드입니다 — 와니온에 등록된 길드만 프로필이 제공됩니다.
       </main>
     );
   }
-  const recent = RAIDS.filter((r) => r.hostType !== 'user').slice(0, 3);
+
+  const activeTab = tab || 'intro';
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      {/* 프로필 헤더 */}
+      {/* 프로필 헤더 — 로고 단일 체계 (배너 폐지, 사양 7.7) */}
       <div className="overflow-hidden rounded border border-line bg-surface">
-        <ArtSlot label={`길드 배너 4:1 — ${g.name}`} ratio="6 / 1" className="!rounded-none border-x-0 border-t-0" />
         <div className="flex flex-wrap items-center gap-5 p-5">
-          <div className="-mt-14 shrink-0">
-            <ArtSlot label="엠블럼 1:1" ratio="1 / 1" className="h-24 w-24 bg-ink" />
+          <div className="shrink-0">
+            {guild.logoPath ? (
+              <img src={guild.logoPath} alt={`${guild.name} 로고`} className="h-24 w-24 rounded bg-ink object-contain" />
+            ) : (
+              <ArtSlot label="로고 1:1" ratio="1 / 1" className="h-24 w-24 bg-ink" />
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-[24px] font-extrabold">{g.name}</h1>
-              <span className="font-mono text-[11px] tracking-[0.06em] text-heal">VERIFIED</span>
-              {g.alliance && (
+              <h1 className="text-[24px] font-extrabold" style={{ color: guild.color || undefined }}>{guild.name}</h1>
+              <span className="font-mono text-[11px] tracking-[0.06em] text-heal">FOUNDING GUILD</span>
+              {alliance && (
                 <span className="rounded border border-violet-deep px-1.5 py-0.5 font-mono text-[10px] tracking-[0.06em] text-violet-hi">
-                  {ALLIANCE.name} 소속
-                </span>
-              )}
-              {g.recruiting && (
-                <span className="flex items-center gap-1 text-[12px] font-semibold text-heal">
-                  <Dot color="bg-heal" /> 모집 중
+                  {alliance.name} 소속
                 </span>
               )}
             </div>
-            <MonoLabel className="mt-1 block">{g.server.toUpperCase()} · EST. {g.founded}</MonoLabel>
+            <MonoLabel className="mt-1 block">
+              {(guild.server || '아즈샤라').toUpperCase()}{myRole ? ` · ${ROLE_LABELS[myRole] || myRole}` : ''}
+            </MonoLabel>
+            {guild.desc && <p className="mt-2 text-[13px] text-sub">{guild.desc}</p>}
           </div>
           <div className="flex gap-2">
-            <button className="btn-primary">가입 신청</button>
-            <button className="btn-ghost">공유</button>
+            <button className="btn-primary" title="Battle.net 연동(P2) 후 활성화됩니다" disabled>
+              가입 신청
+            </button>
           </div>
         </div>
-        {/* 스탯 스트립 */}
-        <div className="grid grid-cols-2 border-t border-line md:grid-cols-4">
-          {[['길드원', g.members], ['평균 템렙', g.avgIlvl], ['창단', g.founded], ['이번 시즌 공대', 31]].map(([k, v], i) => (
+        {/* 스탯 스트립 — 실데이터만 */}
+        <div className="grid grid-cols-3 border-t border-line">
+          {[['길드원', members.length], ['운영진', officers.length], ['최근 공대', raids.length]].map(([k, v], i) => (
             <div key={k} className={`p-4 ${i > 0 ? 'border-l border-line' : ''}`}>
               <div className="num text-[18px] font-extrabold">{v}</div>
               <div className="text-[12px] text-sub">{k}</div>
@@ -62,89 +112,80 @@ export default function GuildPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div>
-          <SectionTitle ko="프로그레스" en="PROGRESS · WARCRAFT LOGS 연동" />
-          <Card className="p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-[15px] font-bold">공허첨탑 신화</span>
-              <span className="num text-[18px] font-extrabold">
-                <span className="text-violet">3</span>
-                <span className="text-mute">/8</span>
-              </span>
-            </div>
-            <Segments done={3} total={8} className="mt-3" />
-            <p className="mt-2 text-[12px] text-sub">최근 킬: 별삼킨 자 · 7/18</p>
-          </Card>
+      {/* 탭 — 게시판은 소속원 전용 노출 */}
+      <div className="mt-5 flex gap-1.5">
+        <Chip active={activeTab === 'intro'} onClick={() => setTab('intro')}>소개</Chip>
+        {isMember && <Chip active={activeTab === 'board'} onClick={() => setTab('board')}>게시판</Chip>}
+      </div>
 
-          <div className="mt-6">
+      {activeTab === 'board' && isMember && (
+        <div className="mt-5">
+          <SectionTitle ko="길드 게시판" en="GUILD BOARD · 소속원 전용" />
+          <PostBoard scopeType="guild" scopeId={guildId} />
+        </div>
+      )}
+
+      {activeTab === 'intro' && (
+        <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_320px]">
+          <div>
             <SectionTitle ko="최근 공대" en="RECENT RAIDS" />
             <Card>
-              {recent.map((r, i) => (
+              {raids.map((r, i) => (
                 <Link key={r.id} to={`/raid/${r.id}`} className={`flex items-center gap-4 p-4 transition hover:bg-surface2 ${i > 0 ? 'border-t border-line' : ''}`}>
-                  <span className="num w-14 shrink-0 font-mono text-[12px] text-sub">{r.date.slice(5).replace('-', '/')}</span>
+                  <span className="num w-12 shrink-0 font-mono text-[12px] text-sub">{fmtRaidDate(r.startAt)}</span>
                   <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{r.title}</span>
-                  <span className="text-[12px] text-sub">{r.difficulty}</span>
-                  <span className="num text-[12px] text-sub">{r.caps.tank + r.caps.heal + r.caps.dps}명</span>
+                  <span className="shrink-0 text-[12px] text-sub">{r.difficulty}</span>
                 </Link>
               ))}
+              {!raids.length && (
+                <div className="p-8 text-center text-[13px] text-sub">아직 등록된 공대가 없습니다.</div>
+              )}
             </Card>
-          </div>
 
-          <div className="mt-6">
-            <SectionTitle ko="길드 게시판" en="GUILD BOARD · 소속원 전용" />
-            <PostBoard scopeType="guild" scopeId={guildId} />
-          </div>
-
-          <div className="mt-6">
-            <SectionTitle ko="길드 임원" en="OFFICERS" />
-            <Card>
-              {OFFICERS.map((o, i) => (
-                <div key={o.name} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-line' : ''}`}>
-                  <Avatar name={o.name} color={o.color} />
-                  <div>
-                    <p className="text-[14px] font-bold" style={{ color: o.color }}>{o.name}</p>
-                    <p className="text-[12px] text-sub">{o.cls}</p>
+            <div className="mt-6">
+              <SectionTitle ko="길드 운영진" en="OFFICERS" />
+              <Card>
+                {officers.map((o, i) => (
+                  <div key={o.id} className={`flex items-center gap-3 p-4 ${i > 0 ? 'border-t border-line' : ''}`}>
+                    <Avatar name={o.displayName} color={guild.color || '#8A70FF'} />
+                    <p className="text-[14px] font-bold text-txt">{o.displayName}</p>
+                    <span className="ml-auto text-[12px] font-semibold text-sub">{ROLE_LABELS[o.role] || o.role}</span>
                   </div>
-                  <span className="ml-auto text-[12px] font-semibold text-sub">{o.role}</span>
-                </div>
-              ))}
-            </Card>
+                ))}
+                {!officers.length && (
+                  <div className="p-8 text-center text-[13px] text-sub">
+                    운영진이 아직 등록되지 않았습니다 — 길드 입주(마이그레이션) 후 표시됩니다.
+                  </div>
+                )}
+              </Card>
+            </div>
           </div>
-        </div>
 
-        <aside className="flex flex-col gap-4">
-          <Card className="p-5">
-            <MonoLabel violet>RECRUITING</MonoLabel>
-            <div className="mt-2">
-              <KV k="탱커" v="마감" />
-              <KV k="힐러" v="1자리" />
-              <KV k="딜러" v="2자리" />
-            </div>
-            <p className="mt-2 text-[11px] text-sub">신화 트라이 기준</p>
-            <button className="btn-primary mt-3 w-full">가입 신청</button>
-            <p className="mt-2 text-[11px] leading-relaxed text-mute">
-              가입 신청에는 {g.name} 소속 캐릭터 1개 이상이 필요합니다 — Battle.net 연동으로 자동 확인됩니다.
-            </p>
-          </Card>
-          <Card className="p-5">
-            <MonoLabel violet>GUILD INFO</MonoLabel>
-            <div className="mt-2">
-              <KV k="서버" v={g.server} />
-              <KV k="성향" v="격주 신화" />
-              <KV k="활동" v="평일 21–24시" />
-              <KV k="디스코드" v="연동됨" />
-            </div>
-          </Card>
-          {g.alliance && (
+          <aside className="flex flex-col gap-4">
             <Card className="p-5">
-              <MonoLabel violet>ALLIANCE</MonoLabel>
-              <p className="mt-2 text-[15px] font-bold">{ALLIANCE.name}</p>
-              <p className="mt-1 text-[12px] text-sub">{ALLIANCE.desc}</p>
+              <MonoLabel violet>GUILD INFO</MonoLabel>
+              <div className="mt-2">
+                <KV k="서버" v={guild.server || '아즈샤라'} />
+                <KV k="길드원" v={`${members.length}명`} />
+                {alliance && <KV k="연합" v={alliance.name} />}
+              </div>
             </Card>
-          )}
-        </aside>
-      </div>
+            <Card className="p-5">
+              <MonoLabel violet>JOIN</MonoLabel>
+              <p className="mt-2 text-[13px] leading-relaxed text-sub">
+                가입 신청에는 {guild.name} 소속 캐릭터 1개 이상이 필요합니다 — Battle.net 연동(P2)으로 자동 확인됩니다.
+              </p>
+            </Card>
+            {alliance && (
+              <Card className="p-5">
+                <MonoLabel violet>ALLIANCE</MonoLabel>
+                <p className="mt-2 text-[15px] font-bold">{alliance.name}</p>
+                {alliance.desc && <p className="mt-1 text-[12px] text-sub">{alliance.desc}</p>}
+              </Card>
+            )}
+          </aside>
+        </div>
+      )}
     </main>
   );
 }
