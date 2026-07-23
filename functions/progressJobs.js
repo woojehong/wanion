@@ -13,6 +13,7 @@ import {
   writeUserProgress,
   refreshAllProgress,
 } from './progress.js';
+import { runDailyEconomy } from './economy.js';
 
 const REGION = 'asia-northeast3';
 const COOLDOWN_MS = 10 * 60 * 1000;
@@ -58,6 +59,13 @@ export const scheduledProgressDaily = onSchedule(
     const db = getFirestore();
     const r = await refreshAllProgress(db, BNET_CLIENT_SECRET.value());
     console.log('daily progress refresh:', JSON.stringify(r));
+    // 포인트 경제 처리(잠금 상태면 내부에서 즉시 종료 — 무적립). 신규 함수 없이 흡수.
+    try {
+      const e = await runDailyEconomy(db);
+      console.log('daily economy:', JSON.stringify(e));
+    } catch (err) {
+      console.error('daily economy failed:', err.message);
+    }
   }
 );
 

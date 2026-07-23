@@ -14,6 +14,8 @@ import {
   fetchPointsConfig,
 } from '../lib/db';
 import { MonoLabel, SectionTitle, Card, Avatar, Chip, Segments } from '../components/ui';
+import { getRank } from '../lib/utils';
+import { SHOP_ITEMS } from '../lib/constants';
 
 const SCOPE_KO = { platform: '플랫폼', guild: '길드', team: '공대', alliance: '연합' };
 const ROLE_KO = {
@@ -346,6 +348,7 @@ export default function MyPage() {
 
   const displayName = profile?.displayName || user.displayName || '모험가';
   const mainColor = profile?.mainChar?.classColor || '#8A70FF';
+  const rank = getRank(wallet?.lifetime);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
@@ -465,7 +468,12 @@ export default function MyPage() {
           <Card className="p-5">
             <div className="flex items-center justify-between">
               <MonoLabel violet>POINTS</MonoLabel>
-              <span className="font-mono text-[11px] text-sub">시즌 1</span>
+              <span
+                className="rounded border px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-[0.06em]"
+                style={{ color: rank.color, borderColor: `${rank.color}66` }}
+              >
+                {rank.label}
+              </span>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="num text-[34px] font-extrabold leading-none">
@@ -479,12 +487,17 @@ export default function MyPage() {
                 <span className="num font-bold text-violet-hi">{Number(wallet?.lifetime || 0).toLocaleString()} P</span>
               </div>
               <div className="mt-1.5 flex items-center justify-between text-[12px]">
-                <span className="text-sub">연속 출석</span>
-                <span className="num font-bold">{Number(wallet?.streakWeeks || 0)}주</span>
+                <span className="text-sub">계급</span>
+                <span className="num font-bold" style={{ color: rank.color }}>
+                  {rank.label}
+                  <span className="ml-1 font-normal text-mute">
+                    {rank.next ? `다음 ${rank.next.label}까지 ${rank.toNext.toLocaleString()}P` : '최고 티어'}
+                  </span>
+                </span>
               </div>
             </div>
             <p className="mt-3 text-[11px] leading-relaxed text-mute">
-              레이드 출석 적립·계급 티어는 시즌 오픈과 함께 활성화됩니다.
+              레이드 출석 적립·계급 티어는 시즌 오픈과 함께 활성화됩니다. (현재 적립 잠금)
             </p>
           </Card>
 
@@ -508,11 +521,24 @@ export default function MyPage() {
           </Card>
 
           <Card className="p-5">
-            <MonoLabel violet>SHOP · 준비 중</MonoLabel>
-            <p className="mt-2 text-[12px] leading-relaxed text-sub">
-              포인트 전용 치장(칭호·테두리·배너)이 입점 예정입니다.
+            <div className="flex items-center justify-between">
+              <MonoLabel violet>SHOP</MonoLabel>
+              <span className="font-mono text-[10px] tracking-[0.06em] text-mute">시즌 오픈 후</span>
+            </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-mute">
+              포인트 전용 치장 — 현금 구매 불가, 활동으로만 적립.
             </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-mute">포인트는 활동으로만 적립됩니다 — 현금 구매 불가.</p>
+            <div className="mt-3 flex flex-col gap-1.5">
+              {SHOP_ITEMS.map((it) => (
+                <div key={it.id} className="flex items-center gap-2 rounded border border-line bg-surface2 px-2.5 py-2 opacity-70">
+                  <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-txt">{it.label}</span>
+                  <span className="num shrink-0 font-mono text-[11px] text-violet-hi">{it.price.toLocaleString()}P</span>
+                  <button className="shrink-0 cursor-not-allowed rounded border border-line px-2 py-0.5 text-[11px] text-mute" disabled>
+                    잠금
+                  </button>
+                </div>
+              ))}
+            </div>
           </Card>
         </aside>
       </div>

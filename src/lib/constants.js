@@ -306,6 +306,24 @@ export const POINTS = {
   GUIDE_PENALTY_THRESHOLD: 3, // 순추천 음수 공략 N개 이상 → 공략 보상 일시중지
 };
 
+// ── 계급/티어 (누적 P 기준 · 수치 placeholder — 대표님 확정 대기) ────
+export const RANK_TIERS = [
+  { id: 'bronze', label: '견습', min: 0, color: '#a97142' },
+  { id: 'silver', label: '숙련', min: 1000, color: '#b8c0c8' },
+  { id: 'gold', label: '정예', min: 3000, color: '#f5c451' },
+  { id: 'platinum', label: '베테랑', min: 7000, color: '#7dd3fc' },
+  { id: 'diamond', label: '전설', min: 15000, color: '#a78bfa' },
+];
+
+// ── 상점 치장 아이템 (placeholder · 시즌 오픈 후 활성) ──────────────
+// 유형: title(칭호) · border(테두리) · background(배경) · effect(이펙트) — 사양 7.2 후보
+export const SHOP_ITEMS = [
+  { id: 'title_pillar', type: 'title', label: '칭호 · 공대의 기둥', price: 2000 },
+  { id: 'border_violet', type: 'border', label: '프로필 테두리 · 보라 글로우', price: 1500 },
+  { id: 'bg_voidspire', type: 'background', label: '프로필 배경 · 공허첨탑', price: 3000 },
+  { id: 'effect_glow', type: 'effect', label: '이름 이펙트 · 광휘', price: 5000 },
+];
+
 // ── 창립 연합·공격대 시드 (260723 대표님 확정) ──────────────────────
 export const SEED_ALLIANCES = [
   { id: 'kwgu', name: '한국길드연합', nameEn: 'KOREAN GUILD UNION', desc: '한국 와우 길드들의 연합', guildIds: [] },

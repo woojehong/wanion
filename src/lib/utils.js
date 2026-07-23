@@ -1,4 +1,16 @@
-import { DIFFICULTIES, TANK_CAP, SERVERS, UNION_GUILD_ID } from './constants';
+import { DIFFICULTIES, TANK_CAP, SERVERS, UNION_GUILD_ID, RANK_TIERS } from './constants';
+
+// ── 계급/티어 (누적 P → 계급) ───────────────────────────────────────
+export function getRank(lifetime, tiers = RANK_TIERS) {
+  const lp = Number(lifetime) || 0;
+  let cur = tiers[0];
+  tiers.forEach((t) => {
+    if (lp >= t.min) cur = t;
+  });
+  const idx = tiers.indexOf(cur);
+  const next = tiers[idx + 1] || null;
+  return { ...cur, next, toNext: next ? Math.max(0, next.min - lp) : 0 };
+}
 
 // ── Role normalization ──────────────────────────────────────────────
 // CLASSES 특성 데이터는 'healer', 신청·counts·필터 체계는 'heal'을 쓴다.
