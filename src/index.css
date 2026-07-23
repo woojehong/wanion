@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background: #09090d;
+    color: #ededf2;
+    font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    margin: 0;
+    min-height: 100vh;
+  }
+  ::selection {
+    background: rgba(138, 112, 255, 0.35);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #1e1e2e transparent;
+  }
+}
+
+@layer components {
+  /* 영문 마이크로 라벨 — WANION 시그니처 타이포 패턴 */
+  .mono-label {
+    @apply font-mono text-[11px] uppercase tracking-[0.08em] text-sub;
+  }
+  .mono-label-violet {
+    @apply font-mono text-[11px] uppercase tracking-[0.08em] text-violet;
+  }
+  /* 섹션 타이틀: 좌측 액센트 바 + 국문 볼드 + 영문 서브 */
+  .section-bar {
+    @apply inline-block w-[3px] self-stretch rounded-full bg-violet;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded bg-violet px-4 py-2 text-[14px] font-bold text-ink transition hover:bg-violet-hi disabled:opacity-40;
+    box-shadow: 0 0 18px rgba(138, 112, 255, 0.25);
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded border border-line bg-transparent px-4 py-2 text-[14px] font-semibold text-txt transition hover:border-violet-deep hover:text-violet-hi;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded border border-line bg-surface px-2 py-0.5 text-[12px] font-medium text-sub;
+  }
+  .chip-active {
+    @apply border-violet-deep bg-violet/10 text-violet-hi;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+}

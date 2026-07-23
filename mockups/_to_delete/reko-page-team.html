@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REKO — 공대 프로필 · TeamSAD</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root {
+    --bg: #09090D;
+    --surface: #101018;
+    --surface-2: #14141F;
+    --border: #1E1E2E;
+    --accent: #8A70FF;
+    --highlight: #B9A8FF;
+    --deep: #5B45E0;
+    --text: #EDEDF2;
+    --text-sub: #8B8B9E;
+    --tank: #60A5FA;
+    --heal: #4ADE80;
+    --dps: #F87171;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #050507; }
+  body {
+    font-family: "Pretendard Variable", Pretendard, system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .mono {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* ============ File-level presentation shell ============ */
+  .shell { max-width: 1440px; margin: 0 auto; padding: 40px 40px 80px; }
+  .meta-strip {
+    display: flex; align-items: center; gap: 16px;
+    padding: 12px 16px; margin-bottom: 32px;
+    background: #0B0B10; border: 1px solid #17171F; border-radius: 8px;
+    color: var(--text-sub);
+  }
+  .meta-strip .mono { color: var(--text-sub); }
+  .meta-strip .tokens { display: flex; gap: 8px; margin-left: auto; }
+  .meta-strip .dot { width: 12px; height: 12px; border-radius: 4px; border: 1px solid #26263A; }
+  .frame-label { margin: 0 0 12px 2px; color: #5A5A6B; }
+
+  /* ============ Browser chrome ============ */
+  .browser {
+    width: 1280px; margin: 0 auto 64px;
+    border: 1px solid #1C1C28; border-radius: 12px;
+    background: var(--bg); overflow: hidden;
+  }
+  .browser-bar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 12px 16px; background: #0C0C12; border-bottom: 1px solid #17171F;
+  }
+  .traffic { display: flex; gap: 8px; }
+  .traffic span { width: 11px; height: 11px; border-radius: 50%; background: #23232F; }
+  .urlbar {
+    flex: 1; max-width: 480px; margin: 0 auto;
+    padding: 6px 16px; border-radius: 6px;
+    background: #12121A; border: 1px solid #1C1C28;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.02em;
+    color: var(--text-sub); text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .urlbar b { color: var(--text); font-weight: 500; }
+  .browser-spacer { width: 49px; }
+
+  /* ============ Top nav ============ */
+  .nav {
+    display: flex; align-items: center; gap: 40px;
+    height: 56px; padding: 0 32px;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+  .nav-logo .en { font-weight: 800; font-size: 15px; letter-spacing: 0.04em; }
+  .nav-logo .ko { font-size: 12px; color: var(--text-sub); }
+  .nav-menu { display: flex; gap: 28px; }
+  .nav-menu a {
+    text-decoration: none; font-size: 13px; color: var(--text-sub);
+    line-height: 56px; height: 56px; display: inline-block; position: relative;
+    white-space: nowrap;
+  }
+  .nav-menu a.active { color: var(--text); font-weight: 600; }
+  .nav-menu a.active::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 2px; background: var(--accent);
+  }
+  .nav-right { margin-left: auto; }
+  .huje-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 8px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    font-size: 12px; color: var(--text-sub); white-space: nowrap;
+  }
+  .huje-chip i {
+    width: 8px; height: 8px; border-radius: 2px; background: var(--accent);
+    display: inline-block; flex: none;
+  }
+
+  .page { padding: 0 32px 64px; }
+  .container { max-width: 1120px; margin: 0 auto; }
+
+  /* ============ Hero ============ */
+  .hero {
+    display: flex; gap: 32px; align-items: stretch;
+    padding: 40px 0 32px;
+  }
+  .hero-id { flex: 1; min-width: 0; display: flex; gap: 24px; }
+  .emblem-slot {
+    width: 88px; height: 88px; flex: none; border-radius: 8px;
+    border: 1px dashed #34344E;
+    background: rgba(138, 112, 255, 0.04);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 8px;
+  }
+  .emblem-slot .mono { color: #6E6E8A; line-height: 1.6; }
+  .hero-name h1 {
+    font-size: 32px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .hero-name .sub { margin-top: 4px; color: var(--text-sub); }
+  .hero-badges { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 28px; padding: 0 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 600; white-space: nowrap;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  }
+  .badge .role-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .badge.recruit { border-color: #2C2C44; }
+  .badge.time { color: var(--text-sub); font-weight: 500; }
+
+  .progress-panel {
+    flex: none; width: 480px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 24px;
+  }
+  .progress-panel .mono { color: var(--text-sub); }
+  .progress-top { display: flex; align-items: baseline; gap: 16px; margin-top: 16px; }
+  .progress-num {
+    font-size: 48px; font-weight: 800; line-height: 1; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .progress-num .cur { color: var(--accent); }
+  .progress-num .div { color: #3A3A52; font-weight: 600; margin: 0 2px; }
+  .progress-num .max { color: var(--text); }
+  .progress-raid { font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .progress-raid small { display: block; font-size: 12px; font-weight: 400; color: var(--text-sub); margin-top: 2px; }
+  .seg-bar { display: flex; gap: 4px; margin-top: 20px; }
+  .seg-bar i { flex: 1; height: 6px; border-radius: 2px; background: #22223A; }
+  .seg-bar i.on { background: var(--accent); }
+  .progress-sub {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);
+  }
+  .progress-sub .kill { font-size: 12px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .progress-sub .kill b { color: var(--text); font-weight: 600; }
+  .progress-sub .rank { color: var(--highlight); white-space: nowrap; }
+  .wcl-mark {
+    display: flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-size: 11px; color: #5A5A6B; white-space: nowrap;
+  }
+  .wcl-mark i { width: 10px; height: 10px; border-radius: 2px; background: #2A2A40; flex: none; }
+
+  .cta-row { display: flex; gap: 12px; padding-bottom: 40px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 44px; padding: 0 24px; border-radius: 8px;
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: var(--accent); color: #FFFFFF;
+    box-shadow: 0 4px 16px rgba(138, 112, 255, 0.24);
+  }
+  .btn-ghost {
+    background: transparent; color: var(--text-sub);
+    border-color: var(--border);
+  }
+
+  /* ============ Banner AI slot ============ */
+  .banner-slot {
+    height: 224px; border-radius: 8px;
+    border: 1px dashed #34344E;
+    background: rgba(138, 112, 255, 0.04);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 64px; padding: 24px; text-align: center;
+  }
+  .banner-slot .mono { color: #6E6E8A; line-height: 1.8; }
+
+  /* ============ Section headers ============ */
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px; }
+  .sec-head h2 { font-size: 18px; font-weight: 700; white-space: nowrap; }
+  .sec-head .mono { color: #5A5A6B; }
+  .sec-head .count { margin-left: auto; font-size: 12px; color: var(--text-sub); white-space: nowrap; }
+
+  /* ============ Kill timeline ============ */
+  .kill-log { margin-bottom: 64px; }
+  .timeline { display: flex; }
+  .step { flex: 1; min-width: 0; position: relative; padding-top: 20px; }
+  .step::before {
+    content: ""; position: absolute; top: 5px; left: 0; right: 0;
+    height: 1px; background: var(--border);
+  }
+  .step:first-child::before { left: 5px; }
+  .step:last-child::before { right: auto; width: 5px; }
+  .step .node {
+    position: absolute; top: 0; left: 5px; transform: translateX(-50%);
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--border);
+  }
+  .step:first-child .node { left: 5px; transform: none; margin-left: -5px; }
+  .step.done .node { background: var(--accent); border-color: var(--accent); }
+  .step.next .node { background: var(--bg); border: 2px solid var(--highlight); width: 12px; height: 12px; }
+  .step.next::before { background: linear-gradient(90deg, var(--border), var(--border)); }
+  .step .boss {
+    font-size: 13px; font-weight: 600; margin-top: 4px;
+    padding-right: 16px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .step .date { margin-top: 4px; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+  .step.next .boss { color: var(--highlight); }
+  .step.next .date { color: var(--text-sub); }
+  .step.locked .boss { color: #4A4A5C; font-weight: 500; }
+  .step.locked .date { color: #3A3A4A; }
+
+  /* ============ Two-column ============ */
+  .cols { display: flex; gap: 32px; align-items: flex-start; }
+  .col-main { flex: 1; min-width: 0; }
+  .col-aside { width: 320px; flex: none; display: flex; flex-direction: column; gap: 16px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .roster-card { padding: 24px; margin-bottom: 32px; }
+
+  .role-group { margin-top: 24px; }
+  .role-group:first-of-type { margin-top: 24px; }
+  .role-head {
+    display: flex; align-items: center; gap: 8px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .role-head .role-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .role-head .mono { color: var(--text-sub); }
+  .role-head .n { margin-left: auto; font-size: 11px; color: #5A5A6B; font-variant-numeric: tabular-nums; }
+
+  .member {
+    display: flex; align-items: center; gap: 12px;
+    height: 48px; border-bottom: 1px solid #16161F;
+  }
+  .member:last-child { border-bottom: none; }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 6px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #09090D;
+  }
+  .member .name {
+    font-size: 14px; font-weight: 600; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .leader-badge {
+    display: inline-block; margin-left: 8px; padding: 1px 6px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; color: var(--highlight);
+    background: rgba(138, 112, 255, 0.12); vertical-align: 1px;
+  }
+  .member .spec { font-size: 12px; color: var(--text-sub); white-space: nowrap; margin-left: auto; }
+  .member .ilvl {
+    width: 56px; text-align: right; font-size: 13px; font-weight: 600;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .member .ilvl small { font-size: 11px; color: #5A5A6B; font-weight: 400; margin-right: 4px; }
+  .member .parse {
+    width: 72px; text-align: right;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.02em;
+    color: var(--text-sub); font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .member .parse.top { color: var(--highlight); }
+  .member.more { color: var(--text-sub); font-size: 13px; }
+  .member.more .avatar { background: var(--surface-2); color: #5A5A6B; border: 1px solid var(--border); }
+
+  .schedule-card { padding: 24px; }
+  .sched-row {
+    display: flex; align-items: center; gap: 16px;
+    height: 56px; border-bottom: 1px solid #16161F;
+  }
+  .sched-row:last-child { border-bottom: none; }
+  .sched-when {
+    width: 176px; flex: none; font-size: 14px; font-weight: 600;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .sched-what { font-size: 13px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sched-tag {
+    margin-left: auto; padding: 2px 8px; border-radius: 4px; flex: none;
+    font-size: 11px; font-weight: 600;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text-sub);
+    white-space: nowrap;
+  }
+  .sched-tag.main { color: var(--accent); border-color: #2E2650; background: rgba(138, 112, 255, 0.08); }
+
+  /* ============ Aside cards ============ */
+  .aside-card { padding: 20px; }
+  .aside-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; }
+  .aside-card .mono { color: #5A5A6B; }
+  .apply-list { margin: 16px 0 20px; }
+  .apply-item {
+    display: flex; gap: 12px; padding: 8px 0; font-size: 13px;
+  }
+  .apply-item .k { width: 40px; flex: none; color: var(--text-sub); }
+  .apply-item .v { color: var(--text); min-width: 0; }
+  .apply-item .v b { font-weight: 600; }
+  .apply-item .v .dps-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--dps); margin-right: 6px; vertical-align: 1px;
+  }
+  .btn-full { width: 100%; }
+
+  .kv-list { margin-top: 16px; }
+  .kv {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 40px; border-bottom: 1px solid #16161F; font-size: 13px;
+  }
+  .kv:last-child { border-bottom: none; }
+  .kv .k { color: var(--text-sub); white-space: nowrap; }
+  .kv .v { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .org-body { margin-top: 16px; font-size: 13px; line-height: 1.7; }
+  .org-body b { font-weight: 600; }
+  .org-body .sub { color: var(--text-sub); }
+  .org-note {
+    margin-top: 16px; padding: 12px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12px; color: var(--text-sub); line-height: 1.6;
+  }
+
+  /* ============ Footer ============ */
+  .site-footer {
+    border-top: 1px solid var(--border); margin-top: 64px;
+    padding: 32px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .site-footer .brand { font-weight: 800; font-size: 13px; letter-spacing: 0.04em; }
+  .site-footer .made { font-size: 12px; color: #5A5A6B; white-space: nowrap; }
+
+  /* ==================================================== */
+  /* ============ Mobile frame (390) ============ */
+  /* ==================================================== */
+  .phone {
+    width: 390px; margin: 0 auto;
+    border: 1px solid #1C1C28; border-radius: 32px;
+    background: var(--bg); overflow: hidden; position: relative;
+  }
+  .notch-bar {
+    height: 44px; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .notch {
+    width: 120px; height: 26px; background: #050507;
+    border-radius: 0 0 14px 14px;
+  }
+  .statusbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; font-size: 12px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .statusbar .right { display: flex; gap: 4px; align-items: center; }
+  .statusbar .cell { width: 16px; height: 8px; border: 1px solid #3A3A4A; border-radius: 2px; position: relative; }
+  .statusbar .cell i { position: absolute; inset: 1px; right: 4px; background: var(--text); border-radius: 1px; }
+
+  .m-nav {
+    display: flex; align-items: center; height: 52px; padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .m-nav .nav-right { margin-left: auto; }
+  .m-burger { display: flex; flex-direction: column; gap: 4px; margin-left: 20px; }
+  .m-burger i { width: 16px; height: 1.5px; background: var(--text-sub); border-radius: 1px; }
+
+  .m-page { padding: 24px 20px 96px; }
+
+  .m-hero-id { display: flex; gap: 16px; align-items: center; }
+  .m-emblem {
+    width: 64px; height: 64px; flex: none; border-radius: 8px;
+    border: 1px dashed #34344E; background: rgba(138, 112, 255, 0.04);
+    display: flex; align-items: center; justify-content: center; text-align: center; padding: 4px;
+  }
+  .m-emblem .mono { font-size: 9px; color: #6E6E8A; line-height: 1.5; }
+  .m-hero-id h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-hero-id .sub { font-size: 10px; margin-top: 2px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-badges { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+  .m-progress {
+    margin-top: 16px; padding: 20px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .m-progress .mono { color: var(--text-sub); }
+  .m-progress .progress-top { margin-top: 12px; }
+  .m-progress .progress-num { font-size: 40px; }
+  .m-progress .seg-bar { margin-top: 16px; }
+  .m-progress .progress-sub { flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 12px; padding-top: 12px; }
+
+  .m-banner {
+    margin-top: 16px; height: 72px; border-radius: 8px;
+    border: 1px dashed #34344E; background: rgba(138, 112, 255, 0.04);
+    display: flex; align-items: center; justify-content: center; padding: 8px; text-align: center;
+  }
+  .m-banner .mono { font-size: 9px; color: #6E6E8A; }
+
+  .m-sec { margin-top: 40px; }
+  .m-sec .sec-head { margin-bottom: 16px; }
+  .m-sec .sec-head h2 { font-size: 15px; }
+
+  .m-kill { position: relative; padding-left: 20px; }
+  .m-kill::before {
+    content: ""; position: absolute; left: 5px; top: 10px; bottom: 10px;
+    width: 1px; background: var(--border);
+  }
+  .m-kill-row { position: relative; display: flex; align-items: center; gap: 12px; height: 44px; }
+  .m-kill-row .node {
+    position: absolute; left: -20px; top: 50%; margin-top: -5px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--border);
+  }
+  .m-kill-row.done .node { background: var(--accent); border-color: var(--accent); }
+  .m-kill-row.next .node { border: 2px solid var(--highlight); width: 10px; height: 10px; margin-top: -6px; left: -21px; }
+  .m-kill-row .boss { font-size: 13px; font-weight: 600; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-kill-row.next .boss { color: var(--highlight); }
+  .m-kill-row.locked .boss { color: #4A4A5C; font-weight: 500; }
+  .m-kill-row .date { margin-left: auto; color: var(--text-sub); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .m-kill-row.locked .date { color: #3A3A4A; }
+
+  .m-role-summary { display: flex; gap: 8px; }
+  .m-role-pill {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 40px; border-radius: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  .m-role-pill .role-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .m-role-pill .n { font-variant-numeric: tabular-nums; }
+  .m-roster { margin-top: 16px; padding: 4px 20px; }
+  .m-roster .member { height: 48px; }
+  .m-roster .member .spec { display: none; }
+  .m-more-link {
+    display: block; margin-top: 12px; text-align: center;
+    font-size: 12px; color: var(--text-sub); text-decoration: none;
+    padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .m-aside-card { padding: 20px; margin-top: 16px; }
+  .m-aside-card:first-child { margin-top: 0; }
+
+  .m-footer {
+    margin-top: 48px; padding: 24px 0 8px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .m-footer .brand { font-weight: 800; font-size: 12px; letter-spacing: 0.04em; }
+  .m-footer .made { font-size: 11px; color: #5A5A6B; }
+
+  .m-sticky {
+    position: sticky; bottom: 0; z-index: 10;
+    padding: 12px 20px 28px;
+    background: linear-gradient(180deg, rgba(9, 9, 13, 0), var(--bg) 32%);
+    border-top: 1px solid var(--border);
+  }
+  .m-sticky .btn { width: 100%; height: 48px; }
+  .home-indicator {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 128px; height: 4px; border-radius: 2px; background: #2A2A38;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ===== File meta strip ===== -->
+  <div class="meta-strip">
+    <span class="mono">REKO — 공대 프로필 · B/C 디자인 언어 검증</span>
+    <div class="tokens">
+      <span class="dot" style="background:#09090D"></span>
+      <span class="dot" style="background:#101018"></span>
+      <span class="dot" style="background:#14141F"></span>
+      <span class="dot" style="background:#8A70FF"></span>
+      <span class="dot" style="background:#B9A8FF"></span>
+      <span class="dot" style="background:#5B45E0"></span>
+      <span class="dot" style="background:#60A5FA"></span>
+      <span class="dot" style="background:#4ADE80"></span>
+      <span class="dot" style="background:#F87171"></span>
+    </div>
+  </div>
+
+  <!-- ================= DESKTOP 1280 ================= -->
+  <p class="frame-label mono">Desktop · 1280</p>
+  <div class="browser">
+    <div class="browser-bar">
+      <div class="traffic"><span></span><span></span><span></span></div>
+      <div class="urlbar">raidkorea.site<b>/team/teamsad</b></div>
+      <div class="browser-spacer"></div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-logo"><span class="en">REKO</span><span class="ko">레코</span></div>
+      <div class="nav-menu">
+        <a href="#">파티 찾기</a>
+        <a href="#">길드</a>
+        <a href="#" class="active">공격대</a>
+        <a href="#">연합</a>
+        <a href="#">업데이트</a>
+      </div>
+      <div class="nav-right">
+        <span class="huje-chip"><i></i>후제</span>
+      </div>
+    </nav>
+
+    <div class="page">
+      <div class="container">
+
+        <!-- ===== HERO ===== -->
+        <section class="hero">
+          <div class="hero-id">
+            <div class="emblem-slot"><span class="mono">AI ART<br>공대 엠블럼<br>1:1</span></div>
+            <div class="hero-name">
+              <h1>TeamSAD</h1>
+              <div class="sub mono">RAID TEAM · EST. 2024 · AZSHARA</div>
+              <div class="hero-badges">
+                <span class="badge recruit"><span class="role-dot" style="background:#F87171"></span>모집 중 · 딜러 2</span>
+                <span class="badge time">격주 토 20:00</span>
+              </div>
+            </div>
+          </div>
+          <div class="progress-panel">
+            <span class="mono">Current Progress</span>
+            <div class="progress-top">
+              <div class="progress-num"><span class="cur">5</span><span class="div">/</span><span class="max">8</span></div>
+              <div class="progress-raid">공허첨탑 신화<small>Voidspire · Mythic</small></div>
+            </div>
+            <div class="seg-bar">
+              <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i>
+            </div>
+            <div class="progress-sub">
+              <span class="kill">최근 킬 <b>무너지는 회랑</b> · 7/20 · 시도 34회</span>
+              <span class="rank mono">KR 상위 12%</span>
+            </div>
+            <div class="wcl-mark"><i></i>Warcraft Logs 연동</div>
+          </div>
+        </section>
+
+        <div class="cta-row">
+          <button class="btn btn-primary">공대 지원하기</button>
+          <button class="btn btn-ghost">문의</button>
+        </div>
+
+        <!-- ===== BANNER AI SLOT ===== -->
+        <div class="banner-slot">
+          <span class="mono">AI ART · 공대 배너 5:1 — 공허첨탑 실루엣, 다크 바이올렛</span>
+        </div>
+
+        <!-- ===== KILL LOG ===== -->
+        <section class="kill-log">
+          <div class="sec-head">
+            <h2>킬 로그</h2>
+            <span class="mono">Kill Log</span>
+            <span class="count tnum">공허첨탑 신화 · 5 / 8 처치</span>
+          </div>
+          <div class="timeline">
+            <div class="step done">
+              <span class="node"></span>
+              <div class="boss">굶주린 어둠</div>
+              <div class="date mono">6/29</div>
+            </div>
+            <div class="step done">
+              <span class="node"></span>
+              <div class="boss">속삭이는 심연</div>
+              <div class="date mono">7/4</div>
+            </div>
+            <div class="step done">
+              <span class="node"></span>
+              <div class="boss">별삼킨 자</div>
+              <div class="date mono">7/8</div>
+            </div>
+            <div class="step done">
+              <span class="node"></span>
+              <div class="boss">침묵의 대주교</div>
+              <div class="date mono">7/13</div>
+            </div>
+            <div class="step done">
+              <span class="node"></span>
+              <div class="boss">무너지는 회랑</div>
+              <div class="date mono">7/20</div>
+            </div>
+            <div class="step next">
+              <span class="node"></span>
+              <div class="boss">다음: 공허의 목소리</div>
+              <div class="date mono">진행 중</div>
+            </div>
+            <div class="step locked">
+              <span class="node"></span>
+              <div class="boss">쌍둥이 공허군주</div>
+              <div class="date mono">—</div>
+            </div>
+            <div class="step locked">
+              <span class="node"></span>
+              <div class="boss">종막의 인도자</div>
+              <div class="date mono">—</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== TWO COLUMN ===== -->
+        <div class="cols">
+          <div class="col-main">
+
+            <!-- ROSTER -->
+            <div class="card roster-card">
+              <div class="sec-head" style="margin-bottom:0">
+                <h2>로스터</h2>
+                <span class="mono">Roster</span>
+                <span class="count tnum">18명</span>
+              </div>
+
+              <div class="role-group">
+                <div class="role-head">
+                  <span class="role-dot" style="background:#60A5FA"></span>
+                  <span class="mono">탱커</span>
+                  <span class="n">2</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#C69B6D">두</span>
+                  <span class="name" style="color:#C69B6D">두부킴<span class="leader-badge">리더</span></span>
+                  <span class="spec">전사 · 방어</span>
+                  <span class="ilvl"><small>템렙</small>489</span>
+                  <span class="parse">88.4</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#FF7C0A">강</span>
+                  <span class="name" style="color:#FF7C0A">강철이빨</span>
+                  <span class="spec">드루이드 · 수호</span>
+                  <span class="ilvl"><small>템렙</small>486</span>
+                  <span class="parse">85.7</span>
+                </div>
+              </div>
+
+              <div class="role-group">
+                <div class="role-head">
+                  <span class="role-dot" style="background:#4ADE80"></span>
+                  <span class="mono">힐러</span>
+                  <span class="n">4</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#FFFFFF">새</span>
+                  <span class="name" style="color:#FFFFFF">새벽기도</span>
+                  <span class="spec">사제 · 신성</span>
+                  <span class="ilvl"><small>템렙</small>487</span>
+                  <span class="parse">91.3</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#F48CBA">은</span>
+                  <span class="name" style="color:#F48CBA">은빛맹세</span>
+                  <span class="spec">성기사 · 신성</span>
+                  <span class="ilvl"><small>템렙</small>485</span>
+                  <span class="parse">89.0</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#0070DD">파</span>
+                  <span class="name" style="color:#3B9BFF">파도소리</span>
+                  <span class="spec">주술사 · 복원</span>
+                  <span class="ilvl"><small>템렙</small>484</span>
+                  <span class="parse">86.2</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#33937F">청</span>
+                  <span class="name" style="color:#33937F">청록빛숨</span>
+                  <span class="spec">기원사 · 보존</span>
+                  <span class="ilvl"><small>템렙</small>483</span>
+                  <span class="parse">84.9</span>
+                </div>
+              </div>
+
+              <div class="role-group">
+                <div class="role-head">
+                  <span class="role-dot" style="background:#F87171"></span>
+                  <span class="mono">딜러</span>
+                  <span class="n">12</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#3FC7EB">얼</span>
+                  <span class="name" style="color:#3FC7EB">얼음별</span>
+                  <span class="spec">마법사 · 냉기</span>
+                  <span class="ilvl"><small>템렙</small>488</span>
+                  <span class="parse top">96.2</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#AAD372">화</span>
+                  <span class="name" style="color:#AAD372">화살비</span>
+                  <span class="spec">사냥꾼 · 사격</span>
+                  <span class="ilvl"><small>템렙</small>486</span>
+                  <span class="parse">93.5</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#8788EE">그</span>
+                  <span class="name" style="color:#8788EE">그림자연</span>
+                  <span class="spec">흑마법사 · 파멸</span>
+                  <span class="ilvl"><small>템렙</small>487</span>
+                  <span class="parse">92.8</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#FFF468">칼</span>
+                  <span class="name" style="color:#FFF468">칼끝서리</span>
+                  <span class="spec">도적 · 암살</span>
+                  <span class="ilvl"><small>템렙</small>485</span>
+                  <span class="parse">90.1</span>
+                </div>
+                <div class="member">
+                  <span class="avatar" style="background:#A330C9">잿</span>
+                  <span class="name" style="color:#A330C9">잿빛칼날</span>
+                  <span class="spec">악마사냥꾼 · 파멸</span>
+                  <span class="ilvl"><small>템렙</small>484</span>
+                  <span class="parse">88.6</span>
+                </div>
+                <div class="member more">
+                  <span class="avatar">+7</span>
+                  <span class="name" style="color:var(--text-sub);font-weight:500">외 7명</span>
+                  <span class="spec">전체 로스터 보기</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SCHEDULE -->
+            <div class="card schedule-card">
+              <div class="sec-head" style="margin-bottom:8px">
+                <h2>정기 일정</h2>
+                <span class="mono">Schedule</span>
+              </div>
+              <div class="sched-row">
+                <span class="sched-when tnum">격주 토 20:00–24:00</span>
+                <span class="sched-what">공허첨탑 신화 트라이</span>
+                <span class="sched-tag main">본대</span>
+              </div>
+              <div class="sched-row">
+                <span class="sched-when tnum">수 21:00</span>
+                <span class="sched-what">영웅 소프트런</span>
+                <span class="sched-tag">선택</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ASIDE -->
+          <aside class="col-aside">
+            <div class="card aside-card">
+              <h3>지원 안내</h3>
+              <span class="mono">Apply</span>
+              <div class="apply-list">
+                <div class="apply-item">
+                  <span class="k">모집</span>
+                  <span class="v"><span class="dps-dot"></span><b>딜러 2</b> · 원딜 우대</span>
+                </div>
+                <div class="apply-item">
+                  <span class="k">요구</span>
+                  <span class="v tnum">템렙 285+ · 목소리 소통 가능</span>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-full">공대 지원하기</button>
+            </div>
+
+            <div class="card aside-card">
+              <h3>시즌 통계</h3>
+              <span class="mono">Season Stats</span>
+              <div class="kv-list">
+                <div class="kv"><span class="k">진행</span><span class="v">5 / 8</span></div>
+                <div class="kv"><span class="k">시도</span><span class="v">187회</span></div>
+                <div class="kv"><span class="k">출석률</span><span class="v">94%</span></div>
+                <div class="kv"><span class="k">평균 파스</span><span class="v">89.1</span></div>
+              </div>
+            </div>
+
+            <div class="card aside-card">
+              <h3>소속</h3>
+              <span class="mono">Affiliation</span>
+              <div class="org-body">
+                <b>두부킴의유기견들</b> 길드 기반<br>
+                <span class="sub">무길드 멤버 4명 포함</span>
+              </div>
+              <div class="org-note">공대는 길드와 독립적으로 운영됩니다.</div>
+            </div>
+          </aside>
+        </div>
+
+      </div>
+
+      <footer class="site-footer">
+        <span class="brand">REKO</span>
+        <span class="made">Made by 후제공방</span>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ================= MOBILE 390 ================= -->
+  <p class="frame-label mono">Mobile · 390</p>
+  <div class="phone">
+    <div class="notch-bar">
+      <div class="statusbar">
+        <span class="tnum">21:42</span>
+        <span class="right"><span class="cell"><i></i></span></span>
+      </div>
+      <div class="notch"></div>
+    </div>
+
+    <nav class="m-nav">
+      <div class="nav-logo"><span class="en">REKO</span><span class="ko">레코</span></div>
+      <div class="nav-right"><span class="huje-chip"><i></i>후제</span></div>
+      <div class="m-burger"><i></i><i></i><i></i></div>
+    </nav>
+
+    <div class="m-page">
+
+      <!-- HERO: identity -->
+      <div class="m-hero-id">
+        <div class="m-emblem"><span class="mono">AI ART<br>엠블럼 1:1</span></div>
+        <div style="min-width:0">
+          <h1>TeamSAD</h1>
+          <div class="sub mono">RAID TEAM · EST. 2024 · AZSHARA</div>
+        </div>
+      </div>
+      <div class="m-badges">
+        <span class="badge recruit"><span class="role-dot" style="background:#F87171"></span>모집 중 · 딜러 2</span>
+        <span class="badge time">격주 토 20:00</span>
+      </div>
+
+      <!-- HERO: progress panel -->
+      <div class="m-progress">
+        <span class="mono">Current Progress</span>
+        <div class="progress-top">
+          <div class="progress-num"><span class="cur">5</span><span class="div">/</span><span class="max">8</span></div>
+          <div class="progress-raid">공허첨탑 신화<small>Voidspire · Mythic</small></div>
+        </div>
+        <div class="seg-bar">
+          <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i>
+        </div>
+        <div class="progress-sub">
+          <span class="kill">최근 킬 <b>무너지는 회랑</b> · 7/20 · 시도 34회</span>
+          <span class="rank mono">KR 상위 12%</span>
+        </div>
+        <div class="wcl-mark"><i></i>Warcraft Logs 연동</div>
+      </div>
+
+      <!-- BANNER SLOT -->
+      <div class="m-banner"><span class="mono">AI ART · 공대 배너 5:1</span></div>
+
+      <!-- KILL LOG -->
+      <section class="m-sec">
+        <div class="sec-head">
+          <h2>킬 로그</h2>
+          <span class="mono">Kill Log</span>
+          <span class="count tnum">5 / 8</span>
+        </div>
+        <div class="m-kill">
+          <div class="m-kill-row done"><span class="node"></span><span class="boss">굶주린 어둠</span><span class="date mono">6/29</span></div>
+          <div class="m-kill-row done"><span class="node"></span><span class="boss">속삭이는 심연</span><span class="date mono">7/4</span></div>
+          <div class="m-kill-row done"><span class="node"></span><span class="boss">별삼킨 자</span><span class="date mono">7/8</span></div>
+          <div class="m-kill-row done"><span class="node"></span><span class="boss">침묵의 대주교</span><span class="date mono">7/13</span></div>
+          <div class="m-kill-row done"><span class="node"></span><span class="boss">무너지는 회랑</span><span class="date mono">7/20</span></div>
+          <div class="m-kill-row next"><span class="node"></span><span class="boss">다음: 공허의 목소리</span><span class="date mono">진행 중</span></div>
+          <div class="m-kill-row locked"><span class="node"></span><span class="boss">쌍둥이 공허군주</span><span class="date mono">—</span></div>
+          <div class="m-kill-row locked"><span class="node"></span><span class="boss">종막의 인도자</span><span class="date mono">—</span></div>
+        </div>
+      </section>
+
+      <!-- ROSTER (collapsed) -->
+      <section class="m-sec">
+        <div class="sec-head">
+          <h2>로스터</h2>
+          <span class="mono">Roster</span>
+          <span class="count tnum">18명</span>
+        </div>
+        <div class="m-role-summary">
+          <span class="m-role-pill"><span class="role-dot" style="background:#60A5FA"></span>탱 <span class="n">2</span></span>
+          <span class="m-role-pill"><span class="role-dot" style="background:#4ADE80"></span>힐 <span class="n">4</span></span>
+          <span class="m-role-pill"><span class="role-dot" style="background:#F87171"></span>딜 <span class="n">12</span></span>
+        </div>
+        <div class="card m-roster">
+          <div class="member">
+            <span class="avatar" style="background:#C69B6D">두</span>
+            <span class="name" style="color:#C69B6D">두부킴<span class="leader-badge">리더</span></span>
+            <span class="ilvl" style="margin-left:auto"><small>템렙</small>489</span>
+            <span class="parse">88.4</span>
+          </div>
+          <div class="member">
+            <span class="avatar" style="background:#3FC7EB">얼</span>
+            <span class="name" style="color:#3FC7EB">얼음별</span>
+            <span class="ilvl" style="margin-left:auto"><small>템렙</small>488</span>
+            <span class="parse top">96.2</span>
+          </div>
+          <div class="member">
+            <span class="avatar" style="background:#FFFFFF">새</span>
+            <span class="name" style="color:#FFFFFF">새벽기도</span>
+            <span class="ilvl" style="margin-left:auto"><small>템렙</small>487</span>
+            <span class="parse">91.3</span>
+          </div>
+          <div class="member">
+            <span class="avatar" style="background:#AAD372">화</span>
+            <span class="name" style="color:#AAD372">화살비</span>
+            <span class="ilvl" style="margin-left:auto"><small>템렙</small>486</span>
+            <span class="parse">93.5</span>
+          </div>
+        </div>
+        <a class="m-more-link" href="#">전체 로스터 18명 보기</a>
+      </section>
+
+      <!-- APPLY -->
+      <section class="m-sec">
+        <div class="card m-aside-card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:4px">지원 안내</h3>
+          <span class="mono" style="color:#5A5A6B">Apply</span>
+          <div class="apply-list">
+            <div class="apply-item">
+              <span class="k">모집</span>
+              <span class="v"><span class="dps-dot"></span><b>딜러 2</b> · 원딜 우대</span>
+            </div>
+            <div class="apply-item">
+              <span class="k">요구</span>
+              <span class="v tnum">템렙 285+ · 목소리 소통 가능</span>
+            </div>
+          </div>
+          <div class="kv-list" style="margin-top:0;border-top:1px solid #16161F">
+            <div class="kv"><span class="k">진행</span><span class="v">5 / 8</span></div>
+            <div class="kv"><span class="k">시도</span><span class="v">187회</span></div>
+            <div class="kv"><span class="k">출석률</span><span class="v">94%</span></div>
+            <div class="kv"><span class="k">평균 파스</span><span class="v">89.1</span></div>
+          </div>
+        </div>
+        <div class="card m-aside-card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:4px">소속</h3>
+          <span class="mono" style="color:#5A5A6B">Affiliation</span>
+          <div class="org-body"><b>두부킴의유기견들</b> 길드 기반 <span class="sub">· 무길드 멤버 4명</span></div>
+          <div class="org-note">공대는 길드와 독립적으로 운영됩니다.</div>
+        </div>
+      </section>
+
+      <footer class="m-footer">
+        <span class="brand">REKO</span>
+        <span class="made">Made by 후제공방</span>
+      </footer>
+    </div>
+
+    <!-- Sticky CTA -->
+    <div class="m-sticky">
+      <button class="btn btn-primary">공대 지원하기</button>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+
+</div>
+</body>
+</html>

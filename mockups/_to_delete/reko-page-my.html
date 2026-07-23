@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REKO — 마이페이지 · B/C 디자인 언어 검증</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{
+    --bg:#09090D;
+    --surface:#101018;
+    --surface2:#14141F;
+    --border:#1E1E2E;
+    --accent:#8A70FF;
+    --hl:#B9A8FF;
+    --deep:#5B45E0;
+    --t1:#EDEDF2;
+    --t2:#8B8B9E;
+    --tank:#60A5FA;
+    --heal:#4ADE80;
+    --dps:#F87171;
+    --warlock:#8788EE;
+    --hunter:#AAD372;
+    --warrior:#C69B6D;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Roboto Mono",Menlo,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:#050507;color:var(--t1);}
+  body{
+    font-family:"Pretendard Variable",Pretendard,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:13px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    padding:40px 32px 96px;
+  }
+  .mono{font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;}
+  .num{font-variant-numeric:tabular-nums;}
+  a{color:inherit;text-decoration:none;}
+
+  /* ============ file top strip ============ */
+  .filestrip{
+    max-width:1280px;margin:0 auto 32px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .filestrip .fs-label{font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;font-size:11px;color:var(--t2);}
+  .filestrip .fs-label strong{color:var(--t1);font-weight:600;}
+  .tokens{display:flex;align-items:center;gap:8px;}
+  .tokens span{width:12px;height:12px;border-radius:3px;border:1px solid var(--border);display:block;}
+  .frame-label{
+    max-width:1280px;margin:0 auto 12px;
+    font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;
+    font-size:11px;color:var(--t2);
+  }
+
+  /* ============ browser chrome ============ */
+  .browser{
+    max-width:1280px;margin:0 auto 64px;
+    background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  }
+  .browser-bar{
+    height:44px;display:flex;align-items:center;gap:16px;padding:0 16px;
+    background:var(--surface);border-bottom:1px solid var(--border);
+  }
+  .traffic{display:flex;gap:8px;}
+  .traffic span{width:10px;height:10px;border-radius:50%;background:#232334;display:block;}
+  .urlbar{
+    flex:0 1 400px;margin:0 auto;height:26px;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--bg);border:1px solid var(--border);border-radius:6px;
+    font-family:var(--mono);font-size:11px;letter-spacing:0.08em;color:var(--t2);
+  }
+  .urlbar .lock{width:8px;height:8px;border-radius:2px;background:#2E2E42;display:inline-block;}
+  .urlbar em{font-style:normal;color:var(--t1);}
+  .browser-spacer{width:52px;}
+
+  /* ============ app nav ============ */
+  .nav{
+    height:56px;display:flex;align-items:center;gap:32px;padding:0 32px;
+    border-bottom:1px solid var(--border);background:var(--bg);
+  }
+  .logo{display:flex;align-items:baseline;gap:8px;white-space:nowrap;}
+  .logo .en{font-weight:800;font-size:15px;letter-spacing:0.04em;}
+  .logo .ko{font-size:12px;color:var(--t2);}
+  .nav-menu{display:flex;align-items:center;gap:4px;flex:1;min-width:0;}
+  .nav-menu a{
+    padding:6px 12px;border-radius:8px;font-size:13px;color:var(--t2);font-weight:500;white-space:nowrap;
+  }
+  .nav-menu a:hover{color:var(--t1);}
+  .nav-menu a.on{color:var(--t1);background:var(--surface2);font-weight:600;}
+  .userchip{
+    display:flex;align-items:center;gap:8px;padding:5px 12px 5px 6px;
+    border:1px solid var(--deep);border-radius:8px;background:rgba(138,112,255,0.08);
+    font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;
+  }
+  .userchip .uc-avatar{
+    width:22px;height:22px;border-radius:6px;background:var(--deep);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;color:#fff;
+  }
+  .userchip .uc-caret{color:var(--hl);font-size:11px;font-family:var(--mono);}
+
+  /* ============ page body ============ */
+  .page{padding:32px 32px 0;max-width:1216px;margin:0 auto;}
+
+  /* --- profile header --- */
+  .profile{display:flex;align-items:flex-start;gap:24px;padding-bottom:32px;}
+  .avatar-slot{
+    width:72px;height:72px;flex:none;border-radius:8px;
+    border:1px dashed #3A3A54;background:var(--surface);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;
+    font-size:9px;color:var(--t2);text-align:center;line-height:1.4;
+  }
+  .avatar-slot b{font-weight:600;color:var(--hl);font-size:9px;}
+  .profile-main{flex:1;min-width:0;}
+  .profile-main h1{font-size:24px;font-weight:700;line-height:1.2;letter-spacing:-0.01em;}
+  .profile-sub{
+    margin-top:4px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;
+    font-size:11px;color:var(--t2);
+  }
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;
+    border:1px solid var(--border);border-radius:8px;background:var(--surface);
+    font-size:12px;font-weight:500;color:var(--t2);white-space:nowrap;
+  }
+  .badge .bcheck{color:var(--heal);font-size:11px;font-weight:700;}
+  .badge.violet{border-color:var(--deep);color:var(--hl);background:rgba(138,112,255,0.08);}
+  .btn-ghost{
+    display:inline-flex;align-items:center;height:32px;padding:0 16px;
+    border:1px solid var(--border);border-radius:8px;background:transparent;
+    font-size:13px;font-weight:500;color:var(--t1);white-space:nowrap;cursor:pointer;
+    font-family:inherit;
+  }
+  .btn-ghost:hover{background:var(--surface2);}
+
+  /* --- section labels --- */
+  .sec-label{
+    display:flex;align-items:baseline;gap:8px;margin-bottom:12px;
+    font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;font-size:11px;
+  }
+  .sec-label .ko{color:var(--t1);font-weight:600;}
+  .sec-label .en{color:var(--t2);}
+
+  /* --- connections --- */
+  .connections{padding-bottom:32px;}
+  .conn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .conn-card{
+    border:1px solid var(--border);border-radius:8px;background:var(--surface);
+    padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;
+  }
+  .conn-top{display:flex;align-items:center;gap:8px;min-width:0;}
+  .conn-mark{
+    width:24px;height:24px;flex:none;border-radius:6px;background:var(--surface2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:9px;letter-spacing:0.05em;font-weight:600;color:var(--t1);
+  }
+  .conn-name{
+    font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;
+    font-size:11px;color:var(--t1);font-weight:600;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;
+  }
+  .conn-req{
+    font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--hl);
+    border:1px solid var(--deep);border-radius:4px;padding:1px 5px;flex:none;
+  }
+  .conn-status{display:flex;align-items:center;gap:6px;min-width:0;font-size:12px;}
+  .dot{width:6px;height:6px;border-radius:50%;flex:none;}
+  .dot.ok{background:var(--heal);}
+  .dot.off{background:#3A3A54;}
+  .conn-status .st{color:var(--t1);font-weight:500;white-space:nowrap;}
+  .conn-status .st.off{color:var(--t2);}
+  .conn-detail{
+    font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .conn-detail .num{color:var(--t2);}
+  .btn-xs{
+    display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 12px;
+    border-radius:8px;border:1px solid transparent;background:var(--accent);
+    font-size:12px;font-weight:600;color:#fff;cursor:pointer;white-space:nowrap;
+    font-family:inherit;align-self:flex-start;
+    box-shadow:0 1px 8px rgba(138,112,255,0.25);
+  }
+  .btn-xs:hover{background:var(--deep);}
+
+  /* --- two column --- */
+  .cols{display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start;padding-bottom:40px;}
+  .card{border:1px solid var(--border);border-radius:8px;background:var(--surface);overflow:hidden;}
+  .card-head{
+    display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    padding:16px 20px;border-bottom:1px solid var(--border);
+  }
+  .card-head .sec-label{margin-bottom:0;}
+
+  /* characters */
+  .char-row{
+    display:flex;align-items:center;gap:16px;padding:16px 20px;min-width:0;
+  }
+  .char-row + .char-row{border-top:1px solid var(--border);}
+  .char-avatar{
+    width:40px;height:40px;flex:none;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:700;
+    background:var(--surface2);border:1px solid var(--border);
+  }
+  .char-avatar.wl{color:var(--warlock);background:rgba(135,136,238,0.10);border-color:rgba(135,136,238,0.28);}
+  .char-avatar.hu{color:var(--hunter);background:rgba(170,211,114,0.08);border-color:rgba(170,211,114,0.24);}
+  .char-avatar.wa{color:var(--warrior);background:rgba(198,155,109,0.08);border-color:rgba(198,155,109,0.24);}
+  .char-id{flex:1;min-width:0;}
+  .char-name-line{display:flex;align-items:baseline;gap:8px;min-width:0;}
+  .char-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .char-name.wl{color:var(--warlock);}
+  .char-name.hu{color:var(--hunter);}
+  .char-name.wa{color:var(--warrior);}
+  .char-spec{font-size:12px;color:var(--t2);white-space:nowrap;}
+  .char-realm{
+    margin-top:2px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;
+    font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .char-ilvl{flex:none;text-align:right;width:64px;}
+  .char-ilvl .v{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .char-ilvl .k{font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;font-size:9px;color:var(--t2);display:block;margin-top:1px;}
+  .guild-chip{
+    flex:none;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;
+    border:1px solid var(--border);border-radius:8px;background:var(--surface2);
+    font-size:12px;color:var(--t2);white-space:nowrap;max-width:180px;
+  }
+  .guild-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .guild-chip .gc-check{color:var(--heal);font-size:11px;font-weight:700;flex:none;}
+  .guild-chip.none{color:#6B6B80;border-style:solid;}
+  .main-toggle{
+    flex:none;display:inline-flex;align-items:center;height:24px;padding:0 10px;
+    border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;
+    border:1px solid var(--deep);background:rgba(138,112,255,0.10);color:var(--hl);
+    font-family:inherit;
+  }
+  .main-toggle.off{border-color:var(--border);background:transparent;color:#6B6B80;font-weight:500;}
+  .main-toggle.off:hover{color:var(--t2);}
+
+  /* memberships */
+  .memberships{margin-top:24px;}
+  .mem-row{display:flex;align-items:center;gap:16px;padding:14px 20px;min-width:0;}
+  .mem-row + .mem-row{border-top:1px solid var(--border);}
+  .mem-scope{
+    flex:none;width:72px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;
+    font-size:10px;color:var(--t2);
+  }
+  .mem-name{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .role-chip{
+    flex:none;display:inline-flex;align-items:center;height:22px;padding:0 8px;
+    border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap;
+    border:1px solid var(--border);background:var(--surface2);color:var(--t2);
+  }
+  .role-chip.lead{border-color:var(--deep);background:rgba(138,112,255,0.10);color:var(--hl);}
+
+  /* --- wallet --- */
+  .wallet-body{padding:20px;}
+  .balance{display:flex;align-items:baseline;gap:6px;}
+  .balance .amt{font-size:32px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.1;}
+  .balance .unit{font-size:18px;font-weight:700;color:var(--accent);}
+  .attend{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .attend .a-label{font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .attend .a-label .num{color:var(--t1);font-weight:600;}
+  .ticks{display:flex;gap:4px;flex:none;}
+  .ticks span{width:20px;height:4px;border-radius:2px;background:#26263A;display:block;}
+  .ticks span.on{background:var(--accent);}
+  .wallet-div{height:1px;background:var(--border);margin:20px -20px;}
+  .ledger-row{display:flex;align-items:baseline;gap:10px;min-width:0;}
+  .ledger-row + .ledger-row{margin-top:12px;}
+  .ledger-date{
+    flex:none;width:36px;font-family:var(--mono);font-size:11px;letter-spacing:0.08em;
+    color:var(--t2);font-variant-numeric:tabular-nums;
+  }
+  .ledger-desc{flex:1;min-width:0;font-size:12px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ledger-desc .sub{color:var(--t2);}
+  .ledger-amt{
+    flex:none;font-family:var(--mono);font-size:12px;letter-spacing:0.02em;
+    font-variant-numeric:tabular-nums;font-weight:600;text-align:right;
+  }
+  .ledger-amt.plus{color:var(--hl);}
+  .ledger-amt.minus{color:var(--t2);}
+  .ledger-amt.penalty{color:var(--dps);}
+  .wallet-foot{
+    border-top:1px solid var(--border);padding:12px 20px;
+    display:flex;justify-content:flex-end;
+  }
+  .wallet-foot a{
+    font-size:12px;font-weight:600;color:var(--hl);white-space:nowrap;
+  }
+  .wallet-foot a:hover{color:var(--accent);}
+
+  /* --- shop --- */
+  .shop-card{margin-top:24px;}
+  .shop-row{display:flex;align-items:center;gap:12px;padding:14px 20px;min-width:0;}
+  .shop-row + .shop-row{border-top:1px solid var(--border);}
+  .shop-name{flex:1;min-width:0;font-size:12px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .shop-name .sub{display:block;font-size:11px;color:var(--t2);font-weight:400;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .shop-price{
+    flex:none;font-family:var(--mono);font-size:11px;letter-spacing:0.05em;
+    color:var(--t2);font-variant-numeric:tabular-nums;font-weight:600;
+  }
+  .btn-buy{
+    flex:none;display:inline-flex;align-items:center;height:24px;padding:0 10px;
+    border-radius:6px;border:1px solid var(--deep);background:rgba(138,112,255,0.10);
+    font-size:11px;font-weight:600;color:var(--hl);cursor:pointer;white-space:nowrap;
+    font-family:inherit;
+  }
+  .btn-buy:hover{background:rgba(138,112,255,0.18);}
+  .owned{
+    flex:none;font-size:11px;color:#6B6B80;font-weight:500;white-space:nowrap;
+  }
+  .shop-note{
+    padding:12px 20px;border-top:1px solid var(--border);
+    font-size:11px;color:var(--t2);line-height:1.5;
+  }
+
+  /* --- app footer --- */
+  .app-foot{
+    margin-top:8px;border-top:1px solid var(--border);
+    padding:20px 32px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .app-foot .f-logo{font-weight:700;font-size:12px;letter-spacing:0.04em;color:var(--t2);}
+  .app-foot .f-made{font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;font-size:10px;color:#55556A;}
+
+  /* ============ MOBILE frame ============ */
+  .phone{
+    width:390px;margin:0 auto;background:var(--bg);
+    border:1px solid var(--border);border-radius:32px;overflow:hidden;position:relative;
+  }
+  .notch{
+    position:absolute;top:10px;left:50%;transform:translateX(-50%);
+    width:110px;height:24px;border-radius:12px;background:#050507;z-index:5;
+  }
+  .statusbar{
+    height:48px;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 24px 4px;font-family:var(--mono);font-size:11px;letter-spacing:0.05em;color:var(--t2);
+    font-variant-numeric:tabular-nums;
+  }
+  .mb .nav{height:52px;padding:0 16px;gap:12px;}
+  .mb .nav-menu{display:none;}
+  .mb .nav-spacer{flex:1;}
+  .mb .page{padding:24px 16px 0;}
+  .mb .profile{flex-direction:row;flex-wrap:wrap;gap:16px;padding-bottom:24px;}
+  .mb .profile .btn-ghost{width:100%;justify-content:center;order:9;}
+  .mb .conn-grid{grid-template-columns:1fr 1fr;gap:12px;}
+  .mb .connections{padding-bottom:24px;}
+  .mb .cols{display:block;padding-bottom:32px;}
+  .mb .cols > * + *{margin-top:24px;}
+  .mb .memberships{margin-top:24px;}
+  .mb .char-row{padding:14px 16px;gap:12px;}
+  .mb .guild-chip{display:none;}
+  .mb .card-head{padding:14px 16px;}
+  .mb .mem-row{padding:12px 16px;gap:12px;}
+  .mb .mem-scope{width:64px;}
+  .mb .wallet-body{padding:16px;}
+  .mb .wallet-div{margin:16px -16px;}
+  .mb .wallet-foot{padding:12px 16px;}
+  .mb .shop-row{padding:12px 16px;}
+  .mb .shop-note{padding:12px 16px;}
+  .mb .app-foot{padding:16px;}
+  .mb .char-realm{max-width:170px;}
+</style>
+</head>
+<body>
+
+<!-- ================= file top strip ================= -->
+<div class="filestrip">
+  <div class="fs-label"><strong>REKO</strong> — 마이페이지 · B/C 디자인 언어 검증</div>
+  <div class="tokens">
+    <span style="background:#09090D;"></span>
+    <span style="background:#101018;"></span>
+    <span style="background:#14141F;"></span>
+    <span style="background:#8A70FF;border-color:#8A70FF;"></span>
+    <span style="background:#B9A8FF;border-color:#B9A8FF;"></span>
+    <span style="background:#5B45E0;border-color:#5B45E0;"></span>
+    <span style="background:#60A5FA;border-color:#60A5FA;"></span>
+    <span style="background:#4ADE80;border-color:#4ADE80;"></span>
+    <span style="background:#F87171;border-color:#F87171;"></span>
+  </div>
+</div>
+
+<!-- ================= DESKTOP 1280 ================= -->
+<div class="frame-label">Desktop · 1280</div>
+<div class="browser">
+  <div class="browser-bar">
+    <div class="traffic"><span></span><span></span><span></span></div>
+    <div class="urlbar"><span class="lock"></span>raidkorea.site<em>/me</em></div>
+    <div class="browser-spacer"></div>
+  </div>
+
+  <nav class="nav">
+    <div class="logo"><span class="en">REKO</span><span class="ko">레코</span></div>
+    <div class="nav-menu">
+      <a href="#">대시보드</a>
+      <a href="#">레이드 일정</a>
+      <a href="#">공대 관리</a>
+      <a href="#">기록실</a>
+      <a href="#" class="on">마이페이지</a>
+    </div>
+    <div class="userchip"><span class="uc-avatar">후</span>후제<span class="uc-caret">▾</span></div>
+  </nav>
+
+  <div class="page">
+
+    <!-- profile header -->
+    <header class="profile">
+      <div class="avatar-slot"><b>AI ART</b><span>아바타 1:1</span></div>
+      <div class="profile-main">
+        <h1>후제</h1>
+        <div class="profile-sub">HOOJE · JOINED 2026.07</div>
+        <div class="badges">
+          <span class="badge"><span class="bcheck">✓</span>BNet 인증</span>
+          <span class="badge">무소속 공대장</span>
+          <span class="badge violet">플랫폼 운영자</span>
+        </div>
+      </div>
+      <button class="btn-ghost">프로필 편집</button>
+    </header>
+
+    <!-- connections -->
+    <section class="connections">
+      <div class="sec-label"><span class="ko">계정 연동</span><span class="en">/ Connected Accounts</span></div>
+      <div class="conn-grid">
+        <div class="conn-card">
+          <div class="conn-top"><span class="conn-mark">GO</span><span class="conn-name">Google</span></div>
+          <div class="conn-status"><span class="dot ok"></span><span class="st">연동됨 ✓</span></div>
+          <div class="conn-detail">hooje@gmail.com</div>
+        </div>
+        <div class="conn-card">
+          <div class="conn-top"><span class="conn-mark">DC</span><span class="conn-name">Discord</span><span class="conn-req">필수</span></div>
+          <div class="conn-status"><span class="dot ok"></span><span class="st">연동됨 ✓</span></div>
+          <div class="conn-detail">후제<span class="num">#0722</span></div>
+        </div>
+        <div class="conn-card">
+          <div class="conn-top"><span class="conn-mark">BN</span><span class="conn-name">Battle.net</span></div>
+          <div class="conn-status"><span class="dot ok"></span><span class="st">연동됨 ✓</span></div>
+          <div class="conn-detail">캐릭터 <span class="num">3</span>개 동기화 · <span class="num">09:12</span></div>
+        </div>
+        <div class="conn-card">
+          <div class="conn-top"><span class="conn-mark">WL</span><span class="conn-name">Warcraft Logs</span></div>
+          <div class="conn-status"><span class="dot off"></span><span class="st off">미연동</span></div>
+          <button class="btn-xs">연동하기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- two-column -->
+    <div class="cols">
+
+      <!-- MAIN -->
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <div class="sec-label"><span class="ko">내 캐릭터</span><span class="en">/ Characters · BNet Synced</span></div>
+          </div>
+          <div class="char-row">
+            <div class="char-avatar wl">후</div>
+            <div class="char-id">
+              <div class="char-name-line">
+                <span class="char-name wl">후제킴</span>
+                <span class="char-spec">흑마법사 · 고통</span>
+              </div>
+              <div class="char-realm">Azshara · 아즈샤라</div>
+            </div>
+            <div class="char-ilvl"><span class="v">285</span><span class="k">템렙</span></div>
+            <span class="guild-chip"><span class="gc-check">✓</span><span>인증 · 두부킴의유기견들</span></span>
+            <button class="main-toggle">대표</button>
+          </div>
+          <div class="char-row">
+            <div class="char-avatar hu">딜</div>
+            <div class="char-id">
+              <div class="char-name-line">
+                <span class="char-name hu">후제딜</span>
+                <span class="char-spec">사냥꾼 · 야수</span>
+              </div>
+              <div class="char-realm">Starfall · 스타폴</div>
+            </div>
+            <div class="char-ilvl"><span class="v">281</span><span class="k">템렙</span></div>
+            <span class="guild-chip"><span>스타폴</span></span>
+            <button class="main-toggle off">대표 설정</button>
+          </div>
+          <div class="char-row">
+            <div class="char-avatar wa">탱</div>
+            <div class="char-id">
+              <div class="char-name-line">
+                <span class="char-name wa">후제탱</span>
+                <span class="char-spec">전사 · 방어</span>
+              </div>
+              <div class="char-realm">Azshara · 아즈샤라</div>
+            </div>
+            <div class="char-ilvl"><span class="v">278</span><span class="k">템렙</span></div>
+            <span class="guild-chip none"><span>무소속 · 미등록 길드</span></span>
+            <button class="main-toggle off">대표 설정</button>
+          </div>
+        </div>
+
+        <div class="card memberships">
+          <div class="card-head">
+            <div class="sec-label"><span class="ko">내 소속</span><span class="en">/ Memberships</span></div>
+          </div>
+          <div class="mem-row">
+            <span class="mem-scope">Guild</span>
+            <span class="mem-name">두부킴의유기견들</span>
+            <span class="role-chip lead">길드 마스터</span>
+          </div>
+          <div class="mem-row">
+            <span class="mem-scope">Alliance</span>
+            <span class="mem-name">한길련</span>
+            <span class="role-chip">연합 운영진</span>
+          </div>
+          <div class="mem-row">
+            <span class="mem-scope">Team</span>
+            <span class="mem-name">TeamSAD</span>
+            <span class="role-chip lead">공대장</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASIDE -->
+      <aside>
+        <div class="card">
+          <div class="card-head">
+            <div class="sec-label"><span class="ko">포인트</span><span class="en">/ Points</span></div>
+          </div>
+          <div class="wallet-body">
+            <div class="balance"><span class="amt">1,250</span><span class="unit">P</span></div>
+            <div class="attend">
+              <span class="a-label">이번 주 출석 적립 <span class="num">2 / 3</span>회</span>
+              <span class="ticks"><span class="on"></span><span class="on"></span><span></span></span>
+            </div>
+            <div class="wallet-div"></div>
+            <div class="ledger-row">
+              <span class="ledger-date">7/20</span>
+              <span class="ledger-desc">공허첨탑 신화 출석</span>
+              <span class="ledger-amt plus">+100</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-date">7/18</span>
+              <span class="ledger-desc"><span class="sub">상점 · </span>칭호 「공허를 걷는 자」</span>
+              <span class="ledger-amt minus">−400</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-date">7/16</span>
+              <span class="ledger-desc">공허첨탑 영웅 출석</span>
+              <span class="ledger-amt plus">+100</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-date">7/9</span>
+              <span class="ledger-desc">노쇼 벌점 <span class="sub">(관리자 확정)</span></span>
+              <span class="ledger-amt penalty">−300</span>
+            </div>
+          </div>
+          <div class="wallet-foot"><a href="#">전체 내역 →</a></div>
+        </div>
+
+        <div class="card shop-card">
+          <div class="card-head">
+            <div class="sec-label"><span class="ko">상점 미리보기</span><span class="en">/ Shop</span></div>
+          </div>
+          <div class="shop-row">
+            <span class="shop-name">프로필 테두리<span class="sub">바이올렛 오라</span></span>
+            <span class="shop-price num">600P</span>
+            <button class="btn-buy">구매</button>
+          </div>
+          <div class="shop-row">
+            <span class="shop-name">칭호 「첫 출정」</span>
+            <span class="shop-price num">200P</span>
+            <span class="owned">보유중</span>
+          </div>
+          <div class="shop-row">
+            <span class="shop-name">프로필 배너 슬롯 확장</span>
+            <span class="shop-price num">800P</span>
+            <button class="btn-buy">구매</button>
+          </div>
+          <div class="shop-note">포인트는 출석으로만 적립됩니다 — 구매 불가</div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <footer class="app-foot">
+    <span class="f-logo">REKO</span>
+    <span class="f-made">Made by 후제공방</span>
+  </footer>
+</div>
+
+<!-- ================= MOBILE 390 ================= -->
+<div class="frame-label" style="max-width:390px;">Mobile · 390</div>
+<div class="phone mb">
+  <div class="notch"></div>
+  <div class="statusbar"><span>09:41</span><span>LTE · 100%</span></div>
+
+  <nav class="nav">
+    <div class="logo"><span class="en">REKO</span><span class="ko">레코</span></div>
+    <div class="nav-spacer"></div>
+    <div class="userchip"><span class="uc-avatar">후</span>후제<span class="uc-caret">▾</span></div>
+  </nav>
+
+  <div class="page">
+
+    <header class="profile">
+      <div class="avatar-slot"><b>AI ART</b><span>아바타 1:1</span></div>
+      <div class="profile-main">
+        <h1>후제</h1>
+        <div class="profile-sub">HOOJE · JOINED 2026.07</div>
+        <div class="badges">
+          <span class="badge"><span class="bcheck">✓</span>BNet 인증</span>
+          <span class="badge">무소속 공대장</span>
+          <span class="badge violet">플랫폼 운영자</span>
+        </div>
+      </div>
+      <button class="btn-ghost">프로필 편집</button>
+    </header>
+
+    <section class="connections">
+      <div class="sec-label"><span class="ko">계정 연동</span><span class="en">/ Connected</span></div>
+      <div class="conn-grid">
+        <div class="conn-card">
+          <div class="conn-top"><span class="conn-mark">GO</span><span class="conn-name">Google</span></div>
+          <div class="conn-status"><span class="dot ok"></span><span class="st">연동됨 ✓</span></div>
+          <div class="conn-detail">hooje@gmail.com</div>
+        </div>
+        <div class="conn-card">
+          <div class="conn-top"><span class="conn-mark">DC</span><span class="conn-name">Discord</span><span class="conn-req">필수</span></div>
+          <div class="conn-status"><span class="dot ok"></span><span class="st">연동됨 ✓</span></div>
+          <div class="conn-detail">후제<span class="num">#0722</span></div>
+        </div>
+        <div class="conn-card">
+          <div class="conn-top"><span class="conn-mark">BN</span><span class="conn-name">Battle.net</span></div>
+          <div class="conn-status"><span class="dot ok"></span><span class="st">연동됨 ✓</span></div>
+          <div class="conn-detail">캐릭터 <span class="num">3</span>개 · <span class="num">09:12</span></div>
+        </div>
+        <div class="conn-card">
+          <div class="conn-top"><span class="conn-mark">WL</span><span class="conn-name">WCL</span></div>
+          <div class="conn-status"><span class="dot off"></span><span class="st off">미연동</span></div>
+          <button class="btn-xs">연동하기</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="cols">
+
+      <div class="card">
+        <div class="card-head">
+          <div class="sec-label"><span class="ko">내 캐릭터</span><span class="en">/ BNet Synced</span></div>
+        </div>
+        <div class="char-row">
+          <div class="char-avatar wl">후</div>
+          <div class="char-id">
+            <div class="char-name-line">
+              <span class="char-name wl">후제킴</span>
+              <span class="char-spec">흑마 · 고통</span>
+            </div>
+            <div class="char-realm">아즈샤라 · ✓ 두부킴의유기견들</div>
+          </div>
+          <div class="char-ilvl"><span class="v">285</span><span class="k">템렙</span></div>
+          <button class="main-toggle">대표</button>
+        </div>
+        <div class="char-row">
+          <div class="char-avatar hu">딜</div>
+          <div class="char-id">
+            <div class="char-name-line">
+              <span class="char-name hu">후제딜</span>
+              <span class="char-spec">사냥꾼 · 야수</span>
+            </div>
+            <div class="char-realm">스타폴</div>
+          </div>
+          <div class="char-ilvl"><span class="v">281</span><span class="k">템렙</span></div>
+          <button class="main-toggle off">대표</button>
+        </div>
+        <div class="char-row">
+          <div class="char-avatar wa">탱</div>
+          <div class="char-id">
+            <div class="char-name-line">
+              <span class="char-name wa">후제탱</span>
+              <span class="char-spec">전사 · 방어</span>
+            </div>
+            <div class="char-realm">아즈샤라 · 무소속</div>
+          </div>
+          <div class="char-ilvl"><span class="v">278</span><span class="k">템렙</span></div>
+          <button class="main-toggle off">대표</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="sec-label"><span class="ko">포인트</span><span class="en">/ Points</span></div>
+        </div>
+        <div class="wallet-body">
+          <div class="balance"><span class="amt">1,250</span><span class="unit">P</span></div>
+          <div class="attend">
+            <span class="a-label">이번 주 출석 적립 <span class="num">2 / 3</span>회</span>
+            <span class="ticks"><span class="on"></span><span class="on"></span><span></span></span>
+          </div>
+          <div class="wallet-div"></div>
+          <div class="ledger-row">
+            <span class="ledger-date">7/20</span>
+            <span class="ledger-desc">공허첨탑 신화 출석</span>
+            <span class="ledger-amt plus">+100</span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-date">7/18</span>
+            <span class="ledger-desc"><span class="sub">상점 · </span>칭호 「공허를 걷는 자」</span>
+            <span class="ledger-amt minus">−400</span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-date">7/16</span>
+            <span class="ledger-desc">공허첨탑 영웅 출석</span>
+            <span class="ledger-amt plus">+100</span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-date">7/9</span>
+            <span class="ledger-desc">노쇼 벌점 <span class="sub">(관리자 확정)</span></span>
+            <span class="ledger-amt penalty">−300</span>
+          </div>
+        </div>
+        <div class="wallet-foot"><a href="#">전체 내역 →</a></div>
+      </div>
+
+      <div class="card shop-card">
+        <div class="card-head">
+          <div class="sec-label"><span class="ko">상점 미리보기</span><span class="en">/ Shop</span></div>
+        </div>
+        <div class="shop-row">
+          <span class="shop-name">프로필 테두리<span class="sub">바이올렛 오라</span></span>
+          <span class="shop-price num">600P</span>
+          <button class="btn-buy">구매</button>
+        </div>
+        <div class="shop-row">
+          <span class="shop-name">칭호 「첫 출정」</span>
+          <span class="shop-price num">200P</span>
+          <span class="owned">보유중</span>
+        </div>
+        <div class="shop-row">
+          <span class="shop-name">프로필 배너 슬롯 확장</span>
+          <span class="shop-price num">800P</span>
+          <button class="btn-buy">구매</button>
+        </div>
+        <div class="shop-note">포인트는 출석으로만 적립됩니다 — 구매 불가</div>
+      </div>
+
+      <div class="card memberships">
+        <div class="card-head">
+          <div class="sec-label"><span class="ko">내 소속</span><span class="en">/ Memberships</span></div>
+        </div>
+        <div class="mem-row">
+          <span class="mem-scope">Guild</span>
+          <span class="mem-name">두부킴의유기견들</span>
+          <span class="role-chip lead">길드 마스터</span>
+        </div>
+        <div class="mem-row">
+          <span class="mem-scope">Alliance</span>
+          <span class="mem-name">한길련</span>
+          <span class="role-chip">연합 운영진</span>
+        </div>
+        <div class="mem-row">
+          <span class="mem-scope">Team</span>
+          <span class="mem-name">TeamSAD</span>
+          <span class="role-chip lead">공대장</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="app-foot">
+    <span class="f-logo">REKO</span>
+    <span class="f-made">Made by 후제공방</span>
+  </footer>
+</div>
+
+</body>
+</html>

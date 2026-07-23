@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// REKO — 초기 잠금 규칙 (P1에서 memberships 기반 정식 규칙으로 교체 예정)
+// 현재는 어떤 클라이언트도 읽기/쓰기 불가. Functions(Admin SDK)만 접근 가능.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

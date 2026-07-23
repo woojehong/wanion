@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WANION 시안 B — Global Board · 구인구직 보드형</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{
+    --bg:#09090D;
+    --surface:#101018;
+    --surface2:#14141F;
+    --border:#1E1E2E;
+    --violet:#8A70FF;
+    --violet-hi:#B9A8FF;
+    --violet-deep:#5B45E0;
+    --text:#EDEDF2;
+    --muted:#8B8B9E;
+    --tank:#60A5FA;
+    --heal:#4ADE80;
+    --dps:#F87171;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:#050507;color:var(--text);
+    font-family:"Pretendard Variable",Pretendard,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  .mono{font-family:"SF Mono","Roboto Mono",ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase;letter-spacing:.14em;}
+  .ellip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* ================= presentation shell ================= */
+  .shell{max-width:1420px;margin:0 auto;padding:48px 40px 96px;}
+  .spec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+    border-bottom:1px solid #17171f;padding-bottom:24px;margin-bottom:40px;flex-wrap:wrap;}
+  .spec-head h1{font-size:20px;font-weight:700;letter-spacing:-.01em;}
+  .spec-head h1 em{font-style:normal;color:var(--violet-hi);}
+  .spec-head .concept{margin-top:8px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .tokens{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .token{display:flex;align-items:center;gap:6px;border:1px solid #1c1c28;border-radius:8px;
+    padding:5px 9px;font-size:10px;color:var(--muted);background:#0b0b11;}
+  .token i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+  .frame-label{font-size:11px;color:var(--muted);margin:0 0 12px 2px;display:flex;align-items:center;gap:8px;}
+  .frame-label b{color:#c8c8d4;font-weight:600;letter-spacing:.14em;}
+  .frame-label span{color:#55556a;}
+
+  /* ================= browser chrome ================= */
+  .browser{width:1280px;margin:0 auto 72px;border:1px solid #1c1c28;border-radius:12px;
+    background:var(--bg);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55);}
+  .chrome{display:flex;align-items:center;gap:14px;background:#0c0c13;border-bottom:1px solid #17171f;
+    padding:10px 16px;}
+  .dots{display:flex;gap:6px;}
+  .dots i{width:10px;height:10px;border-radius:50%;background:#23232f;display:block;}
+  .urlbar{flex:1;max-width:420px;margin:0 auto;background:#101018;border:1px solid #1c1c28;border-radius:7px;
+    padding:5px 12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px;}
+  .urlbar .lock{width:8px;height:8px;border:1px solid #3a3a4c;border-radius:2px;border-top:none;position:relative;flex:none;}
+  .urlbar .lock:before{content:"";position:absolute;top:-4px;left:1px;width:4px;height:4px;
+    border:1px solid #3a3a4c;border-bottom:none;border-radius:3px 3px 0 0;}
+  .chrome-right{width:52px;display:flex;justify-content:flex-end;gap:10px;}
+  .chrome-right i{width:12px;height:2px;background:#2a2a38;display:block;border-radius:2px;margin-top:5px;}
+
+  /* ================= top nav ================= */
+  .nav{display:flex;align-items:center;gap:28px;height:56px;padding:0 28px;
+    border-bottom:1px solid var(--border);background:var(--bg);}
+  .wordmark{display:flex;align-items:baseline;gap:8px;flex:none;}
+  .wordmark .en{font-size:17px;font-weight:800;letter-spacing:.22em;color:var(--text);}
+  .wordmark .en b{color:var(--violet);}
+  .wordmark .ko{font-size:11px;color:var(--muted);letter-spacing:.06em;}
+  .nav-menu{display:flex;gap:2px;align-items:center;height:100%;}
+  .nav-menu a{font-size:13px;color:var(--muted);text-decoration:none;padding:0 13px;height:100%;
+    display:flex;align-items:center;position:relative;white-space:nowrap;}
+  .nav-menu a.on{color:var(--text);font-weight:600;}
+  .nav-menu a.on:after{content:"";position:absolute;left:13px;right:13px;bottom:-1px;height:2px;background:var(--violet);}
+  .nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+  .user-chip{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface);
+    border-radius:8px;padding:6px 12px 6px 7px;font-size:12px;color:var(--text);white-space:nowrap;}
+  .user-chip .avt{width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,#5B45E0,#8A70FF);
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex:none;}
+  .btn-primary{display:inline-flex;align-items:center;gap:7px;background:var(--violet);color:#0B0817;
+    font-size:13px;font-weight:700;border:none;border-radius:8px;padding:9px 16px;cursor:pointer;white-space:nowrap;
+    box-shadow:0 0 18px rgba(138,112,255,.35);}
+  .btn-primary .plus{font-weight:800;}
+
+  /* ================= hero ================= */
+  .hero{display:flex;align-items:center;justify-content:space-between;gap:24px;
+    min-height:130px;padding:24px 32px;background:var(--surface);border-bottom:1px solid var(--border);
+    position:relative;overflow:hidden;}
+  .hero:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--violet);}
+  .hero-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--violet-deep);color:var(--violet-hi);
+    border-radius:6px;padding:4px 10px;font-size:9.5px;background:rgba(138,112,255,.06);}
+  .hero-chip i{width:5px;height:5px;border-radius:50%;background:var(--violet);display:inline-block;
+    box-shadow:0 0 6px rgba(138,112,255,.9);}
+  .hero h2{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:11px 0 7px;}
+  .hero .sub{font-size:13px;color:var(--muted);line-height:1.5;}
+  .hero .sub b{color:#c9bdff;font-weight:600;}
+  .hero-stats{display:flex;gap:10px;flex:none;}
+  .stat-chip{border:1px solid var(--border);background:var(--surface2);border-radius:8px;
+    padding:12px 18px;text-align:center;min-width:104px;}
+  .stat-chip .k{font-size:9px;color:var(--muted);margin-bottom:6px;}
+  .stat-chip .v{font-size:22px;font-weight:800;letter-spacing:-.02em;}
+  .stat-chip .v.violet{color:var(--violet-hi);}
+  .stat-chip .v small{font-size:11px;font-weight:600;color:var(--muted);margin-left:2px;}
+
+  /* ================= toolbar ================= */
+  .toolbar{display:flex;align-items:center;gap:10px;padding:16px 32px;background:var(--bg);
+    border-bottom:1px solid var(--border);}
+  .search{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);
+    border-radius:8px;padding:9px 13px;width:290px;flex:none;}
+  .search svg{flex:none;}
+  .search span{font-size:12.5px;color:#55556a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fchips{display:flex;gap:6px;align-items:center;}
+  .fchip{font-size:12px;color:var(--muted);border:1px solid var(--border);background:var(--surface);
+    border-radius:8px;padding:8px 13px;white-space:nowrap;cursor:pointer;}
+  .fchip.on{color:#0B0817;background:var(--violet);border-color:var(--violet);font-weight:700;}
+  .toolbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+  .sortbox{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface);
+    border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text);white-space:nowrap;}
+  .sortbox .lbl{color:#55556a;font-size:10px;}
+  .sortbox .car{color:var(--muted);font-size:9px;}
+  .viewtoggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface);}
+  .viewtoggle span{padding:8px 11px;display:flex;align-items:center;}
+  .viewtoggle span.on{background:var(--surface2);}
+  .vt-rows i,.vt-grid i{display:block;}
+  .vt-rows i{width:14px;height:2px;background:var(--violet-hi);border-radius:1px;box-shadow:0 5px 0 var(--violet-hi),0 10px 0 var(--violet-hi);margin-bottom:10px;}
+  .vt-grid i{width:6px;height:6px;background:#4a4a5e;border-radius:1px;box-shadow:8px 0 0 #4a4a5e,0 8px 0 #4a4a5e,8px 8px 0 #4a4a5e;margin:0 8px 8px 0;}
+
+  /* ================= board rows ================= */
+  .board{padding:20px 32px 8px;background:var(--bg);}
+  .board-cap{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .board-cap .l{font-size:10px;color:var(--muted);}
+  .board-cap .l b{color:var(--violet-hi);}
+  .board-cap .r{font-size:11px;color:#55556a;}
+  .row{display:flex;align-items:center;gap:24px;background:var(--surface);border:1px solid var(--border);
+    border-radius:8px;padding:20px 24px;margin-bottom:12px;position:relative;}
+  .row.hot{border-color:#2b2444;}
+  .row.hot:before{content:"";position:absolute;left:-1px;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--violet);}
+  .row-main{width:288px;flex:none;min-width:0;}
+  .row-badges{display:flex;gap:6px;align-items:center;margin-bottom:8px;}
+  .badge{font-size:9px;border-radius:5px;padding:3px 8px;border:1px solid;white-space:nowrap;}
+  .badge.mythic{color:#FFB65C;border-color:#4a3520;background:rgba(255,182,92,.07);}
+  .badge.union{color:var(--violet-hi);border-color:#38306a;background:rgba(138,112,255,.08);}
+  .badge.heroic{color:#7dd3fc;border-color:#1f3a4d;background:rgba(125,211,252,.06);}
+  .badge.guildonly{color:#8B8B9E;border-color:#26263a;background:#12121c;}
+  .badge.newbie{color:var(--heal);border-color:#1d3a2a;background:rgba(74,222,128,.06);}
+  .kwgu-mark{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:#a79aef;white-space:nowrap;}
+  .kwgu-mark i{width:11px;height:11px;border:1px solid #38306a;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;
+    font-size:6.5px;color:var(--violet-hi);background:rgba(138,112,255,.1);font-style:normal;font-weight:800;letter-spacing:0;}
+  .row-title{font-size:16.5px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .host{display:flex;align-items:center;gap:8px;margin-top:10px;min-width:0;}
+  .host .avt{width:24px;height:24px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:800;color:#fff;}
+  .host .nm{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;}
+  .host-badge{font-size:9px;border-radius:5px;padding:3px 7px;white-space:nowrap;border:1px solid #26263a;
+    color:var(--muted);background:#12121c;}
+  .host-badge.free{color:var(--violet-hi);border-color:var(--violet-deep);background:rgba(138,112,255,.08);font-weight:700;}
+  .row-meta{width:172px;flex:none;}
+  .row-meta .dt{font-size:13.5px;font-weight:700;white-space:nowrap;}
+  .row-meta .dt small{font-size:11px;color:var(--muted);font-weight:500;margin-left:4px;}
+  .row-meta .ex{font-size:11px;color:var(--muted);margin-top:6px;display:flex;gap:8px;white-space:nowrap;}
+  .row-meta .ex i{font-style:normal;color:#3a3a4c;}
+
+  /* slot squares */
+  .slots{flex:1;min-width:0;}
+  .slot-groups{display:flex;gap:16px;align-items:flex-end;}
+  .sgroup .sg-cap{display:flex;align-items:baseline;gap:5px;margin-bottom:7px;white-space:nowrap;}
+  .sgroup .sg-cap .r{font-size:9px;letter-spacing:.16em;}
+  .sgroup .sg-cap .c{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .sgroup.tank .sg-cap .r{color:var(--tank);}
+  .sgroup.heal .sg-cap .r{color:var(--heal);}
+  .sgroup.dps  .sg-cap .r{color:var(--dps);}
+  .sq-line{display:flex;gap:4px;flex-wrap:wrap;max-width:196px;}
+  .sq{width:13px;height:13px;border-radius:3.5px;flex:none;}
+  .sq.t-f{background:var(--tank);}      .sq.t-e{border:1px solid rgba(96,165,250,.45);background:rgba(96,165,250,.06);}
+  .sq.h-f{background:var(--heal);}      .sq.h-e{border:1px solid rgba(74,222,128,.45);background:rgba(74,222,128,.06);}
+  .sq.d-f{background:var(--dps);}       .sq.d-e{border:1px solid rgba(248,113,113,.45);background:rgba(248,113,113,.06);}
+  .sq.g-f{background:#3c3c4e;}          .sq.g-e{border:1px solid #26263a;background:#101018;}
+  .slots .total{margin-top:9px;font-size:10.5px;color:var(--muted);white-space:nowrap;}
+  .slots .total b{color:var(--text);font-weight:700;}
+
+  /* AI art slots — placeholder for AI-generated artwork */
+  .artslot{border:1px dashed var(--violet-deep);border-radius:8px;flex:none;
+    background:repeating-linear-gradient(45deg,rgba(91,69,224,.07) 0,rgba(91,69,224,.07) 1px,transparent 1px,transparent 7px),#0C0C14;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+    padding:8px;overflow:hidden;text-align:center;min-width:0;}
+  .artslot .al{font-size:8px;color:var(--violet-hi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .artslot .ah{font-size:9px;color:#55556a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .artslot.thumb{width:140px;height:105px;}
+  .artslot.banner{width:216px;height:72px;}
+  .artslot.m-banner{width:100%;height:96px;margin-top:12px;}
+  .artslot.m-thumb{width:92px;height:69px;padding:5px;gap:3px;}
+  .artslot.m-thumb .al{font-size:6.5px;}
+  .artslot.m-thumb .ah{font-size:7.5px;}
+  .card-body{display:flex;gap:12px;align-items:center;min-width:0;}
+  .card-body-txt{min-width:0;flex:1;}
+  .gchip .emb{width:16px;height:16px;border:1px dashed var(--violet-deep);border-radius:4px;flex:none;
+    background:repeating-linear-gradient(45deg,rgba(91,69,224,.09) 0,rgba(91,69,224,.09) 1px,transparent 1px,transparent 4px),#0C0C14;
+    display:inline-flex;align-items:center;justify-content:center;font-size:7px;color:var(--violet-hi);}
+
+  .row-cta{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:10px;width:96px;}
+  .dchip{font-size:10px;font-weight:700;border-radius:6px;padding:4px 9px;white-space:nowrap;letter-spacing:.08em;}
+  .dchip.hot{color:#0B0817;background:var(--violet-hi);}
+  .dchip.warn{color:var(--violet-hi);border:1px solid var(--violet-deep);background:rgba(138,112,255,.08);}
+  .dchip.norm{color:var(--muted);border:1px solid var(--border);background:var(--surface2);}
+  .btn-apply{background:var(--violet);color:#0B0817;font-size:13px;font-weight:700;border:none;border-radius:8px;
+    padding:10px 24px;cursor:pointer;white-space:nowrap;}
+  .btn-apply.ghost{background:transparent;color:var(--violet-hi);border:1px solid var(--violet-deep);}
+  .row.closed{opacity:.45;}
+  .row.closed .row-title{color:var(--muted);}
+  .btn-closed{background:var(--surface2);color:#55556a;font-size:13px;font-weight:600;border:1px solid var(--border);
+    border-radius:8px;padding:10px 18px;white-space:nowrap;}
+
+  /* ================= bottom strip ================= */
+  .bottom{display:grid;grid-template-columns:1fr 348px;gap:16px;padding:12px 32px 28px;background:var(--bg);}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 22px;min-width:0;}
+  .panel-cap{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;}
+  .panel-cap .ko{font-size:13.5px;font-weight:700;white-space:nowrap;}
+  .panel-cap .en{font-size:9px;color:#55556a;white-space:nowrap;}
+  .guild-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .gchip{display:flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--surface2);
+    border-radius:8px;padding:7px 12px;font-size:12px;color:var(--text);white-space:nowrap;}
+  .gchip .ok{width:13px;height:13px;border-radius:4px;background:rgba(138,112,255,.14);border:1px solid var(--violet-deep);
+    color:var(--violet-hi);font-size:8px;display:inline-flex;align-items:center;justify-content:center;flex:none;}
+  .gchip .kw{font-size:7px;font-weight:800;color:var(--violet-hi);border:1px solid #38306a;border-radius:3px;
+    padding:1px 3px;letter-spacing:.06em;background:rgba(138,112,255,.1);}
+  .guild-note{margin-top:13px;font-size:11px;color:#55556a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .guild-note b{color:var(--muted);font-weight:600;}
+  .week{display:flex;gap:6px;margin-top:2px;}
+  .day{flex:1;border:1px solid var(--border);background:var(--surface2);border-radius:8px;
+    padding:9px 0 8px;text-align:center;min-width:0;}
+  .day .dw{font-size:9px;color:#55556a;margin-bottom:5px;}
+  .day .dn{font-size:12.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .day .dot{width:4px;height:4px;border-radius:50%;margin:5px auto 0;background:transparent;}
+  .day.has .dot{background:#3c3c4e;}
+  .day.today{border-color:var(--violet-deep);background:rgba(138,112,255,.07);}
+  .day.today .dn{color:var(--violet-hi);}
+  .day.today .dw{color:#a79aef;}
+  .day.today .dot{background:var(--violet);box-shadow:0 0 6px rgba(138,112,255,.8);}
+  .week-note{margin-top:11px;font-size:10px;color:#55556a;text-align:right;white-space:nowrap;}
+  .week-note b{color:var(--violet-hi);font-weight:700;}
+
+  .site-footer{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;
+    border-top:1px solid var(--border);background:var(--bg);}
+  .site-footer .l{font-size:10px;color:#55556a;}
+  .site-footer .l b{color:var(--muted);}
+  .site-footer .r{font-size:10px;color:#3a3a4c;}
+
+  /* ================= mobile ================= */
+  .phone{width:390px;margin:0 auto;border:1px solid #1c1c28;border-radius:28px;background:var(--bg);
+    overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55);position:relative;}
+  .m-status{display:flex;align-items:center;justify-content:space-between;padding:12px 22px 8px;font-size:11px;
+    color:var(--muted);font-weight:600;}
+  .m-status .caps{display:flex;gap:5px;align-items:center;}
+  .m-status .caps i{display:block;background:#3a3a4c;border-radius:1px;}
+  .m-status .caps i:nth-child(1){width:14px;height:8px;}
+  .m-status .caps i:nth-child(2){width:12px;height:8px;}
+  .m-status .caps i:nth-child(3){width:18px;height:9px;border-radius:2px;background:#4a4a5e;}
+  .m-nav{display:flex;align-items:center;gap:10px;padding:10px 16px 12px;border-bottom:1px solid var(--border);
+    background:var(--bg);position:sticky;top:0;}
+  .m-nav .wordmark .en{font-size:15px;}
+  .m-nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+  .m-avt{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#5B45E0,#8A70FF);
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;}
+  .m-hero{padding:18px 16px 14px;background:var(--surface);border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+  .m-hero:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--violet);}
+  .m-hero h2{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:9px 0 5px;}
+  .m-hero .sub{font-size:11.5px;color:var(--muted);line-height:1.55;}
+  .m-hero .sub b{color:#c9bdff;font-weight:600;}
+  .m-stats{display:flex;gap:6px;margin-top:12px;}
+  .m-stat{flex:1;border:1px solid var(--border);background:var(--surface2);border-radius:8px;padding:8px 10px;
+    display:flex;align-items:baseline;justify-content:space-between;min-width:0;}
+  .m-stat .k{font-size:8.5px;color:var(--muted);}
+  .m-stat .v{font-size:15px;font-weight:800;color:var(--violet-hi);}
+  .m-stat .v.plain{color:var(--text);}
+  .m-tools{padding:12px 16px 4px;background:var(--bg);}
+  .m-search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);
+    border-radius:8px;padding:9px 12px;}
+  .m-search span{font-size:12px;color:#55556a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .m-fchips{display:flex;gap:6px;overflow:hidden;padding:10px 0 4px;mask-image:linear-gradient(90deg,#000 88%,transparent);
+    -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);}
+  .m-fchips .fchip{padding:7px 12px;font-size:11.5px;flex:none;}
+  .m-board{padding:10px 16px 4px;}
+  .m-board .board-cap{margin-bottom:10px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:10px;position:relative;}
+  .card.hot{border-color:#2b2444;}
+  .card.hot:before{content:"";position:absolute;left:-1px;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;background:var(--violet);}
+  .card-top{display:flex;align-items:center;gap:6px;margin-bottom:9px;}
+  .card-top .dchip{margin-left:auto;}
+  .card .row-title{font-size:15px;}
+  .card .host{margin-top:8px;}
+  .card-meta{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .card-meta b{color:var(--text);font-weight:700;}
+  .card-meta i{font-style:normal;color:#3a3a4c;}
+  .card-slots{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+  .card-slots .slot-groups{gap:12px;}
+  .card-slots .sq{width:11.5px;height:11.5px;}
+  .card-slots .sq-line{max-width:150px;gap:3.5px;}
+  .card-cta{margin-top:13px;display:flex;align-items:center;gap:10px;}
+  .card-cta .total{font-size:10.5px;color:var(--muted);white-space:nowrap;}
+  .card-cta .total b{color:var(--text);}
+  .card-cta .btn-apply{margin-left:auto;padding:9px 20px;font-size:12.5px;}
+  .card.closed{opacity:.45;}
+  .m-guilds{padding:6px 16px 14px;}
+  .m-guilds .panel-cap{margin-bottom:10px;}
+  .m-gscroll{display:flex;gap:8px;overflow:hidden;mask-image:linear-gradient(90deg,#000 86%,transparent);
+    -webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);}
+  .m-gscroll .gchip{flex:none;font-size:11.5px;padding:7px 11px;}
+  .m-footer{padding:16px 16px 90px;border-top:1px solid var(--border);text-align:center;}
+  .m-footer .l{font-size:9.5px;color:#55556a;}
+  .fab{position:absolute;right:16px;bottom:26px;display:flex;align-items:center;gap:8px;background:var(--violet);
+    color:#0B0817;font-size:13.5px;font-weight:800;border:none;border-radius:12px;padding:14px 20px;
+    box-shadow:0 0 24px rgba(138,112,255,.45),0 10px 28px rgba(0,0,0,.5);white-space:nowrap;}
+  .fab .plus{font-size:16px;font-weight:800;line-height:1;}
+  .home-bar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:120px;height:4px;border-radius:3px;background:#26263a;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ===== spec header ===== -->
+  <div class="spec-head">
+    <div>
+      <h1 class="mono">WANION 시안 B — <em>Global Board</em> · 구인구직 보드형</h1>
+      <p class="concept">구인구직 게시판이 곧 서비스의 얼굴 — 소속 없는 유저도 파티를 열고, 전국 단위로 모집하는 글로벌 보드 구조.</p>
+    </div>
+    <div class="tokens">
+      <span class="token mono"><i style="background:#09090D;border:1px solid #1E1E2E;"></i>BG #09090D</span>
+      <span class="token mono"><i style="background:#101018;border:1px solid #1E1E2E;"></i>SURFACE #101018</span>
+      <span class="token mono"><i style="background:#8A70FF;"></i>후제 VIOLET #8A70FF</span>
+      <span class="token mono"><i style="background:#60A5FA;"></i>탱 #60A5FA</span>
+      <span class="token mono"><i style="background:#4ADE80;"></i>힐 #4ADE80</span>
+      <span class="token mono"><i style="background:#F87171;"></i>딜 #F87171</span>
+    </div>
+  </div>
+
+  <!-- ================================================== DESKTOP ================================================== -->
+  <p class="frame-label mono"><b>Desktop</b><span>· 1280 · wanion.site/board</span></p>
+  <div class="browser">
+    <div class="chrome">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="urlbar"><span class="lock"></span>wanion.site/board</div>
+      <div class="chrome-right"><i></i></div>
+    </div>
+
+    <!-- nav -->
+    <nav class="nav">
+      <div class="wordmark"><span class="en mono">RE<b>CO</b></span><span class="ko">와니온</span></div>
+      <div class="nav-menu">
+        <a class="on" href="#">파티 찾기</a>
+        <a href="#">길드</a>
+        <a href="#">공격대</a>
+        <a href="#">연합</a>
+        <a href="#">업데이트</a>
+      </div>
+      <div class="nav-right">
+        <span class="user-chip"><span class="avt">후</span>후제</span>
+        <button class="btn-primary"><span class="plus">＋</span>파티 개설</button>
+      </div>
+    </nav>
+
+    <!-- hero -->
+    <header class="hero">
+      <div style="min-width:0;">
+        <span class="hero-chip mono"><i></i>Global Party Board</span>
+        <h2 class="ellip">지금 모집 중인 공격대</h2>
+        <p class="sub ellip">소속이 없어도 공대장이 될 수 있습니다 — <b>누구나 파티를 열고, 전국에서 모집하세요</b></p>
+      </div>
+      <div class="hero-stats">
+        <div class="artslot banner"><span class="al mono">◆ AI ART · 보드 배너 3:1</span><span class="ah">시즌 키비주얼 · 다크 바이올렛</span></div>
+        <div class="stat-chip"><div class="k mono">모집 중</div><div class="v violet">4<small>개</small></div></div>
+        <div class="stat-chip"><div class="k mono">이번 주</div><div class="v">12<small>회</small></div></div>
+      </div>
+    </header>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <div class="search">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#55556a" stroke-width="1.4"/><path d="M9 9l3 3" stroke="#55556a" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>공격대 · 공대장 · 길드 이름으로 검색</span>
+      </div>
+      <div class="fchips">
+        <span class="fchip on">전체</span>
+        <span class="fchip">레이드</span>
+        <span class="fchip">쐐기</span>
+        <span class="fchip">신화만</span>
+        <span class="fchip">오늘</span>
+      </div>
+      <div class="toolbar-right">
+        <span class="sortbox"><span class="lbl mono">정렬</span>마감 임박순<span class="car">▾</span></span>
+        <span class="viewtoggle">
+          <span class="on vt-rows"><i></i></span>
+          <span class="vt-grid"><i></i></span>
+        </span>
+      </div>
+    </div>
+
+    <!-- board -->
+    <main class="board">
+      <div class="board-cap">
+        <span class="l mono">모집 공고 <b>4</b> / OPEN RECRUITS</span>
+        <span class="r">마감 임박순 · 실시간 갱신</span>
+      </div>
+
+      <!-- ROW 1 -->
+      <article class="row hot">
+        <div class="artslot thumb"><span class="al mono">◆ AI ART · 썸네일 4:3</span><span class="ah">공허첨탑 키아트 · 다크 바이올렛</span></div>
+        <div class="row-main">
+          <div class="row-badges">
+            <span class="badge mythic mono">신화</span>
+            <span class="badge guildonly mono" style="border-color:#26263a;">공허첨탑</span>
+          </div>
+          <h3 class="row-title">공허첨탑 신화 격주 트라이</h3>
+          <div class="host">
+            <span class="avt" style="background:linear-gradient(135deg,#2b2440,#4a3a78);">두</span>
+            <span class="nm">두부킴</span>
+            <span class="host-badge">TeamSAD 공대장</span>
+          </div>
+        </div>
+        <div class="row-meta">
+          <div class="dt">7/25 (토) 20:00</div>
+          <div class="ex"><span>4시간</span><i>·</i><span>템285+</span></div>
+        </div>
+        <div class="slots">
+          <div class="slot-groups">
+            <div class="sgroup tank">
+              <div class="sg-cap"><span class="r mono">탱</span><span class="c">2/2</span></div>
+              <div class="sq-line"><span class="sq t-f"></span><span class="sq t-f"></span></div>
+            </div>
+            <div class="sgroup heal">
+              <div class="sg-cap"><span class="r mono">힐</span><span class="c">3/4</span></div>
+              <div class="sq-line"><span class="sq h-f"></span><span class="sq h-f"></span><span class="sq h-f"></span><span class="sq h-e"></span></div>
+            </div>
+            <div class="sgroup dps">
+              <div class="sg-cap"><span class="r mono">딜</span><span class="c">6/14</span></div>
+              <div class="sq-line">
+                <span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-e"></span>
+                <span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+              </div>
+            </div>
+          </div>
+          <div class="total">전체 <b>11 / 20</b> · 딜러 우선 모집</div>
+        </div>
+        <div class="row-cta">
+          <span class="dchip warn mono">D-3</span>
+          <button class="btn-apply">신청</button>
+        </div>
+      </article>
+
+      <!-- ROW 2 -->
+      <article class="row">
+        <div class="artslot thumb"><span class="al mono">◆ AI ART · 썸네일 4:3</span><span class="ah">연합 엠블럼 배너 · 다크 바이올렛</span></div>
+        <div class="row-main">
+          <div class="row-badges">
+            <span class="badge union mono">연합</span>
+            <span class="kwgu-mark"><i>聯</i>한길련</span>
+          </div>
+          <h3 class="row-title">공허첨탑 정기 공대 (연합)</h3>
+          <div class="host">
+            <span class="avt" style="background:linear-gradient(135deg,#38306a,#5B45E0);">聯</span>
+            <span class="nm">한길련 연합</span>
+            <span class="host-badge">연합 운영진</span>
+          </div>
+        </div>
+        <div class="row-meta">
+          <div class="dt">7/23 (목) 20:00</div>
+          <div class="ex"><span>3시간</span><i>·</i><span>템280+</span></div>
+        </div>
+        <div class="slots">
+          <div class="slot-groups">
+            <div class="sgroup tank">
+              <div class="sg-cap"><span class="r mono">탱</span><span class="c">0/2</span></div>
+              <div class="sq-line"><span class="sq t-e"></span><span class="sq t-e"></span></div>
+            </div>
+            <div class="sgroup heal">
+              <div class="sg-cap"><span class="r mono">힐</span><span class="c">0/4</span></div>
+              <div class="sq-line"><span class="sq h-e"></span><span class="sq h-e"></span><span class="sq h-e"></span><span class="sq h-e"></span></div>
+            </div>
+            <div class="sgroup dps">
+              <div class="sg-cap"><span class="r mono">딜</span><span class="c">0/14</span></div>
+              <div class="sq-line">
+                <span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+                <span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+              </div>
+            </div>
+          </div>
+          <div class="total">전체 <b>0 / 20</b> · 전 포지션 모집</div>
+        </div>
+        <div class="row-cta">
+          <span class="dchip hot mono">D-1</span>
+          <button class="btn-apply">신청</button>
+        </div>
+      </article>
+
+      <!-- ROW 3 : killer row -->
+      <article class="row hot">
+        <div class="artslot thumb"><span class="al mono">◆ AI ART · 썸네일 4:3</span><span class="ah">소프트런 일러스트 · 다크 바이올렛</span></div>
+        <div class="row-main">
+          <div class="row-badges">
+            <span class="badge heroic mono">영웅</span>
+            <span class="badge newbie mono">초보 환영</span>
+          </div>
+          <h3 class="row-title">주말 영웅 소프트런 — 초보 환영</h3>
+          <div class="host">
+            <span class="avt" style="background:linear-gradient(135deg,#1c1c28,#3a3a4c);">밤</span>
+            <span class="nm">밤까마귀</span>
+            <span class="host-badge free">무소속 · 공대장</span>
+          </div>
+        </div>
+        <div class="row-meta">
+          <div class="dt">7/26 (일) 14:00</div>
+          <div class="ex"><span>3시간</span><i>·</i><span>템270+</span></div>
+        </div>
+        <div class="slots">
+          <div class="slot-groups">
+            <div class="sgroup tank">
+              <div class="sg-cap"><span class="r mono">탱</span><span class="c">1/2</span></div>
+              <div class="sq-line"><span class="sq t-f"></span><span class="sq t-e"></span></div>
+            </div>
+            <div class="sgroup heal">
+              <div class="sg-cap"><span class="r mono">힐</span><span class="c">2/4</span></div>
+              <div class="sq-line"><span class="sq h-f"></span><span class="sq h-f"></span><span class="sq h-e"></span><span class="sq h-e"></span></div>
+            </div>
+            <div class="sgroup dps">
+              <div class="sg-cap"><span class="r mono">딜</span><span class="c">5/14</span></div>
+              <div class="sq-line">
+                <span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+                <span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+              </div>
+            </div>
+          </div>
+          <div class="total">전체 <b>8 / 20</b> · 첫 공대 참가도 환영</div>
+        </div>
+        <div class="row-cta">
+          <span class="dchip warn mono">D-4</span>
+          <button class="btn-apply">신청</button>
+        </div>
+      </article>
+
+      <!-- ROW 4 : closed -->
+      <article class="row closed">
+        <div class="artslot thumb"><span class="al mono">◆ AI ART · 썸네일 4:3</span><span class="ah">정기공대 배너 · 다크 바이올렛</span></div>
+        <div class="row-main">
+          <div class="row-badges">
+            <span class="badge guildonly mono">길드전용</span>
+          </div>
+          <h3 class="row-title">교차로 길드 정기공대</h3>
+          <div class="host">
+            <span class="avt" style="background:#1c1c28;color:#8B8B9E;">교</span>
+            <span class="nm" style="color:var(--muted);">교차로</span>
+            <span class="host-badge">길드 마스터</span>
+          </div>
+        </div>
+        <div class="row-meta">
+          <div class="dt" style="color:var(--muted);">7/22 (화) 21:00</div>
+          <div class="ex"><span>3시간</span><i>·</i><span>길드원 한정</span></div>
+        </div>
+        <div class="slots">
+          <div class="slot-groups">
+            <div class="sgroup tank">
+              <div class="sg-cap"><span class="r mono" style="color:#55556a;">탱</span><span class="c">2/2</span></div>
+              <div class="sq-line"><span class="sq g-f"></span><span class="sq g-f"></span></div>
+            </div>
+            <div class="sgroup heal">
+              <div class="sg-cap"><span class="r mono" style="color:#55556a;">힐</span><span class="c">4/4</span></div>
+              <div class="sq-line"><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span></div>
+            </div>
+            <div class="sgroup dps">
+              <div class="sg-cap"><span class="r mono" style="color:#55556a;">딜</span><span class="c">14/14</span></div>
+              <div class="sq-line">
+                <span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span>
+                <span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span><span class="sq g-f"></span>
+              </div>
+            </div>
+          </div>
+          <div class="total">전체 <b>20 / 20</b> · 정원 완료</div>
+        </div>
+        <div class="row-cta">
+          <span class="dchip norm mono">마감</span>
+          <span class="btn-closed">모집 마감</span>
+        </div>
+      </article>
+    </main>
+
+    <!-- bottom strip -->
+    <section class="bottom">
+      <div class="panel">
+        <div class="panel-cap">
+          <span class="ko">등록 길드</span>
+          <span class="en mono">Registered Guilds</span>
+        </div>
+        <div class="guild-chips">
+          <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>와우팩토리<span class="kw mono">KWGU</span></span>
+          <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>교차로<span class="kw mono">KWGU</span></span>
+          <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>이에요<span class="kw mono">KWGU</span></span>
+          <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>스타폴<span class="kw mono">KWGU</span></span>
+          <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>두부킴의유기견들</span>
+        </div>
+        <p class="guild-note">＋ 길드 등록은 현재 <b>초대제</b>로 운영됩니다 · KWGU = 한길련 소속 · ◆ = 길드 엠블럼 AI 생성 슬롯</p>
+      </div>
+      <div class="panel">
+        <div class="panel-cap">
+          <span class="ko">이번 주</span>
+          <span class="en mono">This Week</span>
+        </div>
+        <div class="week">
+          <div class="day"><div class="dw">월</div><div class="dn">20</div><div class="dot"></div></div>
+          <div class="day"><div class="dw">화</div><div class="dn">21</div><div class="dot"></div></div>
+          <div class="day today"><div class="dw">수</div><div class="dn">22</div><div class="dot"></div></div>
+          <div class="day has"><div class="dw">목</div><div class="dn">23</div><div class="dot"></div></div>
+          <div class="day"><div class="dw">금</div><div class="dn">24</div><div class="dot"></div></div>
+          <div class="day has"><div class="dw">토</div><div class="dn">25</div><div class="dot"></div></div>
+          <div class="day has"><div class="dw">일</div><div class="dn">26</div><div class="dot"></div></div>
+        </div>
+        <p class="week-note">예정 공대 <b>3회</b></p>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <span class="l mono"><b>WANION</b> — Made by 후제공방</span>
+      <span class="r">© 2026 Huje Workshop · 비공식 팬 프로젝트</span>
+    </footer>
+  </div>
+
+  <!-- ================================================== MOBILE ================================================== -->
+  <p class="frame-label mono"><b>Mobile</b><span>· 390 · 카드 스택 + 개설 FAB</span></p>
+  <div class="phone">
+    <div class="m-status"><span>20:41</span><span class="caps"><i></i><i></i><i></i></span></div>
+
+    <div class="m-nav">
+      <div class="wordmark"><span class="en mono">RE<b>CO</b></span><span class="ko">와니온</span></div>
+      <div class="m-nav-right">
+        <span class="fchip" style="padding:6px 11px;font-size:11px;">파티 찾기 ▾</span>
+        <span class="m-avt">후</span>
+      </div>
+    </div>
+
+    <div class="m-hero">
+      <span class="hero-chip mono"><i></i>Global Party Board</span>
+      <h2 class="ellip">지금 모집 중인 공격대</h2>
+      <p class="sub">소속이 없어도 공대장이 될 수 있습니다<br><b>누구나 파티를 열고, 전국에서 모집하세요</b></p>
+      <div class="m-stats">
+        <div class="m-stat"><span class="k mono">모집 중</span><span class="v">4</span></div>
+        <div class="m-stat"><span class="k mono">이번 주</span><span class="v plain">12</span></div>
+        <div class="m-stat"><span class="k mono">등록 길드</span><span class="v plain">5</span></div>
+      </div>
+      <div class="artslot m-banner"><span class="al mono">◆ AI ART · 보드 배너 3:1</span><span class="ah">시즌 키비주얼 · 다크 바이올렛</span></div>
+    </div>
+
+    <div class="m-tools">
+      <div class="m-search">
+        <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="#55556a" stroke-width="1.4"/><path d="M9 9l3 3" stroke="#55556a" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>공격대 · 공대장 · 길드 검색</span>
+      </div>
+      <div class="m-fchips">
+        <span class="fchip on">전체</span>
+        <span class="fchip">레이드</span>
+        <span class="fchip">쐐기</span>
+        <span class="fchip">신화만</span>
+        <span class="fchip">오늘</span>
+        <span class="fchip">마감 임박</span>
+      </div>
+    </div>
+
+    <div class="m-board">
+      <div class="board-cap">
+        <span class="l mono">모집 공고 <b>4</b></span>
+        <span class="r" style="font-size:10px;">마감 임박순</span>
+      </div>
+
+      <!-- card 1 -->
+      <article class="card hot">
+        <div class="card-top">
+          <span class="badge mythic mono">신화</span>
+          <span class="dchip warn mono">D-3</span>
+        </div>
+        <div class="card-body">
+          <div class="artslot m-thumb"><span class="al mono">◆ AI ART 4:3</span><span class="ah">공허첨탑 키아트</span></div>
+          <div class="card-body-txt">
+            <h3 class="row-title ellip">공허첨탑 신화 격주 트라이</h3>
+            <div class="host">
+              <span class="avt" style="background:linear-gradient(135deg,#2b2440,#4a3a78);">두</span>
+              <span class="nm">두부킴</span>
+              <span class="host-badge">TeamSAD 공대장</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><b>7/25 (토) 20:00</b><i>·</i><span>4시간</span><i>·</i><span>템285+</span></div>
+        <div class="card-slots">
+          <div class="slot-groups">
+            <div class="sgroup tank">
+              <div class="sg-cap"><span class="r mono">탱</span><span class="c">2/2</span></div>
+              <div class="sq-line"><span class="sq t-f"></span><span class="sq t-f"></span></div>
+            </div>
+            <div class="sgroup heal">
+              <div class="sg-cap"><span class="r mono">힐</span><span class="c">3/4</span></div>
+              <div class="sq-line"><span class="sq h-f"></span><span class="sq h-f"></span><span class="sq h-f"></span><span class="sq h-e"></span></div>
+            </div>
+            <div class="sgroup dps">
+              <div class="sg-cap"><span class="r mono">딜</span><span class="c">6/14</span></div>
+              <div class="sq-line">
+                <span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-e"></span>
+                <span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-cta">
+          <span class="total">전체 <b>11/20</b> · 딜러 우선</span>
+          <button class="btn-apply">신청</button>
+        </div>
+      </article>
+
+      <!-- card 2 -->
+      <article class="card">
+        <div class="card-top">
+          <span class="badge union mono">연합</span>
+          <span class="kwgu-mark"><i>聯</i>한길련</span>
+          <span class="dchip hot mono">D-1</span>
+        </div>
+        <div class="card-body">
+          <div class="artslot m-thumb"><span class="al mono">◆ AI ART 4:3</span><span class="ah">연합 엠블럼 배너</span></div>
+          <div class="card-body-txt">
+            <h3 class="row-title ellip">공허첨탑 정기 공대 (연합)</h3>
+            <div class="host">
+              <span class="avt" style="background:linear-gradient(135deg,#38306a,#5B45E0);">聯</span>
+              <span class="nm">한길련 연합</span>
+              <span class="host-badge">연합 운영진</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><b>7/23 (목) 20:00</b><i>·</i><span>3시간</span><i>·</i><span>템280+</span></div>
+        <div class="card-slots">
+          <div class="slot-groups">
+            <div class="sgroup tank">
+              <div class="sg-cap"><span class="r mono">탱</span><span class="c">0/2</span></div>
+              <div class="sq-line"><span class="sq t-e"></span><span class="sq t-e"></span></div>
+            </div>
+            <div class="sgroup heal">
+              <div class="sg-cap"><span class="r mono">힐</span><span class="c">0/4</span></div>
+              <div class="sq-line"><span class="sq h-e"></span><span class="sq h-e"></span><span class="sq h-e"></span><span class="sq h-e"></span></div>
+            </div>
+            <div class="sgroup dps">
+              <div class="sg-cap"><span class="r mono">딜</span><span class="c">0/14</span></div>
+              <div class="sq-line">
+                <span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+                <span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-cta">
+          <span class="total">전체 <b>0/20</b> · 전 포지션</span>
+          <button class="btn-apply">신청</button>
+        </div>
+      </article>
+
+      <!-- card 3 : killer -->
+      <article class="card hot">
+        <div class="card-top">
+          <span class="badge heroic mono">영웅</span>
+          <span class="badge newbie mono">초보 환영</span>
+          <span class="dchip warn mono">D-4</span>
+        </div>
+        <div class="card-body">
+          <div class="artslot m-thumb"><span class="al mono">◆ AI ART 4:3</span><span class="ah">소프트런 일러스트</span></div>
+          <div class="card-body-txt">
+            <h3 class="row-title ellip">주말 영웅 소프트런 — 초보 환영</h3>
+            <div class="host">
+              <span class="avt" style="background:linear-gradient(135deg,#1c1c28,#3a3a4c);">밤</span>
+              <span class="nm">밤까마귀</span>
+              <span class="host-badge free">무소속 · 공대장</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><b>7/26 (일) 14:00</b><i>·</i><span>3시간</span><i>·</i><span>템270+</span></div>
+        <div class="card-slots">
+          <div class="slot-groups">
+            <div class="sgroup tank">
+              <div class="sg-cap"><span class="r mono">탱</span><span class="c">1/2</span></div>
+              <div class="sq-line"><span class="sq t-f"></span><span class="sq t-e"></span></div>
+            </div>
+            <div class="sgroup heal">
+              <div class="sg-cap"><span class="r mono">힐</span><span class="c">2/4</span></div>
+              <div class="sq-line"><span class="sq h-f"></span><span class="sq h-f"></span><span class="sq h-e"></span><span class="sq h-e"></span></div>
+            </div>
+            <div class="sgroup dps">
+              <div class="sg-cap"><span class="r mono">딜</span><span class="c">5/14</span></div>
+              <div class="sq-line">
+                <span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-f"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+                <span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span><span class="sq d-e"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-cta">
+          <span class="total">전체 <b>8/20</b> · 첫 공대 환영</span>
+          <button class="btn-apply">신청</button>
+        </div>
+      </article>
+
+      <!-- card 4 : closed -->
+      <article class="card closed">
+        <div class="card-top">
+          <span class="badge guildonly mono">길드전용</span>
+          <span class="dchip norm mono">마감</span>
+        </div>
+        <div class="card-body">
+          <div class="artslot m-thumb"><span class="al mono">◆ AI ART 4:3</span><span class="ah">정기공대 배너</span></div>
+          <div class="card-body-txt">
+            <h3 class="row-title ellip" style="color:var(--muted);">교차로 길드 정기공대</h3>
+            <div class="host">
+              <span class="avt" style="background:#1c1c28;color:#8B8B9E;">교</span>
+              <span class="nm" style="color:var(--muted);">교차로</span>
+              <span class="host-badge">길드 마스터</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta"><b style="color:var(--muted);">7/22 (화) 21:00</b><i>·</i><span>길드원 한정</span></div>
+        <div class="card-cta" style="margin-top:12px;">
+          <span class="total">전체 <b>20/20</b> · 정원 완료</span>
+          <span class="btn-closed" style="margin-left:auto;padding:9px 16px;font-size:12px;">모집 마감</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="m-guilds">
+      <div class="panel-cap">
+        <span class="ko" style="font-size:12.5px;">등록 길드</span>
+        <span class="en mono">Registered Guilds</span>
+      </div>
+      <div class="m-gscroll">
+        <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>와우팩토리<span class="kw mono">KWGU</span></span>
+        <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>교차로<span class="kw mono">KWGU</span></span>
+        <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>이에요<span class="kw mono">KWGU</span></span>
+        <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>스타폴<span class="kw mono">KWGU</span></span>
+        <span class="gchip"><span class="emb mono" title="길드 엠블럼 AI 생성">◆</span><span class="ok">✓</span>두부킴의유기견들</span>
+      </div>
+      <p class="guild-note">＋ 길드 등록은 현재 <b>초대제</b> · ◆ = 엠블럼 AI 생성 슬롯</p>
+    </div>
+
+    <div class="m-footer">
+      <span class="l mono">WANION — Made by 후제공방</span>
+    </div>
+
+    <button class="fab"><span class="plus">＋</span>개설</button>
+    <div class="home-bar"></div>
+  </div>
+
+</div>
+</body>
+</html>

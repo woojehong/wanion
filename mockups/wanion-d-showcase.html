@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WANION 시안 D — Showcase · 홍보 랜딩형</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{
+    --bg:#09090D;
+    --surface:#101018;
+    --surface2:#14141F;
+    --border:#1E1E2E;
+    --violet:#8A70FF;
+    --violet-hi:#B9A8FF;
+    --violet-deep:#5B45E0;
+    --text:#EDEDF2;
+    --muted:#8B8B9E;
+    --mono:"SF Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:#050507;
+    font-family:"Pretendard Variable",Pretendard,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    padding:48px 24px 96px;
+  }
+  .ellip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* ============ AI ART SLOT ============ */
+  .artslot{
+    position:relative;
+    border:1px dashed var(--violet-deep);
+    border-radius:8px;
+    background:
+      repeating-linear-gradient(45deg, rgba(91,69,224,.07) 0 7px, transparent 7px 14px),
+      rgba(91,69,224,.03);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+    text-align:center;overflow:hidden;padding:12px;min-width:0;
+  }
+  .artslot .al-label{
+    font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--violet-hi);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .artslot .al-hint{
+    font-size:11px;color:var(--muted);letter-spacing:-.01em;line-height:1.5;
+    max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .artslot--sm .al-label{font-size:8.5px;letter-spacing:.12em;}
+  .artslot--sm .al-hint{font-size:9.5px;}
+  .artslot--169{aspect-ratio:16/9;width:100%;}
+  .artslot--31{aspect-ratio:3/1;width:100%;}
+  .artslot--11{aspect-ratio:1/1;width:100%;}
+
+  /* ============ meta header strip ============ */
+  .meta-wrap{max-width:1360px;margin:0 auto 40px;}
+  .meta-strip{
+    border:1px solid var(--border);border-radius:8px;background:var(--surface);
+    padding:20px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px;
+  }
+  .meta-title{font-size:15px;font-weight:700;letter-spacing:-.01em;}
+  .meta-title .d{color:var(--violet-hi);}
+  .meta-concept{font-size:13px;color:var(--muted);letter-spacing:-.01em;}
+  .meta-tokens{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;}
+  .tok{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--muted);
+    border:1px solid var(--border);border-radius:8px;padding:5px 9px;background:var(--surface2);}
+  .tok i{width:10px;height:10px;border-radius:3px;display:inline-block;border:1px solid rgba(255,255,255,.08);}
+  .frame-label{
+    max-width:1360px;margin:0 auto 12px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+  }
+
+  /* ============ browser chrome frame ============ */
+  .browser{
+    max-width:1360px;margin:0 auto 72px;border:1px solid var(--border);border-radius:12px;
+    background:var(--bg);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5);
+  }
+  .browser-bar{
+    height:44px;background:var(--surface2);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;padding:0 16px;gap:14px;
+  }
+  .dots{display:flex;gap:7px;}
+  .dots span{width:11px;height:11px;border-radius:50%;background:#232332;border:1px solid #2B2B3D;}
+  .urlbar{
+    flex:0 1 420px;height:26px;border:1px solid var(--border);border-radius:6px;background:var(--bg);
+    display:flex;align-items:center;gap:8px;padding:0 12px;
+    font-family:var(--mono);font-size:11px;color:var(--muted);
+  }
+  .urlbar .lock{width:9px;height:9px;border:1.5px solid #3A3A4E;border-radius:2px;position:relative;flex:none;}
+  .urlbar .lock::before{content:"";position:absolute;top:-5px;left:1px;width:4px;height:4px;border:1.5px solid #3A3A4E;border-bottom:none;border-radius:3px 3px 0 0;}
+
+  /* ============ page ============ */
+  .page{width:1280px;max-width:100%;margin:0 auto;background:var(--bg);}
+
+  /* top nav */
+  .nav{
+    height:64px;display:flex;align-items:center;gap:36px;padding:0 48px;
+    border-bottom:1px solid var(--border);background:rgba(9,9,13,.9);
+  }
+  .logo{display:flex;align-items:baseline;gap:8px;flex:none;}
+  .logo .en{font-weight:800;font-size:18px;letter-spacing:.06em;}
+  .logo .ko{font-size:12px;color:var(--muted);font-weight:600;}
+  .logo .en::first-letter{color:var(--violet-hi);}
+  .nav-menu{display:flex;gap:28px;font-size:13.5px;color:var(--muted);font-weight:500;}
+  .nav-menu b{color:var(--text);font-weight:600;}
+  .nav-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+  .nav-login{font-size:13.5px;color:var(--muted);font-weight:500;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border-radius:8px;font-weight:700;letter-spacing:-.01em;text-decoration:none;cursor:default;
+  }
+  .btn-violet{background:var(--violet);color:#0B0817;border:1px solid var(--violet);}
+  .btn-outline{background:transparent;color:var(--text);border:1px solid #2B2B3F;}
+  .btn-sm{height:36px;padding:0 18px;font-size:13px;}
+  .btn-lg{height:48px;padding:0 26px;font-size:14.5px;}
+
+  /* micro label */
+  .micro{
+    font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .chip{
+    display:inline-flex;align-items:center;gap:8px;border:1px solid #2A2440;border-radius:999px;
+    padding:7px 14px;font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--violet-hi);background:rgba(138,112,255,.06);
+  }
+  .chip i{width:5px;height:5px;border-radius:50%;background:var(--violet);flex:none;box-shadow:0 0 8px rgba(138,112,255,.8);}
+
+  /* ============ 1. hero ============ */
+  .hero{
+    position:relative;min-height:420px;overflow:hidden;
+    padding:64px 48px 48px;border-bottom:1px solid var(--border);
+  }
+  .hero-grid{
+    position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(138,112,255,.05) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(138,112,255,.05) 1px,transparent 1px);
+    background-size:56px 56px;
+    -webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 30%,#000 30%,transparent 78%);
+    mask-image:radial-gradient(ellipse 90% 80% at 50% 30%,#000 30%,transparent 78%);
+  }
+  .hero-glow{
+    position:absolute;width:900px;height:520px;left:50%;top:-160px;transform:translateX(-50%);
+    background:radial-gradient(ellipse at center,rgba(138,112,255,.10) 0%,transparent 62%);
+    pointer-events:none;
+  }
+  .orbit{
+    position:absolute;width:1400px;height:1400px;border-radius:50%;
+    left:50%;top:160px;transform:translateX(-50%);
+    border:1px solid transparent;
+    background:linear-gradient(var(--bg),var(--bg)) padding-box,
+      conic-gradient(from 210deg,transparent 0deg,rgba(138,112,255,.45) 28deg,rgba(185,168,255,.18) 55deg,transparent 90deg) border-box;
+    opacity:.8;pointer-events:none;
+  }
+  .orbit-node{
+    position:absolute;left:50%;top:160px;transform:translate(calc(-50% + 486px),8px);
+    width:7px;height:7px;border-radius:50%;background:var(--violet-hi);
+    box-shadow:0 0 12px rgba(138,112,255,.9);pointer-events:none;
+  }
+  .hero-cols{
+    position:relative;z-index:2;display:grid;grid-template-columns:1fr 500px;
+    gap:56px;align-items:center;
+  }
+  .hero-inner{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0;}
+  .hero h1{
+    margin-top:24px;font-size:46px;line-height:1.24;font-weight:800;letter-spacing:-.035em;
+  }
+  .hero h1 .v{color:var(--violet-hi);}
+  .hero-sub{
+    margin-top:18px;font-size:15.5px;line-height:1.7;color:var(--muted);letter-spacing:-.01em;max-width:560px;
+  }
+  .hero-sub b{color:#B6B6C6;font-weight:600;}
+  .hero-cta{margin-top:30px;display:flex;gap:12px;}
+  .hero-art{flex:none;box-shadow:0 20px 56px rgba(0,0,0,.4);}
+  .hero-stats{
+    position:relative;z-index:2;margin-top:44px;display:flex;align-items:center;gap:22px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;
+  }
+  .hero-stats b{color:var(--text);font-weight:700;}
+  .hero-stats .sep{width:3px;height:3px;border-radius:50%;background:#33334A;}
+
+  /* ============ section shell ============ */
+  .sec{padding:64px 48px;border-bottom:1px solid var(--border);}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:28px;}
+  .sec-head h2{font-size:24px;font-weight:800;letter-spacing:-.025em;}
+  .sec-head .en{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+  .sec-head .right{margin-left:auto;font-size:12.5px;color:var(--muted);}
+
+  /* ============ 2. progress showcase ============ */
+  .prog-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;}
+  .prog-feature{
+    border:1px solid var(--border);border-radius:8px;background:var(--surface);
+    padding:20px 28px 28px;position:relative;overflow:hidden;
+  }
+  .prog-feature::before{
+    content:"";position:absolute;left:0;top:0;right:0;height:2px;
+    background:linear-gradient(90deg,var(--violet-deep),var(--violet) 40%,transparent 85%);
+  }
+  .prog-banner{margin-bottom:18px;}
+  .live-dot{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.2em;color:var(--violet-hi);text-transform:uppercase;}
+  .live-dot i{width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 8px rgba(138,112,255,.9);flex:none;}
+  .pf-top{display:flex;align-items:center;gap:12px;}
+  .pf-team{margin-top:16px;display:flex;align-items:center;gap:12px;}
+  .team-glyph{
+    width:44px;height:44px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--violet-hi);
+    letter-spacing:.02em;flex:none;
+  }
+  .pf-team .nm{font-size:19px;font-weight:800;letter-spacing:-.02em;}
+  .pf-team .tp{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-top:3px;}
+  .pf-score{margin-top:20px;display:flex;align-items:baseline;gap:14px;}
+  .pf-score .raid{font-size:15px;font-weight:600;color:#C9C9D8;}
+  .pf-score .num{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1;}
+  .pf-score .num b{color:var(--violet-hi);}
+  .pf-score .diff{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--violet-hi);border:1px solid #2A2440;border-radius:999px;padding:4px 10px;background:rgba(138,112,255,.06);}
+  .segbar{margin-top:18px;display:flex;gap:5px;}
+  .segbar i{height:8px;flex:1;border-radius:3px;background:#1B1B29;border:1px solid #232335;}
+  .segbar i.on{background:var(--violet);border-color:var(--violet-deep);box-shadow:0 0 10px rgba(138,112,255,.35);}
+  .pf-foot{margin-top:18px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);}
+  .pf-foot b{color:#C9C9D8;font-weight:600;}
+  .wcl{
+    margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--border);border-radius:8px;padding:5px 10px;background:var(--surface2);flex:none;
+  }
+  .wcl i{width:8px;height:8px;border-radius:2px;background:linear-gradient(135deg,var(--violet),var(--violet-deep));flex:none;}
+  .prog-side{display:flex;flex-direction:column;gap:16px;}
+  .prog-mini{
+    flex:1;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:16px 22px 20px;
+    display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0;
+  }
+  .pm-banner{margin-bottom:4px;}
+  .pm-top{display:flex;align-items:center;gap:10px;}
+  .pm-glyph{width:32px;height:32px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:var(--violet-hi);flex:none;}
+  .pm-name{font-size:14.5px;font-weight:700;letter-spacing:-.015em;}
+  .pm-type{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+  .pm-score{display:flex;align-items:baseline;gap:10px;}
+  .pm-score .n{font-size:22px;font-weight:800;letter-spacing:-.02em;}
+  .pm-score .n b{color:var(--violet-hi);}
+  .pm-score .l{font-size:12px;color:var(--muted);}
+  .pm-badge{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--violet-hi);border:1px solid #2A2440;border-radius:999px;padding:3px 9px;background:rgba(138,112,255,.06);}
+  .minibar{display:flex;gap:4px;}
+  .minibar i{height:5px;flex:1;border-radius:2px;background:#1B1B29;}
+  .minibar i.on{background:var(--violet);}
+  .minibar i.full{background:var(--violet-deep);}
+
+  /* ============ 3. guilds ============ */
+  .guild-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+  .gcard{
+    border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:16px 16px 16px;
+    display:flex;flex-direction:column;gap:12px;min-width:0;position:relative;
+  }
+  .gcard.elev{
+    background:var(--surface2);border-color:#2E2A4A;transform:translateY(-6px);
+    box-shadow:0 16px 40px rgba(0,0,0,.45),0 0 0 1px rgba(138,112,255,.12);
+  }
+  .gdot{width:10px;height:10px;border-radius:50%;flex:none;border:1px solid rgba(255,255,255,.12);}
+  .gd1{background:#8A70FF;} .gd2{background:#5B45E0;} .gd3{background:#3D3D55;} .gd4{background:#B9A8FF;} .gd5{background:#26263A;}
+  .gname-line{display:flex;align-items:center;gap:9px;min-width:0;}
+  .gname{font-size:15px;font-weight:700;letter-spacing:-.015em;}
+  .gserver{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .gverify{
+    display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;
+    letter-spacing:.12em;text-transform:uppercase;color:#9D8CF0;
+  }
+  .gverify .ck{width:13px;height:13px;border-radius:50%;background:rgba(138,112,255,.14);border:1px solid #3A3060;
+    display:inline-flex;align-items:center;justify-content:center;font-size:8px;color:var(--violet-hi);flex:none;}
+  .gfoot{margin-top:auto;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;min-height:33px;}
+  .kwgu{
+    display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);border:1px solid var(--border);border-radius:999px;
+    padding:3px 9px;background:var(--bg);
+  }
+  .kwgu i{width:6px;height:6px;border-radius:2px;background:var(--violet-deep);flex:none;}
+  .indep{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#4E4E66;}
+  .invite-strip{
+    margin-top:22px;border:1px dashed #26263A;border-radius:8px;background:rgba(16,16,24,.5);
+    padding:14px 20px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted);
+  }
+  .invite-strip .tag{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--violet-hi);border:1px solid #2A2440;border-radius:999px;padding:3px 9px;background:rgba(138,112,255,.06);flex:none;}
+  .invite-strip b{color:#C9C9D8;font-weight:600;}
+
+  /* ============ 4. alliance band ============ */
+  .alli{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
+  .alli-mark-slot{width:120px;flex:none;}
+  .alli-left .row1{display:flex;align-items:center;gap:20px;}
+  .alli-name{font-size:26px;font-weight:800;letter-spacing:-.02em;}
+  .alli-en{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:5px;}
+  .alli-desc{margin-top:18px;font-size:15px;line-height:1.65;color:var(--muted);letter-spacing:-.01em;}
+  .alli-desc b{color:#C9C9D8;font-weight:600;}
+  .alli-left .btn{margin-top:24px;}
+  .alli-list{border:1px solid var(--border);border-radius:8px;background:var(--surface);overflow:hidden;}
+  .alli-list-head{
+    padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+  }
+  .alli-item{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border);min-width:0;}
+  .alli-item:last-child{border-bottom:none;}
+  .alli-date{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em;flex:none;width:74px;}
+  .alli-title{font-size:14px;font-weight:600;letter-spacing:-.015em;flex:1;min-width:0;}
+  .alli-count{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none;}
+  .alli-count b{color:var(--violet-hi);font-weight:700;}
+  .alli-full{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--violet-hi);
+    border:1px solid #2A2440;border-radius:999px;padding:3px 8px;background:rgba(138,112,255,.06);flex:none;}
+
+  /* ============ 5. maker band ============ */
+  .maker{
+    padding:44px 48px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:20px;background:var(--surface);
+  }
+  .maker-glyph{
+    width:40px;height:40px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--violet-hi);flex:none;
+  }
+  .maker .t1{font-size:15px;font-weight:700;letter-spacing:-.015em;}
+  .maker .t2{font-size:13px;color:var(--muted);margin-top:4px;letter-spacing:-.01em;}
+  .maker-link{
+    margin-left:auto;font-size:13px;font-weight:600;color:var(--violet-hi);display:inline-flex;align-items:center;gap:7px;flex:none;
+  }
+  .maker-link .arr{font-family:var(--mono);font-size:12px;}
+
+  /* footer */
+  .footer{padding:36px 48px;display:flex;align-items:center;gap:32px;}
+  .footer .wordmark{font-weight:800;font-size:15px;letter-spacing:.06em;}
+  .footer .wordmark::first-letter{color:var(--violet-hi);}
+  .footer-menu{display:flex;gap:22px;font-size:12.5px;color:var(--muted);}
+  .footer .copy{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:#55556E;}
+
+  /* ==================================================
+     MOBILE FRAME
+  ================================================== */
+  .mobile-shell{
+    width:390px;margin:0 auto;border:1px solid var(--border);border-radius:28px;
+    background:var(--bg);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5);position:relative;
+  }
+  .m-status{
+    height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;
+    font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;
+  }
+  .m-status .notch{width:120px;height:26px;background:#050507;border-radius:14px;position:absolute;left:50%;top:9px;transform:translateX(-50%);}
+  .m-nav{height:56px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--border);gap:12px;}
+  .m-nav .burger{width:20px;display:flex;flex-direction:column;gap:5px;margin-left:auto;flex:none;}
+  .m-nav .burger i{height:1.5px;background:var(--muted);border-radius:1px;}
+  .m-hero{
+    position:relative;overflow:hidden;text-align:center;padding:56px 24px 44px;border-bottom:1px solid var(--border);
+  }
+  .m-hero .hero-grid{background-size:44px 44px;}
+  .m-hero .hero-glow{width:520px;height:360px;top:-120px;}
+  .m-orbit{
+    position:absolute;width:760px;height:760px;border-radius:50%;left:50%;top:150px;transform:translateX(-50%);
+    background:linear-gradient(var(--bg),var(--bg)) padding-box,
+      conic-gradient(from 215deg,transparent 0deg,rgba(138,112,255,.45) 30deg,rgba(185,168,255,.15) 60deg,transparent 95deg) border-box;
+    border:1px solid transparent;opacity:.8;pointer-events:none;
+  }
+  .m-hero-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;}
+  .m-hero h1{margin-top:22px;font-size:31px;line-height:1.3;font-weight:800;letter-spacing:-.03em;}
+  .m-hero h1 .v{color:var(--violet-hi);}
+  .m-hero .hero-sub{margin-top:14px;font-size:13.5px;line-height:1.7;max-width:320px;text-align:center;}
+  .m-hero .hero-art{margin-top:24px;width:100%;}
+  .m-hero .hero-cta{margin-top:20px;flex-direction:column;width:100%;gap:10px;}
+  .m-hero .btn{width:100%;height:46px;font-size:14px;}
+  .m-hero .hero-stats{margin-top:30px;font-size:9.5px;gap:12px;letter-spacing:.08em;justify-content:center;}
+  .m-sec{padding:40px 20px;border-bottom:1px solid var(--border);}
+  .m-sec .sec-head{flex-wrap:wrap;gap:8px 12px;margin-bottom:20px;}
+  .m-sec .sec-head h2{font-size:19px;}
+  .m-prog .prog-feature{padding:16px 20px 22px;}
+  .m-prog .pf-score .num{font-size:36px;}
+  .m-prog .pf-score .raid{font-size:13.5px;}
+  .m-prog .prog-side{margin-top:14px;}
+  .m-prog .prog-mini{padding:14px 18px 18px;}
+  .m-guild-scroll{
+    display:flex;gap:12px;overflow:hidden;margin:0 -20px;padding:6px 20px 4px;
+  }
+  .m-guild-scroll .gcard{flex:0 0 190px;transform:none;}
+  .m-guild-scroll .gcard.elev{transform:none;}
+  .scroll-hint{display:flex;gap:5px;justify-content:center;margin-top:16px;}
+  .scroll-hint i{width:5px;height:5px;border-radius:50%;background:#26263A;}
+  .scroll-hint i.on{background:var(--violet);width:16px;border-radius:3px;}
+  .m-invite{margin-top:18px;flex-wrap:wrap;padding:14px 16px;font-size:12.5px;}
+  .m-alli .alli-left .row1{gap:14px;}
+  .m-alli .alli-mark-slot{width:96px;}
+  .m-alli .alli-name{font-size:21px;}
+  .m-alli .alli-desc{font-size:13.5px;margin-top:14px;}
+  .m-alli .alli-list{margin-top:24px;}
+  .m-alli .alli-item{padding:14px 16px;gap:10px;}
+  .m-alli .alli-date{width:60px;font-size:10px;}
+  .m-alli .alli-title{font-size:13px;}
+  .m-maker{padding:32px 20px;display:flex;align-items:center;gap:14px;background:var(--surface);border-bottom:1px solid var(--border);}
+  .m-maker .t1{font-size:14px;}
+  .m-maker .t2{font-size:12px;}
+  .m-footer{padding:28px 20px 120px;display:flex;flex-direction:column;gap:14px;}
+  .m-footer .footer-menu{flex-wrap:wrap;gap:10px 18px;font-size:12px;}
+  .m-footer .copy{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:#55556E;}
+  .m-sticky{
+    position:absolute;left:0;right:0;bottom:0;padding:14px 20px 26px;
+    background:linear-gradient(transparent,rgba(9,9,13,.94) 34%);
+    display:flex;
+  }
+  .m-sticky .btn{flex:1;height:50px;font-size:15px;box-shadow:0 8px 28px rgba(138,112,255,.28);}
+</style>
+</head>
+<body>
+
+  <!-- ===== meta header strip ===== -->
+  <div class="meta-wrap">
+    <div class="meta-strip">
+      <div>
+        <div class="meta-title">WANION 시안 <span class="d">D</span> — Showcase · 홍보 랜딩형</div>
+        <div class="meta-concept" style="margin-top:6px;">로그아웃 상태의 공개 얼굴 — 프로그레스를 전시하는 랜딩. 점선 프레임은 AI 생성 아트워크 슬롯(추후 이미지 생성 삽입).</div>
+      </div>
+      <div class="meta-tokens">
+        <span class="tok"><i style="background:#09090D;"></i>BG #09090D</span>
+        <span class="tok"><i style="background:#101018;"></i>SURFACE #101018</span>
+        <span class="tok"><i style="background:#1E1E2E;"></i>BORDER #1E1E2E</span>
+        <span class="tok"><i style="background:#8A70FF;"></i>후제 바이올렛 #8A70FF</span>
+        <span class="tok"><i style="background:#B9A8FF;"></i>HI #B9A8FF</span>
+        <span class="tok"><i style="background:#5B45E0;"></i>DEEP #5B45E0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame-label">Desktop · 1280 — wanion.site</div>
+
+  <!-- ================= DESKTOP FRAME ================= -->
+  <div class="browser">
+    <div class="browser-bar">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <div class="urlbar"><span class="lock"></span><span class="ellip">wanion.site</span></div>
+    </div>
+
+    <div class="page">
+
+      <!-- nav -->
+      <nav class="nav">
+        <div class="logo"><span class="en">WANION</span><span class="ko">와니온</span></div>
+        <div class="nav-menu">
+          <b>파티 찾기</b><span>길드</span><span>공격대</span><span>연합</span><span>업데이트</span>
+        </div>
+        <div class="nav-right">
+          <span class="nav-login">로그인</span>
+          <span class="btn btn-violet btn-sm">시작하기</span>
+        </div>
+      </nav>
+
+      <!-- 1. hero -->
+      <section class="hero">
+        <div class="hero-grid"></div>
+        <div class="hero-glow"></div>
+        <div class="orbit"></div>
+        <div class="orbit-node"></div>
+        <div class="hero-cols">
+          <div class="hero-inner">
+            <span class="chip"><i></i>Raid Operations Platform</span>
+            <h1>한국 와우의 레이드는<br><span class="v">여기서 굴러갑니다</span></h1>
+            <p class="hero-sub">길드·공격대·연합 — 한국 와우의 실제 구조 그대로.<br><b>소속이 없어도 공대장이 될 수 있습니다.</b></p>
+            <div class="hero-cta">
+              <span class="btn btn-violet btn-lg">파티 찾아보기</span>
+              <span class="btn btn-outline btn-lg">길드 등록 안내</span>
+            </div>
+          </div>
+          <div class="artslot artslot--169 hero-art">
+            <span class="al-label">◆ AI ART · HERO KEY VISUAL · 16:9</span>
+            <span class="al-hint">WANION 히어로 키비주얼 — 공허 궤도/포탈, 다크 바이올렛</span>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <span>등록 길드 <b>5</b></span><span class="sep"></span>
+          <span>공격대 <b>2</b></span><span class="sep"></span>
+          <span>이번 주 공대 <b>12</b></span>
+        </div>
+      </section>
+
+      <!-- 2. progress showcase -->
+      <section class="sec">
+        <div class="sec-head">
+          <h2>지금 이 순간의 프로그레스</h2>
+          <span class="en">Live Progress</span>
+          <span class="right ellip">Warcraft Logs 연동 · 시즌 3 공허첨탑</span>
+        </div>
+        <div class="prog-grid">
+          <!-- feature card -->
+          <div class="prog-feature">
+            <div class="artslot artslot--31 prog-banner">
+              <span class="al-label">◆ AI ART · RAID BANNER · 3:1</span>
+              <span class="al-hint">공허첨탑 키아트 — 첨탑 실루엣, 다크 바이올렛</span>
+            </div>
+            <div class="pf-top">
+              <span class="live-dot"><i></i>Live</span>
+            </div>
+            <div class="pf-team">
+              <div class="team-glyph">SAD</div>
+              <div style="min-width:0;">
+                <div class="nm ellip">TeamSAD</div>
+                <div class="tp ellip">Raid Team · 독립 공격대</div>
+              </div>
+            </div>
+            <div class="pf-score">
+              <span class="num"><b>5</b>/8</span>
+              <span class="raid ellip">공허첨탑</span>
+              <span class="diff">신화</span>
+            </div>
+            <div class="segbar">
+              <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i>
+            </div>
+            <div class="pf-foot">
+              <span class="ellip">최근 킬: <b>무너지는 회랑</b> (7/20)</span>
+              <span class="wcl"><i></i>WCL 연동</span>
+            </div>
+          </div>
+          <!-- side cards -->
+          <div class="prog-side">
+            <div class="prog-mini">
+              <div class="artslot artslot--31 artslot--sm pm-banner">
+                <span class="al-label">◆ AI ART · RAID BANNER · 3:1</span>
+                <span class="al-hint">공허첨탑 키아트 — 다크 바이올렛</span>
+              </div>
+              <div class="pm-top">
+                <div class="pm-glyph">한</div>
+                <div style="min-width:0;">
+                  <div class="pm-name ellip">한길련 연합</div>
+                  <div class="pm-type ellip">Alliance · 4 Guilds</div>
+                </div>
+                <span class="pm-badge" style="margin-left:auto;">영웅</span>
+              </div>
+              <div class="pm-score"><span class="n"><b>8</b>/8</span><span class="l ellip">공허첨탑 · 올킬</span></div>
+              <div class="minibar"><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i></div>
+            </div>
+            <div class="prog-mini">
+              <div class="artslot artslot--31 artslot--sm pm-banner">
+                <span class="al-label">◆ AI ART · RAID BANNER · 3:1</span>
+                <span class="al-hint">공허첨탑 키아트 — 다크 바이올렛</span>
+              </div>
+              <div class="pm-top">
+                <div class="pm-glyph">SF</div>
+                <div style="min-width:0;">
+                  <div class="pm-name ellip">스타폴</div>
+                  <div class="pm-type ellip">Guild · 아즈샤라</div>
+                </div>
+                <span class="pm-badge" style="margin-left:auto;">신화</span>
+              </div>
+              <div class="pm-score"><span class="n"><b>3</b>/8</span><span class="l ellip">공허첨탑 · 진행 중</span></div>
+              <div class="minibar"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. registered guilds -->
+      <section class="sec">
+        <div class="sec-head">
+          <h2>등록 길드</h2>
+          <span class="en">Founding Five</span>
+          <span class="right ellip">아즈샤라 서버 · 전원 인증 완료</span>
+        </div>
+        <div class="guild-row">
+          <div class="gcard">
+            <div class="artslot artslot--11 artslot--sm">
+              <span class="al-label">◆ AI ART · EMBLEM · 1:1</span>
+              <span class="al-hint">길드 엠블럼 AI 생성 — 다크 바이올렛</span>
+            </div>
+            <div class="gname-line"><span class="gdot gd1"></span><span class="gname ellip">와우팩토리</span></div>
+            <div class="gserver ellip">아즈샤라 <span class="gverify"><span class="ck">✓</span>인증</span></div>
+            <div class="gfoot"><span class="kwgu"><i></i>KWGU 한길련</span></div>
+          </div>
+          <div class="gcard elev">
+            <div class="artslot artslot--11 artslot--sm">
+              <span class="al-label">◆ AI ART · EMBLEM · 1:1</span>
+              <span class="al-hint">길드 엠블럼 AI 생성 — 다크 바이올렛</span>
+            </div>
+            <div class="gname-line"><span class="gdot gd2"></span><span class="gname ellip">교차로</span></div>
+            <div class="gserver ellip">아즈샤라 <span class="gverify"><span class="ck">✓</span>인증</span></div>
+            <div class="gfoot"><span class="kwgu"><i></i>KWGU 한길련</span></div>
+          </div>
+          <div class="gcard">
+            <div class="artslot artslot--11 artslot--sm">
+              <span class="al-label">◆ AI ART · EMBLEM · 1:1</span>
+              <span class="al-hint">길드 엠블럼 AI 생성 — 다크 바이올렛</span>
+            </div>
+            <div class="gname-line"><span class="gdot gd3"></span><span class="gname ellip">이에요</span></div>
+            <div class="gserver ellip">아즈샤라 <span class="gverify"><span class="ck">✓</span>인증</span></div>
+            <div class="gfoot"><span class="kwgu"><i></i>KWGU 한길련</span></div>
+          </div>
+          <div class="gcard">
+            <div class="artslot artslot--11 artslot--sm">
+              <span class="al-label">◆ AI ART · EMBLEM · 1:1</span>
+              <span class="al-hint">길드 엠블럼 AI 생성 — 다크 바이올렛</span>
+            </div>
+            <div class="gname-line"><span class="gdot gd4"></span><span class="gname ellip">스타폴</span></div>
+            <div class="gserver ellip">아즈샤라 <span class="gverify"><span class="ck">✓</span>인증</span></div>
+            <div class="gfoot"><span class="kwgu"><i></i>KWGU 한길련</span></div>
+          </div>
+          <div class="gcard">
+            <div class="artslot artslot--11 artslot--sm">
+              <span class="al-label">◆ AI ART · EMBLEM · 1:1</span>
+              <span class="al-hint">길드 엠블럼 AI 생성 — 다크 바이올렛</span>
+            </div>
+            <div class="gname-line"><span class="gdot gd5"></span><span class="gname ellip">두부킴의유기견들</span></div>
+            <div class="gserver ellip">아즈샤라 <span class="gverify"><span class="ck">✓</span>인증</span></div>
+            <div class="gfoot"><span class="indep">Independent</span></div>
+          </div>
+        </div>
+        <div class="invite-strip">
+          <span class="tag">Invite Only</span>
+          <span class="ellip">길드 등록은 현재 <b>초대제</b>입니다 — <b>다음 시즌 오픈 예정</b></span>
+        </div>
+      </section>
+
+      <!-- 4. alliance band -->
+      <section class="sec">
+        <div class="alli">
+          <div class="alli-left">
+            <div class="row1">
+              <div class="artslot artslot--11 artslot--sm alli-mark-slot">
+                <span class="al-label">◆ AI ART · 1:1</span>
+                <span class="al-hint">한길련 연합 마크 — 다크 바이올렛</span>
+              </div>
+              <div style="min-width:0;">
+                <div class="alli-name ellip">한길련</div>
+                <div class="alli-en ellip">Korean WoW Guild Union</div>
+              </div>
+            </div>
+            <p class="alli-desc"><b>4개 길드가 함께 굴리는 연합 레이드.</b><br>와우팩토리·교차로·이에요·스타폴 — 길드 하나로는 채우기 힘든 공대를, 연합은 매주 굴립니다.</p>
+            <span class="btn btn-outline btn-sm">연합 페이지</span>
+          </div>
+          <div class="alli-list">
+            <div class="alli-list-head"><span>최근 연합 공대</span><span style="margin-left:auto;">Recent Union Raids</span></div>
+            <div class="alli-item">
+              <span class="alli-date">7/19 (토)</span>
+              <span class="alli-title ellip">공허첨탑 영웅 — 주간 클리어</span>
+              <span class="alli-count"><b>20</b>/20</span>
+              <span class="alli-full">마감</span>
+            </div>
+            <div class="alli-item">
+              <span class="alli-date">7/16 (수)</span>
+              <span class="alli-title ellip">공허첨탑 신화 — 4넴 트라이</span>
+              <span class="alli-count"><b>18</b>/20</span>
+              <span class="alli-full">마감</span>
+            </div>
+            <div class="alli-item">
+              <span class="alli-date">7/12 (토)</span>
+              <span class="alli-title ellip">공허첨탑 영웅 — 신규 융화</span>
+              <span class="alli-count"><b>20</b>/20</span>
+              <span class="alli-full">마감</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. maker band -->
+      <section class="maker">
+        <div class="maker-glyph">후</div>
+        <div style="min-width:0;">
+          <div class="t1 ellip">Made by 후제공방</div>
+          <div class="t2 ellip">애드온·웹·봇까지, 레이드에 필요한 모든 도구</div>
+        </div>
+        <span class="maker-link">업데이트 노트<span class="arr">→</span></span>
+      </section>
+
+      <!-- footer -->
+      <footer class="footer">
+        <span class="wordmark">WANION</span>
+        <div class="footer-menu">
+          <span>파티 찾기</span><span>길드</span><span>공격대</span><span>연합</span><span>업데이트</span>
+        </div>
+        <span class="copy">© 2026 후제공방 · HUJE WORKSHOP</span>
+      </footer>
+
+    </div>
+  </div>
+
+  <div class="frame-label">Mobile · 390</div>
+
+  <!-- ================= MOBILE FRAME ================= -->
+  <div class="mobile-shell">
+    <div class="m-status">
+      <span>21:42</span>
+      <div class="notch"></div>
+      <span>5G ▮▮▮</span>
+    </div>
+
+    <nav class="m-nav">
+      <div class="logo"><span class="en" style="font-size:16px;">WANION</span><span class="ko">와니온</span></div>
+      <span class="btn btn-violet btn-sm" style="margin-left:auto;height:32px;padding:0 14px;font-size:12px;">시작하기</span>
+      <div class="burger"><i></i><i></i><i></i></div>
+    </nav>
+
+    <!-- hero -->
+    <section class="m-hero">
+      <div class="hero-grid"></div>
+      <div class="hero-glow"></div>
+      <div class="m-orbit"></div>
+      <div class="m-hero-inner">
+        <span class="chip" style="font-size:8.5px;padding:6px 12px;"><i></i>Raid Operations Platform</span>
+        <h1>한국 와우의 레이드는<br><span class="v">여기서 굴러갑니다</span></h1>
+        <p class="hero-sub">길드·공격대·연합 — 한국 와우의 실제 구조 그대로. <b>소속이 없어도 공대장이 될 수 있습니다.</b></p>
+        <div class="artslot artslot--169 artslot--sm hero-art">
+          <span class="al-label">◆ AI ART · HERO KEY VISUAL · 16:9</span>
+          <span class="al-hint">WANION 히어로 키비주얼 — 공허 궤도/포탈, 다크 바이올렛</span>
+        </div>
+        <div class="hero-cta">
+          <span class="btn btn-violet">파티 찾아보기</span>
+          <span class="btn btn-outline">길드 등록 안내</span>
+        </div>
+        <div class="hero-stats">
+          <span>등록 길드 <b>5</b></span><span class="sep"></span>
+          <span>공격대 <b>2</b></span><span class="sep"></span>
+          <span>이번 주 공대 <b>12</b></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- progress -->
+    <section class="m-sec m-prog">
+      <div class="sec-head">
+        <h2>지금 이 순간의 프로그레스</h2>
+        <span class="en">Live Progress</span>
+      </div>
+      <div class="prog-feature">
+        <div class="artslot artslot--31 artslot--sm prog-banner">
+          <span class="al-label">◆ AI ART · RAID BANNER · 3:1</span>
+          <span class="al-hint">공허첨탑 키아트 — 다크 바이올렛</span>
+        </div>
+        <div class="pf-top"><span class="live-dot"><i></i>Live</span></div>
+        <div class="pf-team">
+          <div class="team-glyph" style="width:38px;height:38px;font-size:11px;">SAD</div>
+          <div style="min-width:0;">
+            <div class="nm ellip" style="font-size:16px;">TeamSAD</div>
+            <div class="tp ellip">Raid Team · 독립 공격대</div>
+          </div>
+        </div>
+        <div class="pf-score">
+          <span class="num"><b>5</b>/8</span>
+          <span class="raid ellip">공허첨탑</span>
+          <span class="diff">신화</span>
+        </div>
+        <div class="segbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+        <div class="pf-foot" style="flex-wrap:wrap;gap:8px;">
+          <span class="ellip" style="font-size:12px;">최근 킬: <b>무너지는 회랑</b> (7/20)</span>
+          <span class="wcl"><i></i>WCL 연동</span>
+        </div>
+      </div>
+      <div class="prog-side">
+        <div class="prog-mini">
+          <div class="artslot artslot--31 artslot--sm pm-banner">
+            <span class="al-label">◆ AI ART · RAID BANNER · 3:1</span>
+            <span class="al-hint">공허첨탑 키아트 — 다크 바이올렛</span>
+          </div>
+          <div class="pm-top">
+            <div class="pm-glyph">한</div>
+            <div style="min-width:0;">
+              <div class="pm-name ellip">한길련 연합</div>
+              <div class="pm-type ellip">Alliance · 4 Guilds</div>
+            </div>
+            <span class="pm-badge" style="margin-left:auto;">영웅</span>
+          </div>
+          <div class="pm-score"><span class="n"><b>8</b>/8</span><span class="l ellip">공허첨탑 · 올킬</span></div>
+          <div class="minibar"><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i><i class="full"></i></div>
+        </div>
+        <div class="prog-mini">
+          <div class="artslot artslot--31 artslot--sm pm-banner">
+            <span class="al-label">◆ AI ART · RAID BANNER · 3:1</span>
+            <span class="al-hint">공허첨탑 키아트 — 다크 바이올렛</span>
+          </div>
+          <div class="pm-top">
+            <div class="pm-glyph">SF</div>
+            <div style="min-width:0;">
+              <div class="pm-name ellip">스타폴</div>
+              <div class="pm-type ellip">Guild · 아즈샤라</div>
+            </div>
+            <span class="pm-badge" style="margin-left:auto;">신화</span>
+          </div>
+          <div class="pm-score"><span class="n"><b>3</b>/8</span><span class="l ellip">공허첨탑 · 진행 중</span></div>
+          <div class="minibar"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- guilds (horizontal scroll) -->
+    <section class="m-sec">
+      <div class="sec-head">
+        <h2>등록 길드</h2>
+        <span class="en">Founding Five</span>
+      </div>
+      <div class="m-guild-scroll">
+        <div class="gcard">
+          <div class="artslot artslot--11 artslot--sm">
+            <span class="al-label">◆ AI ART · EMBLEM · 1:1</span>
+            <span class="al-hint">길드 엠블럼 AI 생성 — 다크 바이올렛</span>
+          </div>
+          <div class="gname-line"><span class="gdot gd1"></span><span class="gname ellip">와우팩토리</span></div>
+          <div class="gserver ellip">아즈샤라 <span class="gverify"><span class="ck">✓</span>인증</span></div>
+          <div class="gfoot"><span class="kwgu"><i></i>KWGU 한길련</span></div>
+        </div>
+        <div class="gcard elev">
+          <div class="artslot artslot--11 artslot--sm">
+            <span class="al-label">◆ AI ART · EMBLEM · 1:1</span>
+            <span class="al-hint">길드 엠블럼 AI 생성 — 다크 바이올렛</span>
+          </div>
+          <div class="gname-line"><span class="gdot gd2"></span><span class="gname ellip">교차로</span></div>
+          <div class="gserver ellip">아즈샤라 <span class="gverify"><span class="ck">✓</span>인증</span></div>
+          <div class="gfoot"><span class="kwgu"><i></i>KWGU 한길련</span></div>
+        </div>
+        <div class="gcard">
+          <div class="artslot artslot--11 artslot--sm">
+            <span class="al-label">◆ AI ART · EMBLEM · 1:1</span>
+            <span class="al-hint">길드 엠블럼 AI 생성 — 다크 바이올렛</span>
+          </div>
+          <div class="gname-line"><span class="gdot gd3"></span><span class="gname ellip">이에요</span></div>
+          <div class="gserver ellip">아즈샤라 <span class="gverify"><span class="ck">✓</span>인증</span></div>
+          <div class="gfoot"><span class="kwgu"><i></i>KWGU 한길련</span></div>
+        </div>
+      </div>
+      <div class="scroll-hint"><i class="on"></i><i></i><i></i></div>
+      <div class="invite-strip m-invite">
+        <span class="tag">Invite Only</span>
+        <span>길드 등록은 현재 <b>초대제</b>입니다 — <b>다음 시즌 오픈 예정</b></span>
+      </div>
+    </section>
+
+    <!-- alliance -->
+    <section class="m-sec m-alli">
+      <div class="alli-left">
+        <div class="row1">
+          <div class="artslot artslot--11 artslot--sm alli-mark-slot">
+            <span class="al-label">◆ AI ART · 1:1</span>
+            <span class="al-hint">한길련 연합 마크 — 다크 바이올렛</span>
+          </div>
+          <div style="min-width:0;">
+            <div class="alli-name ellip">한길련</div>
+            <div class="alli-en ellip">Korean WoW Guild Union</div>
+          </div>
+        </div>
+        <p class="alli-desc"><b>4개 길드가 함께 굴리는 연합 레이드.</b> 길드 하나로는 채우기 힘든 공대를, 연합은 매주 굴립니다.</p>
+        <span class="btn btn-outline btn-sm" style="margin-top:18px;">연합 페이지</span>
+      </div>
+      <div class="alli-list">
+        <div class="alli-list-head"><span>최근 연합 공대</span></div>
+        <div class="alli-item">
+          <span class="alli-date">7/19 (토)</span>
+          <span class="alli-title ellip">공허첨탑 영웅 — 주간 클리어</span>
+          <span class="alli-count"><b>20</b>/20</span>
+        </div>
+        <div class="alli-item">
+          <span class="alli-date">7/16 (수)</span>
+          <span class="alli-title ellip">공허첨탑 신화 — 4넴 트라이</span>
+          <span class="alli-count"><b>18</b>/20</span>
+        </div>
+        <div class="alli-item">
+          <span class="alli-date">7/12 (토)</span>
+          <span class="alli-title ellip">공허첨탑 영웅 — 신규 융화</span>
+          <span class="alli-count"><b>20</b>/20</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- maker -->
+    <section class="m-maker">
+      <div class="maker-glyph" style="width:36px;height:36px;font-size:12px;">후</div>
+      <div style="min-width:0;">
+        <div class="t1 ellip" style="font-size:14px;font-weight:700;">Made by 후제공방</div>
+        <div class="t2 ellip" style="font-size:12px;color:var(--muted);margin-top:3px;">애드온·웹·봇까지, 레이드에 필요한 모든 도구</div>
+      </div>
+      <span class="maker-link" style="font-size:12px;">업데이트 노트<span class="arr">→</span></span>
+    </section>
+
+    <!-- footer -->
+    <footer class="m-footer">
+      <span class="wordmark" style="font-weight:800;font-size:14px;letter-spacing:.06em;">WANION</span>
+      <div class="footer-menu">
+        <span>파티 찾기</span><span>길드</span><span>공격대</span><span>연합</span><span>업데이트</span>
+      </div>
+      <span class="copy">© 2026 후제공방 · HUJE WORKSHOP</span>
+    </footer>
+
+    <!-- sticky CTA -->
+    <div class="m-sticky">
+      <span class="btn btn-violet">시작하기</span>
+    </div>
+  </div>
+
+</body>
+</html>
