@@ -1,6 +1,41 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { RAIDS, WEEK } from '../lib/mock';
+import { subscribeUpcomingRaids } from '../lib/db';
+import { getCaps } from '../lib/utils';
+
+// Firestore 레이드 문서 → 보드 로우 형태로 변환
+function adaptRaid(r) {
+  const start = r.startAt?.toDate ? r.startAt.toDate() : new Date();
+  const end = r.endAt?.toDate ? r.endAt.toDate() : start;
+  const pad = (n) => String(n).padStart(2, '0');
+  const c = getCaps(r);
+  const caps = { tank: c.tankCap, heal: c.healerCap, dps: c.dpsCap };
+  const counts = {
+    tank: r.counts?.tank || 0,
+    heal: r.counts?.heal || 0,
+    dps: r.counts?.dps || 0,
+  };
+  const full = counts.tank + counts.heal + counts.dps >= caps.tank + caps.heal + caps.dps;
+  return {
+    id: r.id,
+    title: r.title || '공격대',
+    hostType: r.hostType || 'user',
+    hostName: r.hostName || '',
+    leader: r.leader || '',
+    leaderNoGuild: !!r.leaderNoGuild,
+    difficulty: r.difficulty || '영웅',
+    date: `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`,
+    day: '일월화수목금토'[start.getDay()],
+    time: `${pad(start.getHours())}:${pad(start.getMinutes())}–${pad(end.getHours())}:${pad(end.getMinutes())}`,
+    minIlvl: r.minIlvl || null,
+    caps,
+    counts,
+    dday: Math.max(0, Math.ceil((start.getTime() - Date.now()) / 86400000)),
+    status: full ? 'closed' : 'recruiting',
+    guestParty: !!r.guestParty,
+  };
+}
 import { MonoLabel, SectionTitle, Chip, DDay, SlotSquares, HostBadge } from '../components/ui';
 
 const HOST_FILTERS = [
@@ -22,10 +57,19 @@ export default function BoardPage() {
   const [host, setHost] = useState('all');
   const [diff, setDiff] = useState('전체');
   const [role, setRole] = useState('all');
+  const [live, setLive] = useState(null); // null=로딩, []=실데이터 없음
+
+  useEffect(() => subscribeUpcomingRaids(setLive), []);
+
+  const demoMode = Array.isArray(live) && live.length === 0;
+  const source = useMemo(
+    () => (live && live.length ? live.map(adaptRaid) : RAIDS),
+    [live]
+  );
 
   const list = useMemo(
     () =>
-      RAIDS.filter((r) => (host === 'all' ? true : r.hostType === host))
+      source.filter((r) => (host === 'all' ? true : r.hostType === host))
         .filter((r) => (diff === '전체' ? true : r.difficulty === diff))
         .filter((r) => (role === 'all' ? true : r.status === 'recruiting' && r.counts[role] < r.caps[role]))
         .sort((a, b) => {
@@ -34,7 +78,7 @@ export default function BoardPage() {
           const bc = b.status === 'recruiting' ? 0 : 1;
           return ac - bc || a.dday - b.dday;
         }),
-    [host, diff, role]
+    [host, diff, role, source]
   );
 
   return (
@@ -57,6 +101,12 @@ export default function BoardPage() {
           </div>
         </div>
       </div>
+
+      {demoMode && (
+        <div className="mb-4 rounded border border-violet-deep/50 bg-violet/5 px-3 py-2 text-[12px] text-violet-hi">
+          아직 등록된 공대가 없어 데모 데이터를 표시 중입니다 — 운영자 시드·레이드 생성 후 실데이터로 전환됩니다.
+        </div>
+      )}
 
       {/* 주간 스트립 */}
       <div className="mb-5 flex gap-1.5 overflow-x-auto rounded border border-line bg-surface p-2">

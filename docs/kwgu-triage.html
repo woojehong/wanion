@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KWGU → 와니온 이식 판정표</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{--ink:#09090D;--sf:#101018;--sf2:#14141F;--ln:#1E1E2E;--vi:#8A70FF;--vih:#B9A8FF;--vid:#5B45E0;--tx:#EDEDF2;--sub:#8B8B9E;--mut:#5C5C6E;--keep:#4ADE80;--fix:#FBBF24;--drop:#F87171}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--ink);color:var(--tx);font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:28px 16px 120px}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  header h1{font-size:24px;font-weight:800;margin-top:6px}
+  header p{color:var(--sub);font-size:13px;margin-top:8px;line-height:1.6}
+  .legend{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .legend span{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px}
+  .dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+  section{margin-top:30px}
+  .sec-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .sec-bar{width:3px;height:20px;background:var(--vi);border-radius:99px}
+  .sec-h h2{font-size:16px;font-weight:700}
+  .sec-h .mono{color:var(--vi)}
+  .item{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+  .item .no{font-family:ui-monospace,monospace;font-size:11px;color:var(--mut);min-width:22px;padding-top:3px}
+  .item .body{flex:1;min-width:0}
+  .item h3{font-size:14px;font-weight:700}
+  .item p{font-size:12px;color:var(--sub);margin-top:3px;line-height:1.55}
+  .item .why{font-size:11px;color:var(--mut);margin-top:4px}
+  .choices{display:flex;gap:4px;flex-shrink:0;padding-top:2px}
+  .choices button{background:transparent;border:1px solid var(--ln);color:var(--sub);font-size:12px;font-weight:600;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
+  .choices button:hover{border-color:var(--vid)}
+  .choices button.on-keep{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.5);color:var(--keep)}
+  .choices button.on-fix{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.5);color:var(--fix)}
+  .choices button.on-drop{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.5);color:var(--drop)}
+  .changed{outline:1px solid var(--vid)}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:rgba(9,9,13,.95);border-top:1px solid var(--ln);backdrop-filter:blur(8px)}
+  .bar-in{max-width:880px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .cnt{font-size:12px;color:var(--sub)}
+  .cnt b{color:var(--tx)}
+  .copybtn{margin-left:auto;background:var(--vi);color:var(--ink);border:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:7px;cursor:pointer;font-family:inherit}
+  .copybtn:hover{background:var(--vih)}
+  textarea{width:100%;height:120px;margin-top:10px;background:var(--sf2);border:1px solid var(--ln);border-radius:7px;color:var(--tx);font-size:11px;font-family:ui-monospace,monospace;padding:10px;display:none}
+  @media(max-width:640px){.item{flex-direction:column}.choices{padding-top:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="mono" style="color:var(--vi)">WANION MIGRATION TRIAGE</span>
+    <h1>KWGU 시스템 → 와니온 이식 판정표</h1>
+    <p>한길련 시스템 전 기능 44개를 전수 리스팅했습니다. 각 항목에 수진의 추천이 미리 선택돼 있어요 — <b style="color:var(--tx)">동의하면 그대로 두고, 다른 의견인 것만 클릭해서 바꾼 뒤</b> 하단 [결과 복사]를 눌러 수진에게 붙여넣어 주세요. 추천과 다르게 바꾼 항목은 보라 테두리로 표시됩니다.</p>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--keep)"></i>유지 — 그대로 이식 (UI만 새로)</span>
+      <span><i class="dot" style="background:var(--fix)"></i>보완 — 이식하되 개선</span>
+      <span><i class="dot" style="background:var(--drop)"></i>폐기 — 와니온에선 제외/대체</span>
+    </div>
+  </header>
+  <div id="app"></div>
+  <textarea id="out" readonly></textarea>
+</div>
+<div class="bar"><div class="bar-in">
+  <span class="cnt">유지 <b id="c-keep">0</b></span>
+  <span class="cnt">보완 <b id="c-fix">0</b></span>
+  <span class="cnt">폐기 <b id="c-drop">0</b></span>
+  <span class="cnt" style="color:var(--vih)">내가 바꾼 항목 <b id="c-diff">0</b></span>
+  <button class="copybtn" onclick="copyOut()">결과 복사</button>
+</div></div>
+<script>
+const K='keep',F='fix',D='drop';
+const DATA=[
+["A. 일정 · 달력",[
+ ["월간 달력뷰 + 카드뷰 토글","메인의 달력/카드 전환 보기",K,"와니온 3뷰(탐색·달력·내일정)의 '달력' 축으로 계승"],
+ ["구분(길드)·난이도 필터 칩","전체/연합/길드별 + 일반/영웅/신화",K,"프로토타입 보드에 이미 이식됨 + 역할 빈자리 필터 추가"],
+ ["레이드 생성 폼","제목·날짜·시간·난이도·총원(10~31)·힐러 정원 조절·최소템렙·설명",K,"검증된 폼 그대로, 디자인만"],
+ ["참가 허용 길드(allowedGuilds) 규칙","연합=전체, 길드팟=지정 길드만",K,"와니온 스코프 모델과 정확히 호환"],
+ ["대기 허용 길드(waitGuilds) 규칙","정식 불가여도 대기는 허용하는 세분화",K,"P0에서 미저장 버그 고쳐서 이제 실작동"],
+ ["무길드 허용(allowNoGuild) 토글","무소속 참가 허용 여부",K,"무소속 공대장 시대에 더 중요해짐"],
+ ["소분류(subCategory) 시스템","관리자가 관리하는 일정 소분류 + 디코 채널 필터 연동",K,"봇 카드보드 필터의 기반"],
+ ["소프트삭제 · 아카이브 · 복원","레이드를 지우지 않고 숨김/복구",K,"운영 실수 방지 — 그대로"]
+]],
+["B. 신청 · 로스터 (한길련의 심장)",[
+ ["신청 자격 3단계","정식 참가 / 대기만 / 신청 불가",K,"와니온 핵심 룰로 승격, 웹·봇 판정 로직 단일화"],
+ ["탱힐딜 정원 + 초과 시 자동 대기",'역할별 정원 차면 대기로',F,"로직 유지하되 동시신청 race를 트랜잭션으로 봉인"],
+ ["벤치(예비) 신청",'"자리 나면 갈게요" 상태',K,"포인트 시대에 벤치 보상 여지도 생김"],
+ ["스왑 시스템","다른 역할 전환 가능 표시 + 스왑 가능자 목록",K,"타 서비스에 없는 차별화 — 반드시 보존"],
+ ["예약(관리자 대리 등록)","미가입자·타인 자리를 관리자가 선점",K,"용병/게스트 개념과 연결해 확장"],
+ ["신청 메모","신청자가 남기는 한마디 (관리자·본인만 열람)",K,"그대로"],
+ ["취소 기록 + 사유","취소자 명단 별도 보존, 재신청해도 이력 유지",K,"노쇼 신고·벌점의 증거 체계로 승격"],
+ ["관리자 신청 관리 모달","승격/강등/제외/수정",K,"P0에서 취소기록 인자 버그 픽스됨"],
+ ["시너지 보드","공대 버프·디버프 커버리지 시각화",K,"와니온 킬러 기능 — 공대 상세에 전면 배치"],
+ ["아이템레벨 자진 신고","신청 시 템렙 수동 입력",F,"P3에서 BNet 자동 검증으로 대체 (미연동자만 수동)"],
+ ["MobileRosterRow 컴포넌트","어디서도 안 쓰이는 죽은 파일",D,"감사에서 확인된 데드코드"]
+]],
+["C. 시뮬레이터",[
+ ["파티 배치 시뮬레이터","드래그로 1~4파티 짜기 + 프리셋 저장",F,"기능 유지. 자동저장을 본문서에서 분리(성능) + P4 애드온 /wanion sort로 인게임 자동 배치 연동"]
+]],
+["D. 길드 · 프로필",[
+ ["길드 뱃지 에디터","도형·배경·테두리·이펙트·텍스트 커스텀",F,"기능 유지, 3중 복사본을 단일 컴포넌트로 통합"],
+ ["길드 소개 페이지 + 블록 에디터","마스터가 꾸미는 길드 홈 (폰트 6종)",F,"공개 프로필 페이지로 확장(프로그레스·모집 추가), 폰트는 필요할 때만 로드"],
+ ["길드 깃발 이미지","guildflag PNG들",F,"AI 생성 아트 슬롯 체계로 업그레이드"],
+ ["길드원 관리","역할 변경·공대장가능 토글·제명·무소속 데려오기",K,"memberships 모델 위에 그대로"],
+ ["프로필: 복수 캐릭터 + 대표 지정","캐릭별 특성 여러 개 등록",F,"구조 유지, P3에서 BNet 자동 동기화 얹기"],
+ ["공대장 후보(leaderCapable) 표시","로스터에 왕관 표시",K,"그대로"]
+]],
+["E. 게시판 · 소통",[
+ ["게시판 3분류 (공지/자유/구인)","고정 공지 + 댓글 + 페이지네이션",K,"스코프별(연합/길드/공대) 게시판으로 확장"],
+ ["권한별 삭제 규칙","본인/슈퍼/마스터/관리자(자기 길드 일반원만)",K,"검증된 규칙 그대로"],
+ ["승격·강등 알림 팝업","내 신청 상태 변화 알림",F,"알림 센터(쪽지·디코 DM 연동)로 통합 확장"]
+]],
+["F. 디스코드 봇",[
+ ["카드보드","채널에 모집 카드 자동 게시·실시간 갱신",K,"와니온봇의 간판 기능으로 이식"],
+ ["슬래시 명령 세트","/일정 /신청 /취소 /내신청 /연동",K,"P0에서 봇 템렙 미검사 버그 픽스됨"],
+ ["채널 구독 설정","길드/연합별 + 소분류 필터로 채널마다 다른 카드",K,"멀티 서버 시대에 더 중요"],
+ ["포럼 자동 생성","길드별 모집 포럼 프로비저닝",F,"유지하되 사용 빈도 보고 우선순위 조정"],
+ ["웹훅 알림 (신청 생성/확정)","실시간 알림 발송",F,"픽스 알림·포인트 알림 추가하며 통폐합 (함수 5중 기동 → 정리)"]
+]],
+["G. 관리자 도구",[
+ ["유저 관리 탭","검색·역할·길드 이동·삭제",K,"플랫폼 운영자 콘솔로 승격"],
+ ["PIN 초기화 도구","슈퍼가 임시 PIN 발급",D,"소셜 로그인 전환으로 존재 이유 소멸"],
+ ["레이드 아카이브 + 로그 뷰어","지난 공대·활동 로그 열람",K,"출석·포인트 감사 도구로 확장"],
+ ["게임데이터 시드/마이그레이션 도구","클래스·시너지·서버 데이터 관리",K,"내부 도구로 유지"],
+ ["숨은 관리자 경로(/kga_adminnn)","URL 은닉식 접근",D,"퍼블릭 리포에선 무의미 — 역할 기반 라우팅으로 대체"]
+]],
+["H. 계정 · 인프라",[
+ ["닉네임 + 4자리 PIN 로그인","현행 로그인 방식",D,"보안 취약(브루트포스). 소셜 로그인 + 기존회원 병합 브릿지로 대체"],
+ ["관리자 모드 토글","관리 기능 켜고 끄는 스위치",F,"유지하되 기기(localStorage)가 아닌 계정 기준으로"],
+ ["비정규화 스냅샷 설계","신청서에 길드·클래스 정보 복사 저장",K,"읽기 효율의 핵심 설계 철학 — 계승"],
+ ["HashRouter + GitHub Pages 배포","현행 배포 방식",K,"와니온도 동일 스택 (이미 배포 완료)"],
+ ["전체 컬렉션 실시간 구독","raids·apps 무필터 구독 패턴",D,"읽기폭탄 — 기간 쿼리 + 카운트 비정규화로 대체 (0원 운영의 전제)"],
+ ["거대 단일 파일 구조","SuperAdmin 1,746줄 · 봇 1,520줄",D,"기능은 살리고 파일은 분해 + 코드 스플리팅"]
+]]
+];
+let items=[];
+DATA.forEach(([g,list],gi)=>{list.forEach(it=>items.push({g,name:it[0],desc:it[1],rec:it[2],why:it[3],cur:it[2]}))});
+const LBL={keep:"유지",fix:"보완",drop:"폐기"};
+function render(){
+  const app=document.getElementById('app');app.innerHTML='';let n=0,gi=0;
+  DATA.forEach(([g,list])=>{
+    const sec=document.createElement('section');
+    sec.innerHTML=`<div class="sec-h"><span class="sec-bar"></span><h2>${g}</h2><span class="mono">${list.length} ITEMS</span></div>`;
+    list.forEach(()=>{
+      const it=items[n],idx=n;
+      const div=document.createElement('div');
+      div.className='item'+(it.cur!==it.rec?' changed':'');
+      div.innerHTML=`<span class="no">${String(idx+1).padStart(2,'0')}</span>
+        <div class="body"><h3>${it.name}</h3><p>${it.desc}</p><div class="why">수진 추천: ${LBL[it.rec]} — ${it.why}</div></div>
+        <div class="choices">
+          <button class="${it.cur===K?'on-keep':''}" onclick="setC(${idx},'keep')">유지</button>
+          <button class="${it.cur===F?'on-fix':''}" onclick="setC(${idx},'fix')">보완</button>
+          <button class="${it.cur===D?'on-drop':''}" onclick="setC(${idx},'drop')">폐기</button>
+        </div>`;
+      sec.appendChild(div);n++;
+    });
+    app.appendChild(sec);
+  });
+  const c={keep:0,fix:0,drop:0};let diff=0;
+  items.forEach(it=>{c[it.cur]++;if(it.cur!==it.rec)diff++});
+  document.getElementById('c-keep').textContent=c.keep;
+  document.getElementById('c-fix').textContent=c.fix;
+  document.getElementById('c-drop').textContent=c.drop;
+  document.getElementById('c-diff').textContent=diff;
+}
+function setC(i,v){items[i].cur=v;render()}
+function copyOut(){
+  let lines=["[KWGU→와니온 판정 결과]"];
+  items.forEach((it,i)=>{
+    const mark=it.cur!==it.rec?" ★변경":"";
+    lines.push(`${String(i+1).padStart(2,'0')}. ${it.name} → ${LBL[it.cur]}${mark}`);
+  });
+  const txt=lines.join("\n");
+  const ta=document.getElementById('out');ta.value=txt;ta.style.display='block';ta.select();
+  try{document.execCommand('copy');alert('복사됐습니다! 수진에게 붙여넣어 주세요.')}catch(e){alert('아래 텍스트박스 내용을 직접 복사해주세요.')}
+}
+render();
+</script>
+</body>
+</html>

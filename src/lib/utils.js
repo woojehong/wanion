@@ -1,0 +1,208 @@
+import { DIFFICULTIES, TANK_CAP, SERVERS, UNION_GUILD_ID } from './constants';
+
+// ── Class / spec lookups ────────────────────────────────────────────
+
+export function getClass(classes, classId) {
+  return classes.find((c) => c.id === classId) || null;
+}
+
+export function getSpec(classes, classId, specId) {
+  const cls = getClass(classes, classId);
+  if (!cls) return null;
+  return cls.specs.find((s) => s.id === specId) || null;
+}
+
+/**
+ * 신청/캐릭터 데이터에서 화면에 표시할 특성 목록을 반환.
+ * allSpecNames(여러 특성) 우선, 없으면 specName 하나. 클래스+이름으로 specId를 역해석해
+ * 아이콘 매칭이 가능하게 하고, 최대 3개까지 반환한다. → [{ id, name }]
+ */
+export function appSpecList(classes, app) {
+  if (!app) return [];
+  const cls = getClass(classes, app.classId);
+  const names =
+    app.allSpecNames && app.allSpecNames.length
+      ? app.allSpecNames
+      : app.specName
+      ? [app.specName]
+      : [];
+  return names
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((nm) => {
+      const s = cls ? cls.specs.find((x) => x.name === nm) : null;
+      return { id: s ? s.id : null, name: nm };
+    });
+}
+
+// ── Date helpers (KST local time) ───────────────────────────────────
+
+export function toDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+export function fromDateKey(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export const WEEKDAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
+
+export function formatDateLabel(key) {
+  const d = fromDateKey(key);
+  return `${d.getMonth() + 1}/${d.getDate()} (${WEEKDAYS_KO[d.getDay()]})`;
+}
+
+/**
+ * Builds start/end Date objects from a date key and HH:mm strings.
+ * If end time is earlier than or equal to start time, the raid is
+ * treated as ending on the following day (crossing midnight).
+ * The raid always belongs to the start date.
+ */
+export function buildRaidTimes(dateKey, startTime, endTime) {
+  const base = fromDateKey(dateKey);
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  const startAt = new Date(base);
+  startAt.setHours(sh, sm, 0, 0);
+  const endAt = new Date(base);
+  endAt.setHours(eh, em, 0, 0);
+  if (endAt <= startAt) endAt.setDate(endAt.getDate() + 1);
+  return { startAt, endAt };
+}
+
+export function formatTimeRange(startAt, endAt) {
+  const fmt = (d) =>
+    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${fmt(startAt)} ~ ${fmt(endAt)}`;
+}
+
+/** 4-week calendar matrix starting on the Sunday of the current week. */
+export function buildCalendarWeeks(today = new Date()) {
+  const start = new Date(today);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - start.getDay());
+  const weeks = [];
+  for (let w = 0; w < 4; w += 1) {
+    const week = [];
+    for (let d = 0; d < 7; d += 1) {
+      const day = new Date(start);
+      day.setDate(start.getDate() + w * 7 + d);
+      week.push(day);
+    }
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+// ── Raid capacity ───────────────────────────────────────────────────
+
+export function getCaps(raid) {
+  const diff = DIFFICULTIES[raid.difficulty];
+  const totalCap = raid.totalCap ?? (diff ? diff.totalCap : 30);
+  const healerCap = raid.healerCap ?? (diff ? diff.defaultHealers : 6);
+  return {
+    totalCap,
+    tank: TANK_CAP,
+    healer: healerCap,
+    dps: totalCap - TANK_CAP - healerCap,
+  };
+}
+
+export function countFillColor(current, cap) {
+  if (current > cap) return 'text-red-400';
+  if (current === cap) return 'text-green-400';
+  return 'text-white';
+}
+
+// ── External character links ─────────────────────────────────────────
+
+/** Map Korean server name → English realm slug. Falls back to the Korean name. */
+function realmSlug(serverKo) {
+  const found = SERVERS.find((s) => s.ko === serverKo);
+  return found ? found.slug : encodeURIComponent(serverKo);
+}
+
+/** Warcraft Logs character URL. */
+export function wclUrl(serverKo, characterName) {
+  return `https://www.warcraftlogs.com/character/kr/${realmSlug(serverKo)}/${encodeURIComponent(characterName)}`;
+}
+
+/** Raider.io character URL. */
+export function raiderUrl(serverKo, characterName) {
+  return `https://raider.io/characters/kr/${realmSlug(serverKo)}/${encodeURIComponent(characterName)}`;
+}
+
+/** Blizzard Armory (전투정보실) character URL. */
+export function armoryUrl(serverKo, characterName) {
+  return `https://worldofwarcraft.blizzard.com/ko-kr/character/kr/${realmSlug(serverKo)}/${encodeURIComponent(characterName)}`;
+}
+
+// ── Guild sorting: English first, then 가나다, '소속 없음' last ──────
+
+export function sortGuilds(guilds) {
+  return [...guilds].sort((a, b) => {
+    // 연합 뱃지 문서는 일반 목록에서 항상 맨 뒤(보통은 호출부에서 제외됨).
+    if (a.isUnion !== b.isUnion) return a.isUnion ? 1 : -1;
+    // '소속 없음' always last.
+    if (a.isNone !== b.isNone) return a.isNone ? 1 : -1;
+    // Manual order (set by the super admin) takes priority when present.
+    const ao = typeof a.order === 'number' ? a.order : null;
+    const bo = typeof b.order === 'number' ? b.order : null;
+    if (ao !== null && bo !== null && ao !== bo) return ao - bo;
+    if (ao !== null && bo === null) return -1;
+    if (ao === null && bo !== null) return 1;
+    // Fallback: English first, then 가나다.
+    const aEng = /^[A-Za-z]/.test(a.name);
+    const bEng = /^[A-Za-z]/.test(b.name);
+    if (aEng !== bEng) return aEng ? -1 : 1;
+    return a.name.localeCompare(b.name, aEng ? 'en' : 'ko');
+  });
+}
+
+// 연합 레이드 뱃지 문서를 반환. 아직 Firestore에 저장 전이면 기본값으로 대체해
+// 항상 렌더 가능한 객체를 보장한다(슈퍼관리자가 저장하면 실시간 반영).
+export function getUnionGuild(guilds) {
+  const found = (guilds || []).find((g) => g.isUnion || g.id === UNION_GUILD_ID);
+  return (
+    found || {
+      id: UNION_GUILD_ID,
+      name: '연합',
+      badgeName: '연합',
+      color: '#a78bfa',
+      badge: {},
+      isUnion: true,
+    }
+  );
+}
+
+// ── Misc ────────────────────────────────────────────────────────────
+
+export function randomId(prefix = '') {
+  const part = () => Math.random().toString(36).slice(2, 10);
+  return `${prefix}${part()}${part()}`;
+}
+
+/** Class-coloured text with a crisp dark outline for contrast on any background. */
+export function badgeTextStyle(color) {
+  return {
+    color,
+    textShadow:
+      '-1px -1px 0 rgba(0,0,0,0.75), 1px -1px 0 rgba(0,0,0,0.75), -1px 1px 0 rgba(0,0,0,0.75), 1px 1px 0 rgba(0,0,0,0.75)',
+  };
+}
+
+/** Returns a readable text colour (dark or white) for a given background hex. */
+export function readableOn(hex) {
+  if (!hex || typeof hex !== 'string') return '#ffffff';
+  const c = hex.replace('#', '');
+  if (c.length < 6) return '#ffffff';
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  const L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return L > 0.6 ? '#0b0e13' : '#ffffff';
+}

@@ -1,10 +1,320 @@
 rules_version = '2';
 
-// REKO — 초기 잠금 규칙 (P1에서 memberships 기반 정식 규칙으로 교체 예정)
-// 현재는 어떤 클라이언트도 읽기/쓰기 불가. Functions(Admin SDK)만 접근 가능.
+// ─────────────────────────────────────────────────────────────────────
+// WANION Firestore 규칙 v1 (P1)
+// 원칙:
+//  - uid = Firebase Auth uid 직접 사용 (kgusystem의 authlinks 간접층 제거)
+//  - 권한 = memberships/{uid}_{scopeType}_{scopeId} 문서의 (스코프, 역할)
+//  - 포인트(wallets/pointLedger)는 클라이언트 쓰기 전면 금지 — Functions 전용
+//  - 카운터(raids.counts, guides.up/down/score)는 증분 검증 브랜치로만 허용
+// ─────────────────────────────────────────────────────────────────────
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function me() {
+      return request.auth.uid;
+    }
+    function membership(scopeType, scopeId) {
+      return get(/databases/$(database)/documents/memberships/$(me() + '_' + scopeType + '_' + scopeId)).data;
+    }
+    function hasRole(scopeType, scopeId, roles) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/memberships/$(me() + '_' + scopeType + '_' + scopeId))
+        && membership(scopeType, scopeId).role in roles;
+    }
+    function isPlatformAdmin() {
+      return hasRole('platform', 'platform', ['owner', 'staff']);
+    }
+    // 레이드 host 스코프 관리 권한 (kgusystem useCanEdit 계승)
+    function canManageRaid(d) {
+      return isPlatformAdmin()
+        || (d.hostType == 'user' && signedIn() && d.hostId == me())
+        || (d.hostType == 'guild' && hasRole('guild', d.hostId, ['master', 'officer']))
+        || (d.hostType == 'team' && hasRole('team', d.hostId, ['leader', 'officer']))
+        || (d.hostType == 'alliance' && hasRole('alliance', d.hostId, ['officer']));
+    }
+    // counts.{tank|heal|dps}만 ±1 범위로 변경하는 업데이트인지 (신청 트랜잭션용)
+    function isCountsOnlyUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['counts'])
+        && request.resource.data.counts.tank >= 0
+        && request.resource.data.counts.heal >= 0
+        && request.resource.data.counts.dps >= 0
+        && (request.resource.data.counts.tank - resource.data.counts.tank) <= 1
+        && (request.resource.data.counts.tank - resource.data.counts.tank) >= -1
+        && (request.resource.data.counts.heal - resource.data.counts.heal) <= 1
+        && (request.resource.data.counts.heal - resource.data.counts.heal) >= -1
+        && (request.resource.data.counts.dps - resource.data.counts.dps) <= 1
+        && (request.resource.data.counts.dps - resource.data.counts.dps) >= -1;
+    }
+
+    // ── Users & characters ──────────────────────────────────────────
+    match /users/{uid} {
+      allow read: if true; // 공개 프로필 (작성자 표기·과시 경제)
+      allow create, update: if signedIn() && me() == uid;
+      allow delete: if isPlatformAdmin();
+
+      match /identities/{provider} {
+        allow read, write: if signedIn() && me() == uid;
+      }
+      match /characters/{charId} {
+        allow read: if true;
+        allow write: if signedIn() && me() == uid; // P3: BNet 워커(Admin SDK)가 주 담당
+      }
+    }
+
+    // ── Memberships — 변경은 운영자/Functions 경유 ──────────────────
+    match /memberships/{id} {
+      allow read: if true;
+      // 부트스트랩: 플랫폼 최초 1회, meta/super가 없을 때만 본인을 owner로 등록 가능
+      allow create: if isPlatformAdmin()
+        || (
+          signedIn()
+          && id == me() + '_platform_platform'
+          && request.resource.data.role == 'owner'
+          && !exists(/databases/$(database)/documents/meta/super)
+        );
+      allow update, delete: if isPlatformAdmin();
+    }
+
+    // ── 조직 엔티티 — 공개 프로필 전략 (비로그인 열람) ──────────────
+    match /guilds/{guildId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin() || hasRole('guild', guildId, ['master']);
+    }
+    match /alliances/{allianceId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin() || hasRole('alliance', allianceId, ['officer']);
+    }
+    match /teams/{teamId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin() || hasRole('team', teamId, ['leader', 'officer']);
+    }
+
+    // ── Game data · zones · meta · config ───────────────────────────
+    match /gamedata/{docId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin();
+    }
+    match /zones/{zoneId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin();
+      match /bosses/{bossId} {
+        allow read: if true;
+        allow write: if isPlatformAdmin();
+      }
+    }
+    match /meta/{docId} {
+      allow read: if true;
+      allow create: if isPlatformAdmin()
+        || (docId == 'super' && signedIn()
+            && !exists(/databases/$(database)/documents/meta/super));
+      allow update, delete: if isPlatformAdmin();
+    }
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin();
+    }
+
+    // ── Raids ────────────────────────────────────────────────────────
+    match /raids/{raidId} {
+      allow read: if true; // 탐색 보드 공개 (SEO·홍보)
+      allow create: if canManageRaid(request.resource.data);
+      allow update: if (canManageRaid(resource.data) && canManageRaid(request.resource.data))
+        || (signedIn() && isCountsOnlyUpdate()); // 신청 트랜잭션의 counts 증감
+      allow delete: if canManageRaid(resource.data);
+
+      match /apps/{appId} {
+        allow read: if signedIn();
+        allow create: if canManageRaid(get(/databases/$(database)/documents/raids/$(raidId)).data)
+          || (
+            signedIn()
+            && appId == me()
+            && request.resource.data.userId == me()
+            && request.resource.data.isReservation == false
+          );
+        // 본인 수정 가능. wait/bench → active 자기 승격 금지 (승격은 관리자 전용)
+        allow update: if canManageRaid(get(/databases/$(database)/documents/raids/$(raidId)).data)
+          || (
+            signedIn()
+            && appId == me()
+            && request.resource.data.userId == me()
+            && request.resource.data.isReservation == false
+            && !(resource.data.status == 'wait' && request.resource.data.status == 'active')
+            && !(resource.data.status == 'bench' && request.resource.data.status == 'active')
+            && !(resource.data.status == 'pending' && request.resource.data.status == 'active')
+            && !(resource.data.status == 'pending' && request.resource.data.status == 'wait')
+          );
+        allow delete: if canManageRaid(get(/databases/$(database)/documents/raids/$(raidId)).data)
+          || (signedIn() && appId == me());
+      }
+
+      match /memos/{appId} {
+        allow read, write: if canManageRaid(get(/databases/$(database)/documents/raids/$(raidId)).data)
+          || (signedIn() && appId == me());
+      }
+
+      match /logs/{logId} {
+        allow read: if isPlatformAdmin();
+        allow write: if false; // Functions 전용
+      }
+
+      // 손님파티 — 관리(등록·수정·삭제)는 생성자+슈퍼만 (사양 7.1)
+      // guests: 캐릭명·서버·클래스·유형 (열람: 그 공대 신청자 + 관리자)
+      // guestFees: 업비 골드 — 문서 분리로 비공개 구현 (feePublic 시 공대원만)
+      match /guests/{guestId} {
+        allow read: if signedIn() && (
+          get(/databases/$(database)/documents/raids/$(raidId)).data.createdBy == me()
+          || isPlatformAdmin()
+          || exists(/databases/$(database)/documents/raids/$(raidId)/apps/$(me()))
+        );
+        // '손님 지원': BNet 연동 회원이 본인을 applied 상태로만 등록 가능 (승인은 생성자·슈퍼)
+        allow create: if (signedIn()
+            && get(/databases/$(database)/documents/raids/$(raidId)).data.createdBy == me())
+          || isPlatformAdmin()
+          || (signedIn()
+              && request.resource.data.linkedUid == me()
+              && request.resource.data.status == 'applied');
+        allow update, delete: if (signedIn()
+            && get(/databases/$(database)/documents/raids/$(raidId)).data.createdBy == me())
+          || isPlatformAdmin();
+      }
+      match /guestFees/{guestId} {
+        allow read: if signedIn() && (
+          get(/databases/$(database)/documents/raids/$(raidId)).data.createdBy == me()
+          || isPlatformAdmin()
+          || (
+            get(/databases/$(database)/documents/raids/$(raidId)).data.feePublic == true
+            && exists(/databases/$(database)/documents/raids/$(raidId)/apps/$(me()))
+          )
+        );
+        allow write: if (signedIn()
+            && get(/databases/$(database)/documents/raids/$(raidId)).data.createdBy == me())
+          || isPlatformAdmin();
+      }
+
+      match /cancels/{cancelId} {
+        allow read: if canManageRaid(get(/databases/$(database)/documents/raids/$(raidId)).data)
+          || (signedIn() && resource.data.userId == me());
+        allow create: if signedIn()
+          && (request.resource.data.userId == me()
+              || canManageRaid(get(/databases/$(database)/documents/raids/$(raidId)).data));
+        allow update: if false;
+        allow delete: if canManageRaid(get(/databases/$(database)/documents/raids/$(raidId)).data);
+      }
+    }
+
+    // ── Guides (공략게시판) ──────────────────────────────────────────
+    match /guides/{guideId} {
+      // global 스코프 = 비로그인 공개(SEO). 길드·공대 스코프 글은 로그인 필요
+      // (P2: 커스텀 클레임으로 멤버십 단위 정밀 차단 예정 — 현재는 UI 필터 병행)
+      allow read: if resource.data.scopeKeys.hasAny(['global']) || signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.authorId == me()
+        && request.resource.data.up == 0
+        && request.resource.data.down == 0
+        && request.resource.data.score == 0;
+
+      allow update: if
+        // (a) 작성자 본문 수정 — 카운터·작성자·보상 필드 불가침
+        (
+          signedIn()
+          && resource.data.authorId == me()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['title', 'body', 'links', 'difficulty', 'updatedAt'])
+        )
+        // (b) 투표 트랜잭션의 카운터 증감 (±1, score 정합 강제)
+        || (
+          signedIn()
+          && resource.data.authorId != me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['up', 'down', 'score'])
+          && (request.resource.data.up - resource.data.up) >= -1
+          && (request.resource.data.up - resource.data.up) <= 1
+          && (request.resource.data.down - resource.data.down) >= -1
+          && (request.resource.data.down - resource.data.down) <= 1
+          && request.resource.data.score == request.resource.data.up - request.resource.data.down
+        )
+        || isPlatformAdmin();
+
+      allow delete: if isPlatformAdmin() || (signedIn() && resource.data.authorId == me());
+
+      // 투표 — 익명 보장: 본인 표만 조회 가능
+      match /votes/{uid} {
+        allow read: if signedIn() && me() == uid;
+        allow create, update: if signedIn() && me() == uid
+          && request.resource.data.value in [1, -1]
+          && get(/databases/$(database)/documents/guides/$(guideId)).data.authorId != me();
+        allow delete: if signedIn() && me() == uid;
+      }
+    }
+
+    // ── Posts (공지/자유/구인 — P1-5에서 스코프 세분화 예정) ─────────
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.authorId == me()
+        && request.resource.data.category in ['notice', 'free', 'recruit']
+        && request.resource.data.commentCount == 0;
+      allow update: if signedIn() && (
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount'])
+          && (request.resource.data.commentCount == resource.data.commentCount + 1
+              || request.resource.data.commentCount == resource.data.commentCount - 1)
+        )
+        || isPlatformAdmin()
+        || (resource.data.authorId == me()
+            && request.resource.data.authorId == resource.data.authorId
+            && request.resource.data.category == resource.data.category)
+      );
+      allow delete: if isPlatformAdmin() || (signedIn() && resource.data.authorId == me());
+
+      match /comments/{commentId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && request.resource.data.authorId == me();
+        allow update: if signedIn() && (
+          isPlatformAdmin()
+          || (resource.data.authorId == me()
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['body', 'updatedAt']))
+        );
+        allow delete: if isPlatformAdmin() || (signedIn() && resource.data.authorId == me());
+      }
+    }
+
+    // ── 포인트 — 클라이언트 쓰기 전면 금지 ──────────────────────────
+    match /wallets/{uid} {
+      allow read: if true; // 누적 P·계급 공개 = 과시 경제
+      allow write: if false; // Functions 전용
+    }
+    match /pointLedger/{txId} {
+      allow read: if signedIn() && resource.data.uid == me();
+      allow write: if false; // Functions 전용
+    }
+    match /dailyCheckins/{id} {
+      allow read: if signedIn() && resource.data.uid == me();
+      allow create: if signedIn()
+        && request.resource.data.uid == me()
+        && id == me() + '_' + request.resource.data.dateKey; // 하루 1회 중복 방지 키
+      allow update, delete: if false;
+    }
+    match /weeklyAttendance/{id} {
+      allow read: if signedIn();
+      allow write: if false; // Functions 전용
+    }
+
+    // ── 신고 (노쇼 등) — 생성만, 심사는 운영자 ──────────────────────
+    match /reports/{reportId} {
+      allow read: if isPlatformAdmin() || (signedIn() && resource.data.reporterId == me());
+      allow create: if signedIn() && request.resource.data.reporterId == me()
+        && request.resource.data.status == 'pending';
+      allow update, delete: if isPlatformAdmin();
+    }
+
+    // ── 애드온 브릿지 세션 (P4에서 정의) ────────────────────────────
+    match /addonSessions/{code} {
       allow read, write: if false;
     }
   }
