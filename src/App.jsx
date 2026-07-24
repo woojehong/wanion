@@ -28,12 +28,15 @@ export default function App() {
         <Route path="/community" element={<CommunityPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <footer className="border-t border-line py-6">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4">
-          <span className="mono-label">WANION · 와니온</span>
-          <span className="text-[12px] text-sub">Made by 후제공방</span>
-        </div>
-      </footer>
+      {/* 랜딩은 자체 푸터(RUN BY STUDIO HOOJE)를 가진다. 그 외 페이지는 슬림 푸터. */}
+      {!isLanding && (
+        <footer className="border-t border-line py-6">
+          <div className="mx-auto flex max-w-content items-center justify-between px-4">
+            <span className="mono-label">WANION · 와니온</span>
+            <span className="credit-hooje text-[12px]">RUN BY STUDIO HOOJE</span>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }
