@@ -11,7 +11,7 @@ import {
   cancelOrgApplication,
   subscribeTeamWclReport,
 } from '../lib/db';
-import { MonoLabel, SectionTitle, Card, ArtSlot, Segments, KV, Avatar, Chip } from '../components/ui';
+import { MonoLabel, SectionTitle, Card, Segments, KV, Avatar, Chip } from '../components/ui';
 import PostBoard from '../components/PostBoard';
 import RosterEditor from '../components/RosterEditor';
 import TeamWclPanel from '../components/TeamWclPanel';
@@ -122,17 +122,17 @@ export default function TeamPage() {
   const rosterCount = rosterGroups.reduce((n, g) => n + g.list.length, 0);
 
   if (team === undefined) {
-    return <main className="mx-auto max-w-6xl px-4 py-16 text-center text-[13px] text-mute">불러오는 중…</main>;
+    return <main className="mx-auto max-w-content px-4 py-16 text-center text-[13px] text-mute">불러오는 중…</main>;
   }
   if (!team) {
-    return <main className="mx-auto max-w-6xl px-4 py-16 text-center text-sub">등록되지 않은 공격대입니다.</main>;
+    return <main className="mx-auto max-w-content px-4 py-16 text-center text-sub">등록되지 않은 공격대입니다.</main>;
   }
 
   const activeTab = tab || 'intro';
   const p = team.progress || null; // WCL 리포트(P3) 연동 전까지는 수동 입력값
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="mx-auto max-w-content px-4 py-8">
       {/* 히어로: 팀 정체성 + 프로그레스 */}
       <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
         <Card className="flex flex-col justify-between p-6">
@@ -140,7 +140,7 @@ export default function TeamPage() {
             {team.logoPath ? (
               <img src={team.logoPath} alt={`${team.name} 로고`} className="h-20 w-20 shrink-0 rounded bg-ink object-contain" />
             ) : (
-              <ArtSlot label="공대 로고 1:1" ratio="1 / 1" className="h-20 w-20 shrink-0" />
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded border border-line bg-surface2 text-[28px] font-extrabold text-violet">{team.name?.slice(0, 1) || 'W'}</div>
             )}
             <div className="min-w-0">
               <h1 className="text-[26px] font-extrabold">{team.name}</h1>
@@ -157,7 +157,7 @@ export default function TeamPage() {
           </div>
           {!isMember && (
             <div className="mt-6 flex flex-col items-start gap-1">
-              <button className={pendingApp ? 'btn-ghost' : 'btn-primary'} onClick={onJoinClick}>
+              <button className={pendingApp ? 'btn-secondary' : 'btn-primary'} onClick={onJoinClick}>
                 {pendingApp ? '승인 대기 중 · 취소' : '공대 지원하기'}
               </button>
               {myApp?.status === 'rejected' && (

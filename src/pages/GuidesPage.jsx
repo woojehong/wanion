@@ -75,7 +75,7 @@ function GuideForm({ zone, boss, onClose }) {
             onChange={(e) => setLink(e.target.value)} />
           {error && <p className="text-[13px] font-semibold text-dps">{error}</p>}
           <div className="flex justify-end gap-2">
-            <button className="btn-ghost" onClick={() => onClose(false)}>취소</button>
+            <button className="btn-secondary" onClick={() => onClose(false)}>취소</button>
             <button className="btn-primary" disabled={busy} onClick={submit}>{busy ? '등록 중…' : '등록'}</button>
           </div>
         </div>

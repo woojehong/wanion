@@ -10,7 +10,7 @@ import {
   fetchMyOrgApplication,
   cancelOrgApplication,
 } from '../lib/db';
-import { MonoLabel, SectionTitle, Card, ArtSlot, KV, Avatar, Chip } from '../components/ui';
+import { MonoLabel, SectionTitle, Card, KV, Avatar, Chip } from '../components/ui';
 import PostBoard from '../components/PostBoard';
 import GuildVerifyPanel from '../components/GuildVerifyPanel';
 import LogoUploader from '../components/LogoUploader';
@@ -71,11 +71,11 @@ export default function GuildPage() {
   );
 
   if (guild === undefined) {
-    return <main className="mx-auto max-w-6xl px-4 py-16 text-center text-[13px] text-mute">불러오는 중…</main>;
+    return <main className="mx-auto max-w-content px-4 py-16 text-center text-[13px] text-mute">불러오는 중…</main>;
   }
   if (!guild || guild.isNone || guild.isUnion) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-16 text-center text-sub">
+      <main className="mx-auto max-w-content px-4 py-16 text-center text-sub">
         등록되지 않은 길드입니다 — 와니온에 등록된 길드만 프로필이 제공됩니다.
       </main>
     );
@@ -103,7 +103,7 @@ export default function GuildPage() {
   };
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="mx-auto max-w-content px-4 py-8">
       {/* 프로필 헤더 — 로고 단일 체계 (배너 폐지, 사양 7.7) */}
       <div className="overflow-hidden rounded border border-line bg-surface">
         <div className="flex flex-wrap items-center gap-5 p-5">
@@ -111,7 +111,7 @@ export default function GuildPage() {
             {guild.logoPath ? (
               <img src={guild.logoPath} alt={`${guild.name} 로고`} className="h-24 w-24 rounded bg-ink object-contain" />
             ) : (
-              <ArtSlot label="로고 1:1" ratio="1 / 1" className="h-24 w-24 bg-ink" />
+              <div className="flex h-24 w-24 items-center justify-center rounded border border-line bg-surface2 text-[34px] font-extrabold" style={{ color: guild.color || '#8A70FF' }}>{guild.name?.slice(0, 1) || 'W'}</div>
             )}
           </div>
           <div className="min-w-0 flex-1">
@@ -131,7 +131,7 @@ export default function GuildPage() {
           </div>
           {!isMember && (
             <div className="flex flex-col items-end gap-1">
-              <button className={pendingApp ? 'btn-ghost' : 'btn-primary'} onClick={onJoinClick}>
+              <button className={pendingApp ? 'btn-secondary' : 'btn-primary'} onClick={onJoinClick}>
                 {pendingApp ? '승인 대기 중 · 취소' : '가입 신청'}
               </button>
               {myApp?.status === 'rejected' && (

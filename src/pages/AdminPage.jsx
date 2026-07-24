@@ -29,11 +29,11 @@ export default function AdminPage() {
     isBootstrapped().then(setBootstrapped).catch(() => setBootstrapped(false));
   }, [msg]);
 
-  if (!authReady) return <main className="mx-auto max-w-4xl px-4 py-16 text-center text-sub">로딩 중…</main>;
+  if (!authReady) return <main className="mx-auto max-w-content px-4 py-16 text-center text-sub">로딩 중…</main>;
 
   if (!user) {
     return (
-      <main className="mx-auto max-w-4xl px-4 py-16 text-center">
+      <main className="mx-auto max-w-content px-4 py-16 text-center">
         <p className="text-sub">운영자 콘솔은 로그인이 필요합니다.</p>
         <button className="btn-primary mt-4" onClick={signInGoogle}>Google로 로그인</button>
       </main>
@@ -54,7 +54,7 @@ export default function AdminPage() {
   };
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10">
+    <main className="mx-auto max-w-content px-4 py-10">
       <MonoLabel violet>PLATFORM CONSOLE</MonoLabel>
       <h1 className="mt-1 text-[24px] font-extrabold">운영자 콘솔</h1>
 
