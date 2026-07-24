@@ -11,7 +11,7 @@ import {
   cancelOrgApplication,
   subscribeTeamWclReport,
 } from '../lib/db';
-import { MonoLabel, SectionTitle, Card, Segments, KV, Avatar, Chip, StatusBadge } from '../components/ui';
+import { MonoLabel, SectionTitle, Card, Segments, KV, Avatar, Chip } from '../components/ui';
 import PostBoard from '../components/PostBoard';
 import RosterEditor from '../components/RosterEditor';
 import TeamWclPanel from '../components/TeamWclPanel';
@@ -253,23 +253,13 @@ export default function TeamPage() {
   const content = TEAM_CONTENT[teamId]; // 팀별 편집형 소개(있으면 렌더)
 
   // 소개 탭 항목별 공개 범위 (팀 문서 visibility, 기본 전체공개)
+  // 표면 단위 가리기 — 비공개면 항목 자체가 없는 것처럼 사라짐(라벨·배지 없음).
   const vis = team.visibility || {};
-  const VIS = {
-    public: { label: '전체공개', tone: 'default' },
-    members: { label: '공대원 전용', tone: 'violet' },
-    private: { label: '비공개', tone: 'warn' },
-  };
   const canSee = (k) => {
     const s = vis[k] || 'public';
-    if (s === 'private') return isLeader; // 관리자만(숨김 확인용)
-    if (s === 'members') return isMember;
+    if (s === 'private') return false; // 아무에게도 안 보임
+    if (s === 'members') return isMember; // 소속원·관리자만
     return true;
-  };
-  const visBadge = (k) => {
-    const s = vis[k] || 'public';
-    if (s === 'public') return null;
-    if (s === 'members' && !isMember) return null; // 외부인에겐 배지도 숨김(애초에 안 보임)
-    return <StatusBadge tone={VIS[s].tone}>{VIS[s].label}</StatusBadge>;
   };
 
   return (
@@ -386,7 +376,7 @@ export default function TeamPage() {
 
             {canSee('roster') && (
             <>
-            <SectionTitle ko="정규 로스터" en={`ROSTER · ${rosterCount}명`} right={visBadge('roster')} />
+            <SectionTitle ko="정규 로스터" en={`ROSTER · ${rosterCount}명`} />
             <Card>
               {rosterCount > 0 ? (
                 rosterGroups.map((grp) => (
@@ -424,7 +414,7 @@ export default function TeamPage() {
 
             {canSee('recentRaids') && (
             <div className="mt-6">
-              <SectionTitle ko="최근 일정" en="RECENT RAIDS" right={visBadge('recentRaids')} />
+              <SectionTitle ko="최근 일정" en="RECENT RAIDS" />
               <Card>
                 {raids.map((r, i) => (
                   <Link key={r.id} to={`/raid/${r.id}`} className={`flex items-center gap-4 p-4 transition hover:bg-surface2 ${i > 0 ? 'border-t border-line' : ''}`}>
@@ -452,10 +442,7 @@ export default function TeamPage() {
             </Card>
             {canSee('members') && (
             <Card className="p-5">
-              <div className="flex items-center justify-between">
-                <MonoLabel violet>MEMBERS</MonoLabel>
-                {visBadge('members')}
-              </div>
+              <MonoLabel violet>MEMBERS</MonoLabel>
               <div className="mt-2 flex flex-col gap-2">
                 {members
                   .slice()

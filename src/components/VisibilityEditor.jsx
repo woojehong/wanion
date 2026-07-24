@@ -42,7 +42,7 @@ export default function VisibilityEditor({ scopeType, scopeId, current, onSaved 
     <Card className="mt-4 p-5">
       <MonoLabel violet>소개 탭 공개 범위</MonoLabel>
       <p className="mt-1 text-[12px] leading-relaxed text-sub">
-        각 항목을 누구에게 보일지 정합니다 — <b className="text-txt">공대원만</b>은 소속원·관리자에게만, <b className="text-txt">비공개</b>는 관리자에게만 보입니다.
+        각 항목을 누구에게 보일지 정합니다 — <b className="text-txt">공대원만</b>은 소속원·관리자에게만 보이고, <b className="text-txt">비공개</b>는 소개 탭에서 항목 자체가 사라집니다.
       </p>
       <div className="mt-3 flex flex-col gap-2.5">
         {SECTIONS.map((s) => (
