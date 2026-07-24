@@ -15,8 +15,7 @@ const MENU = [
 ];
 
 export default function Header() {
-  const { authReady, user, profile, isPlatformAdmin, signInGoogle, signOutUser } = useApp();
-  const displayName = profile?.displayName || user?.displayName || '';
+  const { authReady, user, isPlatformAdmin, signInGoogle, signOutUser, displayName, displayColor } = useApp();
 
   return (
     <>
@@ -68,8 +67,8 @@ export default function Header() {
                 </Link>
                 <NotificationBell />
                 <Link to="/me" className="flex items-center gap-2">
-                  <Avatar name={displayName || 'W'} size="h-7 w-7" />
-                  <span className="hidden max-w-[96px] truncate text-[13px] font-semibold text-txt sm:inline">
+                  <Avatar name={displayName || 'W'} color={displayColor || undefined} size="h-7 w-7" />
+                  <span className="hidden max-w-[96px] truncate text-[13px] font-semibold text-txt sm:inline" style={{ color: displayColor || undefined }}>
                     {displayName}
                   </span>
                 </Link>

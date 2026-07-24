@@ -66,7 +66,7 @@ function PartyRow({ r, myStatus }) {
 }
 
 export default function HomePage() {
-  const { user, profile, uid, signInGoogle } = useApp();
+  const { user, profile, uid, signInGoogle, displayName, displayColor } = useApp();
   const [live, setLive] = useState(null);
   const [memberships, setMemberships] = useState([]);
   const [myApps, setMyApps] = useState(null); // [{raid, myStatus}]
@@ -107,7 +107,6 @@ export default function HomePage() {
         : { t: '신청한 일정이 없어요', d: '글로벌 탭에서 파티를 찾아 신청해보세요.' };
 
   const prog = profile?.progress || null;
-  const name = profile?.displayName || user?.displayName || '모험가';
   const orgLink = (m) => (m.scopeType === 'guild' ? `/guild/${m.scopeId}` : m.scopeType === 'team' ? `/team/${m.scopeId}` : null);
 
   return (
@@ -115,7 +114,7 @@ export default function HomePage() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <MonoLabel violet>WELCOME BACK</MonoLabel>
-          <h1 className="mt-1 text-[26px] font-extrabold">{name}님, 오늘 어떤 파티에 갈까요?</h1>
+          <h1 className="mt-1 text-[26px] font-extrabold"><span style={{ color: displayColor || undefined }}>{displayName}</span>님, 오늘 어떤 파티에 갈까요?</h1>
         </div>
         <button className="btn-primary" onClick={() => (user ? setFormOpen(true) : signInGoogle())}>파티 개설</button>
       </div>

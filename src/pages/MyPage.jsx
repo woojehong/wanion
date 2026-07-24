@@ -346,7 +346,7 @@ export default function MyPage() {
     );
   }
 
-  const displayName = profile?.displayName || user.displayName || '모험가';
+  const displayName = profile?.mainChar?.name || profile?.displayName || user.displayName || '모험가';
   const mainColor = profile?.mainChar?.classColor || '#8A70FF';
   const rank = getRank(wallet?.lifetime);
 
@@ -357,7 +357,7 @@ export default function MyPage() {
         <Avatar name={displayName} color={mainColor} size="h-[72px] w-[72px] !text-[26px]" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[24px] font-extrabold">{displayName}</h1>
+            <h1 className="text-[24px] font-extrabold" style={{ color: profile?.mainChar?.classColor || undefined }}>{displayName}</h1>
             {profile?.bnetLinked ? (
               <StatusBadge tone="ok">BNET 인증됨</StatusBadge>
             ) : (

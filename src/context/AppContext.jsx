@@ -76,6 +76,9 @@ export function AppProvider({ children }) {
       uid: user?.uid || null,
       profile,
       gamedata,
+      // 표시 이름 — 대표 캐릭터가 있으면 캐릭터명 + 클래스 컬러, 없으면 구글 이름 폴백
+      displayName: profile?.mainChar?.name || profile?.displayName || user?.displayName || '모험가',
+      displayColor: profile?.mainChar?.classColor || null,
       isPlatformAdmin: platformRole === 'owner' || platformRole === 'staff',
       isOwner: platformRole === 'owner',
       signInGoogle: () => signInWithPopup(auth, googleProvider),
