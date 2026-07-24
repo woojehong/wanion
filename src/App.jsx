@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useApp } from './context/AppContext';
 import Header from './components/Header';
 import LandingPage from './pages/LandingPage';
 import BoardPage from './pages/BoardPage';
@@ -12,12 +13,15 @@ import CommunityPage from './pages/CommunityPage';
 
 export default function App() {
   const { pathname } = useLocation();
+  const { user, authReady } = useApp();
+  // 랜딩(마케팅·온보딩)은 비로그인 방문자에게만. 로그인 사용자는 "/" 진입 시 곧바로 파티 보드로.
   const isLanding = pathname === '/';
+  const home = !authReady ? null : user ? <Navigate to="/board" replace /> : <LandingPage />;
   return (
     <div className="min-h-screen bg-ink text-txt">
       {!isLanding && <Header />}
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={home} />
         <Route path="/board" element={<BoardPage />} />
         <Route path="/raid/:raidId" element={<RaidDetailPage />} />
         <Route path="/guild/:guildId" element={<GuildPage />} />
