@@ -10,3 +10,7 @@ dist
 scripts/migrate/sa-*.json
 scripts/migrate/out/
 scripts/migrate/node_modules/
+
+# transfer artifacts (design v2 작업 전송용)
+*.tar
+_to_delete/

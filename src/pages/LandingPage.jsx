@@ -2,7 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchGuilds, fetchTeams, fetchAlliances, subscribeUpcomingRaids } from '../lib/db';
 import { sortGuilds } from '../lib/utils';
-import { MonoLabel, Segments, ArtSlot, Dot } from '../components/ui';
+import { MonoLabel, Segments, Dot, PhaseIndex, PHASES } from '../components/ui';
+
+// 핵심 기능 (screen-map 랜딩 5항: 시너지·벤치·스왑·배치) — AI ART 없이 정보로 설명
+const FEATURES = [
+  { ko: '시너지', desc: '직업·특성 조합을 자동 점검해 빈 시너지를 표시합니다.' },
+  { ko: '벤치·대기', desc: '대기 인원과 벤치를 한 화면에서 즉시 교체합니다.' },
+  { ko: '스왑', desc: '역할 스왑과 교체 요청을 기록과 함께 처리합니다.' },
+  { ko: '자동 배치', desc: '정원과 역할에 맞춰 로스터를 정렬합니다.' },
+];
+
+const PHASE_DESC = {
+  recruit: '파티 공개, 신청 시작',
+  forming: '신청이 쌓이는 중',
+  confirmed: '로스터 픽스',
+  departing: '체크인·교체 처리',
+  recorded: '종료·회고·다음 주 준비',
+};
 
 export default function LandingPage() {
   const [guilds, setGuilds] = useState([]);
@@ -25,7 +41,6 @@ export default function LandingPage() {
     return s;
   }, [alliances]);
 
-  // 대표 프로그레스 카드 — 진도(WCL/수동)가 있는 공대 우선
   const featureTeam = useMemo(() => teams.find((t) => t.progress) || teams[0] || null, [teams]);
   const otherTeams = useMemo(
     () => teams.filter((t) => t.id !== featureTeam?.id).slice(0, 2),
@@ -36,7 +51,7 @@ export default function LandingPage() {
     <div>
       {/* 공개 랜딩 전용 슬림 네비 */}
       <header className="border-b border-line">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+        <div className="mx-auto flex h-14 max-w-content items-center justify-between px-4">
           <span className="text-[17px] font-extrabold tracking-[0.14em]">
             WAN<span className="text-violet">ION</span>
           </span>
@@ -47,57 +62,83 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 히어로 */}
-      <section className="relative overflow-hidden border-b border-line">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-40"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(138,112,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(138,112,255,0.05) 1px, transparent 1px)',
-            backgroundSize: '48px 48px',
-          }}
-        />
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 md:grid-cols-[1.2fr_1fr]">
-          <div className="relative">
+      {/* 히어로 — 제품 정보가 주인공. 거대한 판타지 키아트 없음(screen-map 랜딩). */}
+      <section className="border-b border-line">
+        <div className="mx-auto grid max-w-content items-center gap-10 px-4 py-16 md:grid-cols-[1.1fr_1fr] md:py-20">
+          <div>
             <MonoLabel violet>RAID OPERATIONS PLATFORM</MonoLabel>
-            <h1 className="mt-3 text-[40px] font-extrabold leading-[1.15] md:text-[48px]">
-              한국 와우의 레이드는
+            <h1 className="mt-3 text-[36px] font-extrabold leading-[1.18] md:text-[46px]">
+              길드·공격대·연합의 일정을
               <br />
-              <span className="text-violet">여기서 굴러갑니다</span>
+              <span className="text-violet-hi">한곳에서 운영</span>합니다
             </h1>
             <p className="mt-4 max-w-md text-[15px] leading-relaxed text-sub">
-              길드·공격대·연합 — 한국 와우의 실제 구조 그대로.
-              <br />
-              소속이 없어도 공대장이 될 수 있습니다.
+              한국 와우의 실제 구조 그대로 — 모집부터 로스터 확정, 출발 체크인,
+              기록까지. 소속이 없어도 공대장이 될 수 있습니다.
             </p>
-            <div className="mt-7 flex gap-3">
+            <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/board" className="btn-primary">파티 찾아보기</Link>
-              <Link to="/me" className="btn-ghost">Battle.net 연동으로 시작</Link>
+              <Link to="/me" className="btn-secondary">Battle.net 연동으로 시작</Link>
             </div>
-            <div className="mt-8 flex gap-6">
+            <div className="mt-8 flex gap-7">
               {[
                 ['등록 길드', guilds.length],
                 ['공격대', teams.length],
-                ['모집 중 공대', raidCount],
+                ['모집 중', raidCount],
               ].map(([k, v]) => (
                 <div key={k}>
-                  <div className="num text-[22px] font-extrabold text-txt">{v}</div>
+                  <div className="num text-[24px] font-extrabold text-txt">{v}</div>
                   <div className="text-[12px] text-sub">{k}</div>
                 </div>
               ))}
             </div>
           </div>
-          <ArtSlot label="히어로 키비주얼 16:9 — 공허 궤도, 다크 바이올렛" className="relative" />
+
+          {/* 실제 제품 요소 — 이번 주 운영 주기(월상 인덱스) */}
+          <div className="rounded border border-line bg-surface p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <MonoLabel>WEEKLY CYCLE</MonoLabel>
+                <div className="mt-1 text-[16px] font-bold text-txt">이번 주 운영 주기</div>
+              </div>
+              <span className="num text-[13px] font-semibold text-violet-hi">모집 {raidCount}</span>
+            </div>
+            <div className="mt-5 flex flex-col divide-y divide-line">
+              {PHASES.map((p) => (
+                <div key={p.key} className="flex items-center gap-3 py-3">
+                  <PhaseIndex phase={p.key} showText={false} className="w-4 justify-center" />
+                  <span className="w-10 shrink-0 text-[13px] font-bold text-txt">{p.ko}</span>
+                  <span className="text-[12px] text-sub">{PHASE_DESC[p.key]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 핵심 기능 */}
+      <section className="border-b border-line">
+        <div className="mx-auto max-w-content px-4 py-14">
+          <div className="mb-6">
+            <h2 className="text-[20px] font-bold">운영에 필요한 도구</h2>
+            <MonoLabel violet>ROSTER TOOLS</MonoLabel>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURES.map((f) => (
+              <div key={f.ko} className="rounded border border-line bg-surface p-5">
+                <div className="text-[15px] font-bold text-txt">{f.ko}</div>
+                <p className="mt-2 text-[13px] leading-relaxed text-sub">{f.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* 라이브 프로그레스 */}
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <div className="mb-5 flex items-end justify-between">
-          <div>
-            <h2 className="text-[22px] font-bold">지금 이 순간의 프로그레스</h2>
-            <MonoLabel violet>LIVE PROGRESS · WARCRAFT LOGS 연동</MonoLabel>
-          </div>
+      <section className="mx-auto max-w-content px-4 py-14">
+        <div className="mb-5">
+          <h2 className="text-[20px] font-bold">지금 이 순간의 프로그레스</h2>
+          <MonoLabel violet>LIVE PROGRESS · WARCRAFT LOGS 연동</MonoLabel>
         </div>
         {featureTeam ? (
           <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
@@ -168,16 +209,16 @@ export default function LandingPage() {
       </section>
 
       {/* 등록 길드 */}
-      <section className="border-t border-line bg-surface/40">
-        <div className="mx-auto max-w-6xl px-4 py-14">
+      <section className="border-t border-line bg-surface2/40">
+        <div className="mx-auto max-w-content px-4 py-14">
           <div className="mb-5">
-            <h2 className="text-[22px] font-bold">등록 길드</h2>
+            <h2 className="text-[20px] font-bold">등록 길드</h2>
             <MonoLabel violet>FOUNDING GUILDS</MonoLabel>
           </div>
           {guilds.length ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               {guilds.map((g) => (
-                <Link key={g.id} to={`/guild/${g.id}`} className="group rounded border border-line bg-surface p-4 transition hover:border-violet-deep">
+                <Link key={g.id} to={`/guild/${g.id}`} className="group rounded border border-line bg-surface p-4 transition-colors hover:border-violet-deep">
                   <div className="flex items-center gap-2">
                     {g.logoPath ? (
                       <img src={g.logoPath} alt="" className="h-5 w-5 shrink-0 rounded bg-ink object-contain" />
@@ -203,6 +244,16 @@ export default function LandingPage() {
           <p className="mt-4 text-[12px] text-sub">길드 등록·가입은 각 길드 페이지에서 Battle.net 연동 후 신청할 수 있습니다.</p>
         </div>
       </section>
+
+      {/* 푸터 크레딧 (design-system 11항) */}
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-content flex-col items-center gap-2 px-4 py-10 text-center">
+          <span className="text-[15px] font-extrabold tracking-[0.14em]">
+            WAN<span className="text-violet">ION</span>
+          </span>
+          <span className="credit-hooje text-[12px]">RUN BY STUDIO HOOJE</span>
+        </div>
+      </footer>
     </div>
   );
 }
