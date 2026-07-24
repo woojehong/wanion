@@ -11,12 +11,13 @@ import {
   cancelOrgApplication,
   subscribeTeamWclReport,
 } from '../lib/db';
-import { MonoLabel, SectionTitle, Card, Segments, KV, Avatar, Chip } from '../components/ui';
+import { MonoLabel, SectionTitle, Card, Segments, KV, Avatar, Chip, StatusBadge } from '../components/ui';
 import PostBoard from '../components/PostBoard';
 import RosterEditor from '../components/RosterEditor';
 import TeamWclPanel from '../components/TeamWclPanel';
 import LogoUploader from '../components/LogoUploader';
 import GuestPresetEditor from '../components/GuestPresetEditor';
+import VisibilityEditor from '../components/VisibilityEditor';
 import { OrgJoinModal, OrgManagePanel } from '../components/OrgMembership';
 import { TEAM_CONTENT } from '../lib/teamContent';
 
@@ -251,6 +252,26 @@ export default function TeamPage() {
   const p = team.progress || null; // WCL 리포트(P3) 연동 전까지는 수동 입력값
   const content = TEAM_CONTENT[teamId]; // 팀별 편집형 소개(있으면 렌더)
 
+  // 소개 탭 항목별 공개 범위 (팀 문서 visibility, 기본 전체공개)
+  const vis = team.visibility || {};
+  const VIS = {
+    public: { label: '전체공개', tone: 'default' },
+    members: { label: '공대원 전용', tone: 'violet' },
+    private: { label: '비공개', tone: 'warn' },
+  };
+  const canSee = (k) => {
+    const s = vis[k] || 'public';
+    if (s === 'private') return isLeader; // 관리자만(숨김 확인용)
+    if (s === 'members') return isMember;
+    return true;
+  };
+  const visBadge = (k) => {
+    const s = vis[k] || 'public';
+    if (s === 'public') return null;
+    if (s === 'members' && !isMember) return null; // 외부인에겐 배지도 숨김(애초에 안 보임)
+    return <StatusBadge tone={VIS[s].tone}>{VIS[s].label}</StatusBadge>;
+  };
+
   return (
     <main className="mx-auto max-w-content px-4 py-8">
       {/* 히어로: 팀 정체성 + 프로그레스 */}
@@ -325,6 +346,7 @@ export default function TeamPage() {
           <LogoUploader scopeType="team" scopeId={teamId} current={team.logoPath} onSaved={reloadTeam} />
           <RosterEditor teamId={teamId} roster={team.roster} gamedata={gamedata} onSaved={reloadTeam} />
           <GuestPresetEditor scopeType="team" scopeId={teamId} current={team.guestTypePresets} onSaved={reloadTeam} />
+          <VisibilityEditor scopeType="team" scopeId={teamId} current={team.visibility} onSaved={reloadTeam} />
           <TeamWclPanel teamId={teamId} team={team} onSaved={reloadTeam} />
         </>
       )}
@@ -362,7 +384,9 @@ export default function TeamPage() {
               </div>
             )}
 
-            <SectionTitle ko="정규 로스터" en={`ROSTER · ${rosterCount}명`} />
+            {canSee('roster') && (
+            <>
+            <SectionTitle ko="정규 로스터" en={`ROSTER · ${rosterCount}명`} right={visBadge('roster')} />
             <Card>
               {rosterCount > 0 ? (
                 rosterGroups.map((grp) => (
@@ -395,9 +419,12 @@ export default function TeamPage() {
                 </div>
               )}
             </Card>
+            </>
+            )}
 
+            {canSee('recentRaids') && (
             <div className="mt-6">
-              <SectionTitle ko="최근 공대" en="RECENT RAIDS" />
+              <SectionTitle ko="최근 일정" en="RECENT RAIDS" right={visBadge('recentRaids')} />
               <Card>
                 {raids.map((r, i) => (
                   <Link key={r.id} to={`/raid/${r.id}`} className={`flex items-center gap-4 p-4 transition hover:bg-surface2 ${i > 0 ? 'border-t border-line' : ''}`}>
@@ -407,10 +434,11 @@ export default function TeamPage() {
                   </Link>
                 ))}
                 {!raids.length && (
-                  <div className="p-8 text-center text-[13px] text-sub">아직 등록된 공대가 없습니다.</div>
+                  <div className="p-8 text-center text-[13px] text-sub">아직 진행한 일정이 없습니다.</div>
                 )}
               </Card>
             </div>
+            )}
           </div>
 
           <aside className="flex flex-col gap-4">
@@ -422,8 +450,12 @@ export default function TeamPage() {
                 {team.schedule && <KV k="일정" v={team.schedule} />}
               </div>
             </Card>
+            {canSee('members') && (
             <Card className="p-5">
-              <MonoLabel violet>MEMBERS</MonoLabel>
+              <div className="flex items-center justify-between">
+                <MonoLabel violet>MEMBERS</MonoLabel>
+                {visBadge('members')}
+              </div>
               <div className="mt-2 flex flex-col gap-2">
                 {members
                   .slice()
@@ -442,6 +474,7 @@ export default function TeamPage() {
                 {members.length > 8 && <p className="text-[11px] text-mute">외 {members.length - 8}명</p>}
               </div>
             </Card>
+            )}
             {baseGuild && (
               <Card className="p-5">
                 <MonoLabel violet>AFFILIATION</MonoLabel>
