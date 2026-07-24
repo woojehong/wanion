@@ -141,23 +141,27 @@ export const bnetCallback = onRequest({ secrets: [BNET_CLIENT_SECRET] }, async (
     const prof = await profRes.json();
 
     const maxLevel = Number((await db.doc('config/game').get()).data()?.maxLevel) || 90;
-    const chars = (prof.wow_accounts || [])
-      .flatMap((a) => a.characters || [])
-      .filter((c) => (c.level || 0) >= maxLevel)
-      .map((c) => {
-        const cls = BLIZZ_CLASSES[c.playable_class?.id] || null;
-        return {
-          docId: `${c.realm?.slug || 'unknown'}-${String(c.name || '').toLowerCase()}`,
-          name: c.name,
-          realm: c.realm?.name || c.realm?.slug || '',
-          realmSlug: c.realm?.slug || '',
-          level: c.level || 0,
-          classId: cls?.id || null,
-          className: cls?.name || null,
-          classColor: cls?.color || null,
-          bnetCharId: c.id || null,
-        };
-      });
+    // 만렙 캐릭터가 하나라도 있으면 만렙만 등록, 하나도 없으면 전체 등록(만렙여부 표기).
+    // → 만렙 0개 계정도 대표 캐릭터를 지정할 수 있게(경고와 함께). 신청은 만렙만 허용.
+    const allChars = (prof.wow_accounts || []).flatMap((a) => a.characters || []);
+    const maxChars = allChars.filter((c) => (c.level || 0) >= maxLevel);
+    const source = maxChars.length ? maxChars : allChars;
+    const chars = source.map((c) => {
+      const cls = BLIZZ_CLASSES[c.playable_class?.id] || null;
+      const level = c.level || 0;
+      return {
+        docId: `${c.realm?.slug || 'unknown'}-${String(c.name || '').toLowerCase()}`,
+        name: c.name,
+        realm: c.realm?.name || c.realm?.slug || '',
+        realmSlug: c.realm?.slug || '',
+        level,
+        isMax: level >= maxLevel,
+        classId: cls?.id || null,
+        className: cls?.name || null,
+        classColor: cls?.color || null,
+        bnetCharId: c.id || null,
+      };
+    });
 
     // 6) 기록 — 캐릭터는 전량 교체(탈퇴·삭제 캐릭 잔재 방지)
     const charCol = db.collection(`users/${uid}/characters`);

@@ -156,6 +156,44 @@ export async function writeUserProgress(db, uid, progress, { manual = false } = 
   await db.doc(`users/${uid}`).set(patch, { merge: true });
 }
 
+/** 캐릭터 요약 조회 → 현재 레벨 (앱 토큰, 재로그인 불필요) */
+export async function fetchCharacterLevel(token, char) {
+  const realm = char.realmSlug || char.realm || '';
+  const name = String(char.name || '').toLowerCase();
+  if (!realm || !name) return null;
+  const url =
+    `${API_HOST}/profile/wow/character/${encodeURIComponent(realm)}/${encodeURIComponent(name)}` +
+    `?namespace=${NAMESPACE}&locale=${LOCALE}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return typeof data.level === 'number' ? data.level : null;
+}
+
+/** 한 캐릭터의 레벨을 재조회 → level·isMax 갱신 (대표면 mainChar 스냅샷도 갱신) */
+export async function refreshCharacterLevel(db, uid, charId, secret) {
+  const ref = db.doc(`users/${uid}/characters/${charId}`);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error('캐릭터를 찾을 수 없습니다.');
+  const char = snap.data();
+  const token = await getClientToken(secret);
+  const level = await fetchCharacterLevel(token, char);
+  if (level == null) {
+    return { level: char.level || 0, isMax: char.isMax !== false, updated: false };
+  }
+  const maxLevel = Number((await db.doc('config/game').get()).data()?.maxLevel) || 90;
+  const isMax = level >= maxLevel;
+  await ref.set({ level, isMax, syncedAt: FieldValue.serverTimestamp() }, { merge: true });
+  const userSnap = await db.doc(`users/${uid}`).get();
+  if (userSnap.exists && userSnap.data().mainCharId === charId) {
+    await db.doc(`users/${uid}`).set(
+      { mainChar: { ...(userSnap.data().mainChar || {}), level, isMax } },
+      { merge: true }
+    );
+  }
+  return { level, isMax, updated: true };
+}
+
 /** BNet 연동 유저 전원 진도 갱신 (스케줄러용) — 소규모 전제 순차/청크 */
 export async function refreshAllProgress(db, secret) {
   const snap = await db.collection('users').where('bnetLinked', '==', true).get();

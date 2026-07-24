@@ -865,6 +865,8 @@ export function setMainCharacter(uid, ch) {
       classId: ch.classId || null,
       className: ch.className || null,
       classColor: ch.classColor || null,
+      level: ch.level || 0,
+      isMax: ch.isMax !== false,
     },
   });
 }

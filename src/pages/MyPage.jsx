@@ -111,6 +111,24 @@ function BnetLinkCard({ chars }) {
   const location = useLocation();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [refreshing, setRefreshing] = useState(null); // 레벨 갱신 중인 charId
+
+  // 만렙 아닌 캐릭터 옆 [갱신] — 그 캐릭터 레벨만 재조회(재로그인 불필요)
+  const refreshChar = async (charId) => {
+    setRefreshing(charId);
+    setNotice(null);
+    try {
+      const call = httpsCallable(functions, 'refreshMyProgress');
+      const res = await call({ charId });
+      const ch = res.data?.character;
+      if (ch?.isMax) setNotice({ ok: true, text: '만렙 확인! 이제 대표로 지정하고 신청할 수 있어요.' });
+      else if (ch) setNotice({ ok: false, text: `아직 만렙이 아니에요 (Lv.${ch.level}). 레벨업 후 다시 눌러주세요.` });
+    } catch (e) {
+      setNotice({ ok: false, text: e.message || '갱신에 실패했어요.' });
+    } finally {
+      setRefreshing(null);
+    }
+  };
 
   // 콜백 리다이렉트 결과 배너 (?bnet=linked | error)
   useEffect(() => {
@@ -165,27 +183,67 @@ function BnetLinkCard({ chars }) {
         <p className={`mt-2 text-[13px] font-semibold ${notice.ok ? 'text-heal' : 'text-dps'}`}>{notice.text}</p>
       )}
 
-      {linked && chars.length > 0 && (
-        <div className="mt-3 border-t border-line pt-3">
-          <MonoLabel>{needMain ? 'SELECT MAIN CHARACTER' : 'MAIN CHARACTER'}</MonoLabel>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {chars.map((c) => (
-              <Chip
-                key={c.id}
-                active={profile?.mainCharId === c.id}
-                onClick={() => setMainCharacter(uid, c).catch(() => {})}
-                className="!py-1"
-              >
-                <span style={{ color: c.classColor || undefined }} className="font-bold">{c.name}</span>
-                <span className="ml-1 text-mute">{c.className}{c.realm ? ` · ${c.realm}` : ''}</span>
-              </Chip>
-            ))}
+      {linked && chars.length > 0 && (() => {
+        const isMaxOf = (c) => c.isMax !== false; // 구버전(필드 없음)=만렙 간주
+        const hasMax = chars.some(isMaxOf);
+        const sorted = chars.slice().sort((a, b) => (b.level || 0) - (a.level || 0));
+        return (
+          <div className="mt-3 border-t border-line pt-3">
+            <MonoLabel>{needMain ? '대표 캐릭터 선택' : '대표 캐릭터'}</MonoLabel>
+            {!hasMax && (
+              <p className="mt-1 text-[12px] text-amber-300">
+                만렙 캐릭터가 없어요 — 아무 캐릭터나 대표로 지정할 수 있지만, <b>만렙이 아니면 레이드·공대 신청은 불가</b>합니다.
+              </p>
+            )}
+            <div className="mt-2 flex flex-col gap-1.5">
+              {sorted.map((c) => {
+                const max = isMaxOf(c);
+                const selectable = hasMax ? max : true; // 만렙 있으면 만렙만 선택 가능
+                const isMain = profile?.mainCharId === c.id;
+                return (
+                  <div
+                    key={c.id}
+                    className={`flex items-center gap-2 rounded-btn border px-2.5 py-1.5 ${isMain ? 'border-violet-deep bg-violet/10' : 'border-line'}`}
+                  >
+                    <button
+                      type="button"
+                      disabled={!selectable}
+                      onClick={() => selectable && setMainCharacter(uid, c).catch(() => {})}
+                      title={selectable ? '대표로 지정' : '만렙 캐릭터가 있어 이 캐릭터는 대표로 지정할 수 없습니다'}
+                      className={`flex min-w-0 flex-1 items-center gap-1.5 text-left ${selectable ? '' : 'cursor-not-allowed opacity-45'}`}
+                    >
+                      <span className="truncate text-[13px] font-bold" style={{ color: c.classColor || undefined }}>{c.name}</span>
+                      <span className="num truncate text-[11px] text-sub">
+                        {c.className}{c.realm ? ` · ${c.realm}` : ''} · Lv.{c.level || 0}
+                      </span>
+                    </button>
+                    {isMain && <span className="shrink-0 rounded border border-violet-deep px-1 font-mono text-[9px] tracking-[0.06em] text-violet-hi">대표</span>}
+                    {!max && <span className="shrink-0 rounded border border-amber-400/40 px-1 text-[10px] text-amber-300">만렙 아님</span>}
+                    {!max && (
+                      <button
+                        type="button"
+                        onClick={() => refreshChar(c.id)}
+                        disabled={refreshing === c.id}
+                        className="shrink-0 rounded-btn border border-line px-2 py-0.5 text-[11px] text-sub transition-colors hover:text-txt disabled:opacity-50"
+                      >
+                        {refreshing === c.id ? '확인 중…' : '갱신'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {profile?.mainChar?.isMax === false && (
+              <p className="mt-2 text-[12px] text-amber-300">
+                현재 대표 캐릭터가 만렙이 아닙니다 — 레이드·공대 신청이 제한됩니다. 만렙 달성 후 옆의 [갱신]을 눌러주세요.
+              </p>
+            )}
+            <p className="mt-1.5 text-[11px] text-mute">
+              대표 캐릭터명이 게시글·공략·댓글의 작성자로 표기됩니다 (작성 시점 스냅샷 — 이후 변경해도 과거 글은 유지).
+            </p>
           </div>
-          <p className="mt-1.5 text-[11px] text-mute">
-            대표 캐릭터명이 게시글·공략·댓글의 작성자로 표기됩니다 (작성 시점 스냅샷 — 이후 변경해도 과거 글은 유지).
-          </p>
-        </div>
-      )}
+        );
+      })()}
     </Card>
   );
 }

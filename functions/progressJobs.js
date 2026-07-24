@@ -12,6 +12,7 @@ import {
   computeUserProgress,
   writeUserProgress,
   refreshAllProgress,
+  refreshCharacterLevel,
 } from './progress.js';
 import { runDailyEconomy } from './economy.js';
 
@@ -37,6 +38,16 @@ export const refreshMyProgress = onCall(
     const snap = await db.doc(`users/${uid}`).get();
     if (!snap.exists || !snap.data().bnetLinked) {
       throw new HttpsError('failed-precondition', 'Battle.net 연동이 필요합니다.');
+    }
+    // 캐릭터 레벨 갱신 모드 — 만렙 아닌 캐릭터 옆 [갱신] 버튼 (진도 쿨다운과 무관)
+    const charId = request.data?.charId;
+    if (charId) {
+      try {
+        const character = await refreshCharacterLevel(db, uid, charId, BNET_CLIENT_SECRET.value());
+        return { character };
+      } catch (e) {
+        throw new HttpsError('internal', e.message || '캐릭터 갱신에 실패했어요.');
+      }
     }
     const last = snap.data().progressRefreshedAt || 0;
     const remain = COOLDOWN_MS - (Date.now() - last);

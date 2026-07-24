@@ -228,6 +228,12 @@ export default function TeamPage() {
       }
       return;
     }
+    if (!profile?.mainCharId || profile?.mainChar?.isMax === false) {
+      if (window.confirm('공대 지원에는 만렙 대표 캐릭터가 필요합니다.\n마이페이지에서 대표 캐릭터를 설정하거나 [갱신]해주세요. 이동할까요?')) {
+        navigate('/me');
+      }
+      return;
+    }
     setJoinOpen(true);
   };
 

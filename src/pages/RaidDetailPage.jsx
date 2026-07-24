@@ -468,6 +468,12 @@ export default function RaidDetailPage() {
                     }
                     return;
                   }
+                  if (profile?.mainChar?.isMax === false) {
+                    if (window.confirm('대표 캐릭터가 만렙이 아니라 레이드 신청이 불가합니다.\n만렙 달성 후 마이페이지에서 [갱신]하거나 만렙 캐릭터로 바꿔주세요. 이동할까요?')) {
+                      navigate('/me');
+                    }
+                    return;
+                  }
                   setApplyOpen(true);
                 }}
               >
