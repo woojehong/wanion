@@ -18,6 +18,125 @@ import TeamWclPanel from '../components/TeamWclPanel';
 import LogoUploader from '../components/LogoUploader';
 import GuestPresetEditor from '../components/GuestPresetEditor';
 import { OrgJoinModal, OrgManagePanel } from '../components/OrgMembership';
+import { TEAM_CONTENT } from '../lib/teamContent';
+
+const BASE = import.meta.env.BASE_URL;
+
+// 공대 편집형 소개 (팀별 정적 콘텐츠) — 대표사진·소개·특징·공대장 한마디·연혁·엠블럼
+function TeamEditorial({ content }) {
+  const gold = content.accent || '#C9A84C';
+  return (
+    <div className="mb-8 flex flex-col gap-8">
+      {content.groupPhoto && (
+        <figure className="overflow-hidden rounded border border-line">
+          <img src={`${BASE}${content.groupPhoto}`} alt="공대 단체사진" className="w-full object-cover" />
+          {content.tagline && (
+            <figcaption className="border-t border-line bg-surface2 px-4 py-2 text-center text-[13px] font-semibold text-sub">“{content.tagline}”</figcaption>
+          )}
+        </figure>
+      )}
+
+      {content.about && (
+        <section>
+          <SectionTitle ko="소개" en="ABOUT THE TEAM" />
+          {content.about.subtitle && <p className="mb-3 text-[15px] font-bold text-txt">{content.about.subtitle}</p>}
+          <div className="flex flex-col gap-3">
+            {content.about.paragraphs.map((t, i) => (
+              <p key={i} className="text-[14px] leading-relaxed text-sub">{t}</p>
+            ))}
+          </div>
+          {content.about.sad && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {content.about.sad.map((s) => (
+                <span key={s.k} className="inline-flex items-baseline gap-1.5 rounded-btn border border-line bg-surface2 px-3 py-1.5">
+                  <b className="text-[15px] font-extrabold" style={{ color: gold }}>{s.k}</b>
+                  <span className="text-[13px] text-txt">{s.v}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {content.features?.length > 0 && (
+        <section className="grid gap-3 sm:grid-cols-3">
+          {content.features.map((f) => (
+            <Card key={f.title} className="p-4">
+              <p className="text-[14px] font-bold text-txt">{f.title}</p>
+              <p className="mt-2 text-[13px] leading-relaxed text-sub">{f.desc}</p>
+            </Card>
+          ))}
+        </section>
+      )}
+
+      {content.quote && (
+        <section>
+          <SectionTitle ko="공대장의 한마디" en="A WORD FROM THE LEADER" />
+          <blockquote className="rounded border-l-2 bg-surface2 p-5" style={{ borderColor: gold }}>
+            <p className="text-[15px] font-semibold leading-relaxed text-txt">“{content.quote.text}”</p>
+            <footer className="mt-3 text-[12px] text-sub">— {content.quote.by} · {content.quote.role}</footer>
+          </blockquote>
+        </section>
+      )}
+
+      {content.history?.length > 0 && (
+        <section>
+          <SectionTitle ko="프로그레스 연혁" en="PROGRESS TIMELINE" />
+          <Card className="p-5">
+            <ol className="flex flex-col">
+              {content.history.map((h, i) => (
+                <li key={i} className="border-l border-line pb-5 pl-4 last:pb-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <MonoLabel violet>{h.season}</MonoLabel>
+                    {h.date && <span className="num text-[11px] text-mute">{h.date}</span>}
+                    {h.badge && (
+                      <span className="rounded-full border px-2 py-0.5 text-[10px] font-bold" style={{ color: gold, borderColor: `${gold}66` }}>{h.badge}</span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-[14px] font-bold text-txt">{h.title}</p>
+                  {[h.leader && `공대장 ${h.leader}`, h.sched, h.note].filter(Boolean).length > 0 && (
+                    <p className="text-[12px] text-sub">{[h.leader && `공대장 ${h.leader}`, h.sched, h.note].filter(Boolean).join(' · ')}</p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </Card>
+        </section>
+      )}
+
+      {content.emblem_note && (
+        <section>
+          <SectionTitle ko="엠블럼" en="EMBLEM" />
+          <div className="grid gap-5 sm:grid-cols-[160px_1fr]">
+            {content.emblem && (
+              <img src={`${BASE}${content.emblem}`} alt="엠블럼" className="h-40 w-40 rounded border border-line bg-ink object-contain p-2" />
+            )}
+            <div className="flex flex-col gap-3">
+              {content.emblem_note.letters.map((l) => (
+                <div key={l.k} className="flex gap-3">
+                  <b className="w-5 shrink-0 text-[18px] font-extrabold" style={{ color: gold }}>{l.k}</b>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold text-txt">{l.part} · {l.label}</p>
+                    <p className="text-[12px] leading-relaxed text-sub">{l.desc}</p>
+                  </div>
+                </div>
+              ))}
+              <div className="mt-1 flex flex-wrap gap-2">
+                {content.emblem_note.colors.map((c) => (
+                  <span key={c.hex} className="inline-flex items-center gap-1.5 rounded-btn border border-line px-2 py-1">
+                    <i className="h-3 w-3 rounded-full" style={{ background: c.hex }} />
+                    <span className="text-[11px] text-sub">{c.name}</span>
+                    <span className="num font-mono text-[10px] text-mute">{c.hex}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
 
 function fmtWclDate(ms) {
   if (!ms) return '';
@@ -130,6 +249,7 @@ export default function TeamPage() {
 
   const activeTab = tab || 'intro';
   const p = team.progress || null; // WCL 리포트(P3) 연동 전까지는 수동 입력값
+  const content = TEAM_CONTENT[teamId]; // 팀별 편집형 소개(있으면 렌더)
 
   return (
     <main className="mx-auto max-w-content px-4 py-8">
@@ -217,7 +337,9 @@ export default function TeamPage() {
       )}
 
       {activeTab === 'intro' && (
-        <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="mt-5">
+          {content && <TeamEditorial content={content} />}
+          <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div>
             {wclReport?.reports?.length > 0 && (
               <div className="mb-6">
@@ -332,6 +454,7 @@ export default function TeamPage() {
               </Card>
             )}
           </aside>
+          </div>
         </div>
       )}
 
