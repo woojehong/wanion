@@ -1,3 +1,7 @@
+/* WANION 디자인 v2 — 폰트는 @tailwind 지시문보다 먼저 와야 한다. */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Marcellus&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,48 +9,105 @@
 @layer base {
   html {
     background: #09090d;
-    color: #ededf2;
+    color: #f1f0f5;
     font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   body {
     margin: 0;
     min-height: 100vh;
   }
+  /* 모바일 하단 탭바가 콘텐츠를 가리지 않도록 여백 확보 (Header의 MobileTabBar와 짝) */
+  @media (max-width: 767px) {
+    body {
+      padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    }
+  }
   ::selection {
-    background: rgba(138, 112, 255, 0.35);
+    background: rgba(138, 112, 255, 0.32);
   }
   * {
     scrollbar-width: thin;
-    scrollbar-color: #1e1e2e transparent;
+    scrollbar-color: #292832 transparent;
   }
 }
 
 @layer components {
-  /* 영문 마이크로 라벨 — WANION 시그니처 타이포 패턴 */
+  /* 영문 마이크로 라벨 — 섹션 보조 정보에만 (design-system 3항) */
   .mono-label {
     @apply font-mono text-[11px] uppercase tracking-[0.08em] text-sub;
   }
   .mono-label-violet {
     @apply font-mono text-[11px] uppercase tracking-[0.08em] text-violet;
   }
-  /* 섹션 타이틀: 좌측 액센트 바 + 국문 볼드 + 영문 서브 */
+  /* Studio Hooje 크레딧 — Marcellus 에디토리얼 */
+  .credit-hooje {
+    @apply font-editorial tracking-[0.14em] text-sub;
+  }
+  /* 섹션 타이틀 좌측 액센트 바 */
   .section-bar {
     @apply inline-block w-[3px] self-stretch rounded-full bg-violet;
   }
+
+  /* ── 버튼 4종 (design-system 6항) : 글로우 금지 ── */
+  /* Primary: 바이올렛 단색, 화면당 1개의 핵심 행동 */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded bg-violet px-4 py-2 text-[14px] font-bold text-ink transition hover:bg-violet-hi disabled:opacity-40;
-    box-shadow: 0 0 18px rgba(138, 112, 255, 0.25);
+    @apply inline-flex items-center justify-center gap-1.5 rounded-btn bg-violet px-4 py-2 text-[14px] font-bold text-ink transition-colors hover:bg-violet-hi active:bg-violet-deep disabled:cursor-not-allowed disabled:opacity-40;
   }
+  /* Secondary: 경계 + 상승 패널, Primary와 같은 높이 */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-btn border border-line bg-surface2 px-4 py-2 text-[14px] font-semibold text-txt transition-colors hover:border-violet-deep hover:text-violet-hi disabled:opacity-40;
+  }
+  /* 하위호환: 기존 .btn-ghost = Secondary 계열 */
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded border border-line bg-transparent px-4 py-2 text-[14px] font-semibold text-txt transition hover:border-violet-deep hover:text-violet-hi;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-btn border border-line bg-transparent px-4 py-2 text-[14px] font-semibold text-txt transition-colors hover:border-violet-deep hover:text-violet-hi disabled:opacity-40;
   }
+  /* Tertiary: 텍스트 버튼. 취소·부가 기능 */
+  .btn-tertiary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-btn px-3 py-2 text-[14px] font-semibold text-sub transition-colors hover:text-txt disabled:opacity-40;
+  }
+  /* Destructive: 파괴적 행동/오류에만. 항상 확인 단계와 함께 */
+  .btn-destructive {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-btn border border-danger/50 bg-danger/10 px-4 py-2 text-[14px] font-semibold text-danger transition-colors hover:bg-danger/20 disabled:opacity-40;
+  }
+
+  /* ── 입력 (design-system 7항) : 라벨을 placeholder로 대체하지 않음 ── */
+  .input {
+    @apply h-11 w-full rounded-btn border border-line bg-surface px-3 text-[14px] text-txt placeholder:text-mute transition-colors focus:border-violet-deep focus:outline-none;
+  }
+  .input-label {
+    @apply mb-1.5 block text-[12px] font-semibold text-sub;
+  }
+  .input-help {
+    @apply mt-1 block text-[12px] text-mute;
+  }
+  .input-error {
+    @apply mt-1 block text-[12px] text-danger;
+  }
+
+  /* ── 칩 ── */
   .chip {
-    @apply inline-flex items-center gap-1 rounded border border-line bg-surface px-2 py-0.5 text-[12px] font-medium text-sub;
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2.5 py-0.5 text-[12px] font-medium text-sub transition-colors;
   }
   .chip-active {
     @apply border-violet-deep bg-violet/10 text-violet-hi;
   }
+
+  /* ── 테이블 (운영 화면) ── */
+  .tbl {
+    @apply w-full border-collapse text-[13px];
+  }
+  .tbl th {
+    @apply border-b border-line px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-mute;
+  }
+  .tbl td {
+    @apply border-b border-line px-3 py-2 text-txt;
+  }
+  .tbl tr:hover td {
+    @apply bg-surface2/60;
+  }
+
   .num {
     font-variant-numeric: tabular-nums;
   }

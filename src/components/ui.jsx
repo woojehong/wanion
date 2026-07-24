@@ -129,3 +129,132 @@ export function HostBadge({ raid }) {
     </span>
   );
 }
+
+// ─────────────────────────────────────────────────────────────
+// 디자인 v2 신규 원자 (design-system.md 9·6·8·상태화면 항목)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 월상 상태 인덱스 — 모집○ 구성◔ 확정● 출발◕ 기록◑
+ * 기호 옆에 상태 텍스트를 반드시 함께 쓴다. 오컬트 장식 금지(design-system 9항).
+ * phase: 'recruit' | 'forming' | 'confirmed' | 'departing' | 'recorded'
+ * rail=true 이면 5단계 전체를 진행 레일로 표시(현재 단계 강조).
+ */
+export const PHASES = [
+  { key: 'recruit', sym: '○', ko: '모집' },
+  { key: 'forming', sym: '◔', ko: '구성' },
+  { key: 'confirmed', sym: '●', ko: '확정' },
+  { key: 'departing', sym: '◕', ko: '출발' },
+  { key: 'recorded', sym: '◑', ko: '기록' },
+];
+
+export function PhaseIndex({ phase = 'recruit', rail = false, showText = true, className = '' }) {
+  const idx = Math.max(0, PHASES.findIndex((p) => p.key === phase));
+  if (!rail) {
+    const p = PHASES[idx];
+    return (
+      <span className={`inline-flex items-center gap-1.5 ${className}`}>
+        <span className="text-[13px] leading-none text-violet-hi" aria-hidden>
+          {p.sym}
+        </span>
+        {showText && <span className="text-[12px] font-semibold text-txt">{p.ko}</span>}
+      </span>
+    );
+  }
+  return (
+    <div className={`flex items-center gap-2 ${className}`} role="list" aria-label="주간 진행 단계">
+      {PHASES.map((p, i) => {
+        const active = i === idx;
+        const done = i < idx;
+        return (
+          <div key={p.key} role="listitem" className="flex items-center gap-1.5">
+            <span
+              className={`text-[13px] leading-none ${active ? 'text-violet-hi' : done ? 'text-sub' : 'text-mute'}`}
+              aria-hidden
+            >
+              {p.sym}
+            </span>
+            <span
+              className={`text-[12px] ${active ? 'font-bold text-txt' : done ? 'font-medium text-sub' : 'text-mute'}`}
+            >
+              {p.ko}
+            </span>
+            {i < PHASES.length - 1 && <span className="mx-0.5 h-px w-4 bg-line" aria-hidden />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * 상태 배지 — 색·배경·텍스트를 함께 바꾼다(design-system 5항).
+ * tone: 'default' | 'violet' | 'ok' | 'warn' | 'danger' | 'mute'
+ */
+export function StatusBadge({ children, tone = 'default', className = '' }) {
+  const tones = {
+    default: 'border-line bg-surface2 text-sub',
+    violet: 'border-violet-deep bg-violet/10 text-violet-hi',
+    ok: 'border-heal/40 bg-heal/10 text-heal',
+    warn: 'border-amber-400/40 bg-amber-400/10 text-amber-300',
+    danger: 'border-danger/50 bg-danger/10 text-danger',
+    mute: 'border-line bg-transparent text-mute',
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tones[tone] || tones.default} ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+/**
+ * 로스터 미터 — 탱/힐/딜 현재/정원을 가는 막대로.
+ * 역할색은 작은 슬롯에만 쓴다(design-system 2항). 넓은 배경으로 쓰지 않음.
+ */
+export function RosterMeter({ caps = {}, counts = {}, className = '' }) {
+  const roles = [
+    { key: 'tank', label: '탱', bar: 'bg-tank' },
+    { key: 'heal', label: '힐', bar: 'bg-heal' },
+    { key: 'dps', label: '딜', bar: 'bg-dps' },
+  ];
+  return (
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      {roles.map((r) => {
+        const cap = caps[r.key] || 0;
+        const cur = Math.min(counts[r.key] || 0, cap);
+        const pct = cap ? (cur / cap) * 100 : 0;
+        const full = cap > 0 && cur >= cap;
+        return (
+          <div key={r.key} className="flex items-center gap-2">
+            <span className="w-4 shrink-0 text-[11px] font-semibold text-sub">{r.label}</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
+              <i className={`block h-full rounded-full ${r.bar}`} style={{ width: `${pct}%` }} />
+            </div>
+            <span className={`num w-10 shrink-0 text-right font-mono text-[11px] ${full ? 'text-mute' : 'text-txt'}`}>
+              {cur}/{cap}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * 빈 상태 — 설명 + 다음 행동(screen-map 상태화면). 필요할 때만 WANI(art) 사용.
+ * art: 선택적 ReactNode(캐릭터 이미지 등). 기본은 월상 표식.
+ */
+export function EmptyState({ title, desc, action, art = null, className = '' }) {
+  return (
+    <div className={`flex flex-col items-center justify-center gap-3 px-6 py-14 text-center ${className}`}>
+      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-line text-[20px] text-mute" aria-hidden>
+        {art || '○'}
+      </div>
+      {title && <p className="text-[15px] font-bold text-txt">{title}</p>}
+      {desc && <p className="max-w-xs text-[13px] leading-relaxed text-sub">{desc}</p>}
+      {action && <div className="mt-1">{action}</div>}
+    </div>
+  );
+}
