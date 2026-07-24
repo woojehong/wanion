@@ -13,7 +13,7 @@ import {
   fetchLedger,
   fetchPointsConfig,
 } from '../lib/db';
-import { MonoLabel, SectionTitle, Card, Avatar, Chip, Segments } from '../components/ui';
+import { MonoLabel, SectionTitle, Card, Avatar, Chip, Segments, StatusBadge } from '../components/ui';
 import { getRank } from '../lib/utils';
 import { SHOP_ITEMS } from '../lib/constants';
 
@@ -156,7 +156,7 @@ function BnetLinkCard({ chars }) {
               : 'Battle.net을 연동하면 만렙 캐릭터가 전원 자동 등록됩니다 — 연동 없이는 레이드 신청이 불가합니다.'}
           </p>
         </div>
-        <button className={linked ? 'btn-ghost' : 'btn-primary'} disabled={busy} onClick={startLink}>
+        <button className={linked ? 'btn-secondary' : 'btn-primary'} disabled={busy} onClick={startLink}>
           {busy ? '이동 중…' : linked ? '다시 동기화' : 'Battle.net 연동'}
         </button>
       </div>
@@ -290,7 +290,7 @@ function ProgressCard() {
             </p>
           )}
         </div>
-        <button className="btn-ghost" disabled={busy || cooldownLeft > 0} onClick={refresh}>
+        <button className="btn-secondary" disabled={busy || cooldownLeft > 0} onClick={refresh}>
           {busy ? '갱신 중…' : cooldownLeft > 0 ? `${Math.ceil(cooldownLeft / 60000)}분 후 가능` : '지금 갱신'}
         </button>
       </div>
@@ -335,11 +335,11 @@ export default function MyPage() {
   }, [uid]);
 
   if (!authReady) {
-    return <main className="mx-auto max-w-6xl px-4 py-16 text-center text-[13px] text-mute">불러오는 중…</main>;
+    return <main className="mx-auto max-w-content px-4 py-16 text-center text-[13px] text-mute">불러오는 중…</main>;
   }
   if (!user) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-16 text-center">
+      <main className="mx-auto max-w-content px-4 py-16 text-center">
         <p className="text-sub">마이페이지는 로그인이 필요합니다.</p>
         <button className="btn-primary mt-4" onClick={signInGoogle}>Google로 로그인</button>
       </main>
@@ -351,39 +351,42 @@ export default function MyPage() {
   const rank = getRank(wallet?.lifetime);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <BnetLinkCard chars={chars} />
-      <DiscordLinkCard />
-      <ProgressCard />
-      <DailyCheckinCard wallet={wallet} />
-
-      {/* 프로필 헤더 */}
+    <main className="mx-auto max-w-content px-4 py-8">
+      {/* 프로필 헤더 — 신원 우선 */}
       <div className="flex flex-wrap items-center gap-5 rounded border border-line bg-surface p-5">
         <Avatar name={displayName} color={mainColor} size="h-[72px] w-[72px] !text-[26px]" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-[24px] font-extrabold">{displayName}</h1>
             {profile?.bnetLinked ? (
-              <span className="font-mono text-[11px] tracking-[0.06em] text-heal">BNET VERIFIED</span>
+              <StatusBadge tone="ok">BNET 인증됨</StatusBadge>
             ) : (
-              <span className="font-mono text-[11px] tracking-[0.06em] text-mute">BNET 미연동</span>
+              <StatusBadge tone="mute">BNET 미연동</StatusBadge>
             )}
+            {isPlatformAdmin && <StatusBadge tone="violet">플랫폼 운영자</StatusBadge>}
           </div>
           <MonoLabel className="mt-0.5 block">
             {profile?.battletag ? `${profile.battletag} · ` : ''}JOINED {fmtDate(profile?.createdAt) || '—'}
           </MonoLabel>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {isPlatformAdmin && <Chip className="chip-active">플랫폼 운영자</Chip>}
-            {profile?.mainChar && (
+          {profile?.mainChar && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
               <Chip>
                 대표{' '}
                 <span className="font-bold" style={{ color: profile.mainChar.classColor || undefined }}>
                   {profile.mainChar.name}
                 </span>
               </Chip>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* 온보딩·연동 */}
+      <div className="mt-6">
+        <BnetLinkCard chars={chars} />
+        <DiscordLinkCard />
+        <ProgressCard />
+        <DailyCheckinCard wallet={wallet} />
       </div>
 
       {/* 계정 연동 */}
