@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { subscribeUpcomingRaids, fetchMyMemberships } from '../lib/db';
+import { subscribeUpcomingRaids, fetchMyMemberships, fetchMyApplications } from '../lib/db';
 import { getCaps } from '../lib/utils';
 import RaidFormModal from '../components/RaidFormModal';
-import { MonoLabel, SectionTitle, Card, DDay, RosterMeter, HostBadge, PhaseIndex, StatusBadge, Segments, EmptyState } from '../components/ui';
+import { MonoLabel, SectionTitle, Card, Chip, DDay, RosterMeter, HostBadge, PhaseIndex, StatusBadge, Segments, EmptyState } from '../components/ui';
 
 const SCOPE_KO = { platform: '플랫폼', guild: '길드', team: '공대', alliance: '연합' };
 const DIFF_META = {
@@ -15,6 +15,8 @@ const DIFF_META = {
 const DIFF_ALIAS = { 일반: 'normal', 영웅: 'heroic', 신화: 'mythic' };
 const diffMeta = (raw) => DIFF_META[DIFF_META[raw] ? raw : DIFF_ALIAS[raw] || 'heroic'];
 const pad = (n) => String(n).padStart(2, '0');
+const APPLIED_KO = { active: '확정', wait: '대기', bench: '벤치', pending: '승인 대기' };
+const APPLIED_TONE = { active: 'ok', wait: 'warn', bench: 'default', pending: 'default' };
 
 function adaptRaid(r) {
   const start = r.startAt?.toDate ? r.startAt.toDate() : new Date();
@@ -34,19 +36,19 @@ function adaptRaid(r) {
   };
 }
 
-function PartyRow({ r }) {
+function PartyRow({ r, myStatus }) {
   const closed = r.status !== 'recruiting';
   return (
-    <Link to={`/raid/${r.id}`} className={`group flex overflow-hidden rounded border border-line bg-surface transition-colors hover:border-violet-deep ${closed ? 'opacity-50' : ''}`}>
+    <Link to={`/raid/${r.id}`} className={`group flex overflow-hidden rounded border border-line bg-surface transition-colors hover:border-violet-deep ${closed && !myStatus ? 'opacity-50' : ''}`}>
       <span className="w-1 shrink-0" style={{ background: r.diffColor }} />
       <div className="grid flex-1 gap-3 p-3.5 md:grid-cols-[1fr_220px]">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <PhaseIndex phase={r.phase} />
+            {myStatus ? <StatusBadge tone={APPLIED_TONE[myStatus] || 'default'}>{APPLIED_KO[myStatus] || myStatus}</StatusBadge> : <PhaseIndex phase={r.phase} />}
             <span className="rounded-full border px-2 py-0.5 text-[11px] font-bold" style={{ color: r.diffColor, borderColor: `${r.diffColor}66` }}>{r.difficulty}</span>
             <h3 className="truncate text-[15px] font-bold group-hover:text-violet-hi">{r.title}</h3>
             {r.guestParty && <StatusBadge tone="violet">손님</StatusBadge>}
-            {closed && <StatusBadge tone="mute">마감</StatusBadge>}
+            {closed && !myStatus && <StatusBadge tone="mute">마감</StatusBadge>}
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-sub">
             <HostBadge raid={r} />
@@ -67,21 +69,42 @@ export default function HomePage() {
   const { user, profile, uid, signInGoogle } = useApp();
   const [live, setLive] = useState(null);
   const [memberships, setMemberships] = useState([]);
+  const [myApps, setMyApps] = useState(null); // [{raid, myStatus}]
   const [formOpen, setFormOpen] = useState(false);
+  const [tab, setTab] = useState('global'); // global | mine | applied
 
   useEffect(() => subscribeUpcomingRaids(setLive), []);
   useEffect(() => {
-    if (uid) fetchMyMemberships(uid).then(setMemberships).catch(() => setMemberships([]));
-    else setMemberships([]);
+    if (!uid) { setMemberships([]); setMyApps([]); return; }
+    fetchMyMemberships(uid).then(setMemberships).catch(() => setMemberships([]));
+    fetchMyApplications(uid).then(setMyApps).catch(() => setMyApps([]));
   }, [uid]);
 
   const all = useMemo(() => (live ? live.map(adaptRaid) : []), [live]);
-  const recruiting = useMemo(() => all.filter((r) => r.status === 'recruiting').sort((a, b) => a.dday - b.dday), [all]);
+  // 글로벌 = 신청 가능한 모든 모집 파티
+  const globalList = useMemo(() => all.filter((r) => r.status === 'recruiting').sort((a, b) => a.dday - b.dday), [all]);
+  // 내 소속 = 내 길드·공대·연합이 여는 예정 일정
   const myScopeIds = useMemo(() => new Set(memberships.filter((m) => m.scopeId).map((m) => m.scopeId)), [memberships]);
-  const mySchedule = useMemo(
-    () => all.filter((r) => r.hostId && myScopeIds.has(r.hostId)).sort((a, b) => a._start - b._start),
-    [all, myScopeIds]
+  const mineList = useMemo(() => all.filter((r) => r.hostId && myScopeIds.has(r.hostId)).sort((a, b) => a._start - b._start), [all, myScopeIds]);
+  // 내 신청 = 실제 내가 신청/확정/대기/벤치된 일정
+  const appliedList = useMemo(
+    () => (myApps || []).map((x) => ({ ...adaptRaid(x.raid), myStatus: x.myStatus })).sort((a, b) => a._start - b._start),
+    [myApps]
   );
+
+  const TABS = [
+    { id: 'global', label: '글로벌', count: globalList.length, hint: '신청 가능한 전체 파티' },
+    { id: 'mine', label: '내 소속', count: mineList.length, hint: '내 길드·공대가 여는 일정' },
+    { id: 'applied', label: '내 신청', count: appliedList.length, hint: '내가 신청·확정된 일정' },
+  ];
+  const active = TABS.find((t) => t.id === tab) || TABS[0];
+  const rows = tab === 'global' ? globalList : tab === 'mine' ? mineList : appliedList;
+  const emptyMsg =
+    tab === 'global'
+      ? { t: '지금 모집 중인 파티가 없어요', d: '직접 파티를 열어 전국에서 모집해보세요.' }
+      : tab === 'mine'
+        ? { t: '소속 공대의 예정 일정이 없어요', d: memberships.filter((m) => m.scopeType !== 'platform').length ? '아직 열린 일정이 없습니다.' : '길드·공대에 가입하면 여기 모입니다.' }
+        : { t: '신청한 일정이 없어요', d: '글로벌 탭에서 파티를 찾아 신청해보세요.' };
 
   const prog = profile?.progress || null;
   const name = profile?.displayName || user?.displayName || '모험가';
@@ -89,64 +112,39 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto max-w-content px-4 py-8">
-      {/* 인사 + 요약 (단골용 — 마케팅 설명 없음) */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <MonoLabel violet>WELCOME BACK</MonoLabel>
           <h1 className="mt-1 text-[26px] font-extrabold">{name}님, 오늘 어떤 파티에 갈까요?</h1>
         </div>
-        <div className="flex items-center gap-5">
-          <div className="text-right">
-            <div className="num text-[20px] font-extrabold text-violet-hi">{recruiting.length}</div>
-            <MonoLabel>모집 중</MonoLabel>
-          </div>
-          <div className="text-right">
-            <div className="num text-[20px] font-extrabold">{all.length}</div>
-            <MonoLabel>이번 주 일정</MonoLabel>
-          </div>
-          <button className="btn-primary" onClick={() => (user ? setFormOpen(true) : signInGoogle())}>파티 개설</button>
-        </div>
+        <button className="btn-primary" onClick={() => (user ? setFormOpen(true) : signInGoogle())}>파티 개설</button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        {/* 지금 모집 중인 파티 */}
         <div>
-          <SectionTitle ko="지금 모집 중인 파티" en={`OPEN RECRUITS · ${recruiting.length}`} right={<Link to="/board" className="text-[12px] text-violet-hi hover:underline">전체 보기 →</Link>} />
+          {/* 3분류 탭: 글로벌 · 내 소속 · 내 신청 */}
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            {TABS.map((t) => (
+              <Chip key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
+                {t.label} <span className="num ml-0.5 text-mute">{t.count}</span>
+              </Chip>
+            ))}
+            <Link to="/board" className="ml-auto text-[12px] text-violet-hi hover:underline">전체 보드 →</Link>
+          </div>
+          <p className="mb-3 text-[12px] text-mute">{active.hint}</p>
+
           <div className="flex flex-col gap-2.5">
-            {recruiting.slice(0, 6).map((r) => <PartyRow key={r.id} r={r} />)}
-            {recruiting.length === 0 && (
-              <EmptyState title="지금 모집 중인 파티가 없어요" desc="직접 파티를 열어 전국에서 모집해보세요." action={<button className="btn-primary" onClick={() => setFormOpen(true)}>파티 개설</button>} />
+            {rows.slice(0, 8).map((r) => <PartyRow key={r.id} r={r} myStatus={r.myStatus} />)}
+            {tab === 'applied' && myApps === null && (
+              <p className="py-6 text-center text-[12px] text-mute">불러오는 중…</p>
+            )}
+            {rows.length === 0 && !(tab === 'applied' && myApps === null) && (
+              <EmptyState title={emptyMsg.t} desc={emptyMsg.d} action={tab !== 'applied' ? <button className="btn-primary" onClick={() => setFormOpen(true)}>파티 개설</button> : <button className="btn-secondary" onClick={() => setTab('global')}>글로벌에서 찾기</button>} />
             )}
           </div>
         </div>
 
-        {/* 우측: 내 일정 · 진도 · 소속 */}
         <aside className="flex flex-col gap-4">
-          {/* 내 일정 = 내 소속이 여는 일정 */}
-          <Card className="p-4">
-            <MonoLabel violet>내 일정 · 소속 공대</MonoLabel>
-            <div className="mt-2 flex flex-col gap-1.5">
-              {mySchedule.slice(0, 5).map((r) => (
-                <Link key={r.id} to={`/raid/${r.id}`} className="flex items-center gap-2 rounded-btn border border-line bg-surface2 px-2.5 py-2 transition-colors hover:border-violet-deep">
-                  <span className="h-6 w-0.5 shrink-0 rounded-full" style={{ background: r.diffColor }} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-bold">{r.title}</p>
-                    <p className="num truncate text-[11px] text-sub">{r.dateLabel}</p>
-                  </div>
-                  <DDay n={r.dday} />
-                </Link>
-              ))}
-              {mySchedule.length === 0 && (
-                <p className="py-3 text-center text-[12px] text-mute">
-                  {memberships.filter((m) => m.scopeType !== 'platform').length
-                    ? '소속 공대의 예정된 일정이 아직 없어요.'
-                    : '아직 소속이 없어요 — 길드·공대에 가입하면 일정이 여기 모입니다.'}
-                </p>
-              )}
-            </div>
-          </Card>
-
-          {/* 이번 주 진도 */}
           <Card className="p-4">
             <MonoLabel violet>이번 주 진도</MonoLabel>
             {profile?.bnetLinked ? (
@@ -170,7 +168,6 @@ export default function HomePage() {
             )}
           </Card>
 
-          {/* 내 소속 */}
           <Card className="p-4">
             <MonoLabel violet>내 소속</MonoLabel>
             <div className="mt-2 flex flex-col gap-1.5">

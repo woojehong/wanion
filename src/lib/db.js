@@ -1,5 +1,6 @@
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   getDocs,
@@ -1367,4 +1368,33 @@ export async function uploadOrgLogo(scopeType, scopeId, file) {
   const url = await getDownloadURL(r);
   await updateDoc(doc(db, col, scopeId), { logoPath: url, logoUpdatedAt: serverTimestamp() });
   return url;
+}
+
+
+// ── 내 신청 레이드 (collectionGroup) — 내가 신청/확정/대기/벤치된 모든 예정 레이드 ──
+// 인덱스: fieldOverrides apps.userId COLLECTION_GROUP (이미 존재) · 규칙: apps read=signedIn
+export async function fetchMyApplications(uid) {
+  if (!uid) return [];
+  const snap = await getDocs(query(collectionGroup(db, 'apps'), where('userId', '==', uid)));
+  const rows = snap.docs
+    .map((d) => ({ raidId: d.ref.parent.parent?.id, status: d.data().status }))
+    .filter((r) => r.raidId);
+  const raids = await Promise.all(
+    rows.map(async (r) => {
+      try {
+        const rd = await getDoc(doc(db, 'raids', r.raidId));
+        return rd.exists() ? { id: rd.id, ...rd.data() } : null;
+      } catch {
+        return null;
+      }
+    })
+  );
+  const now = Date.now();
+  return rows
+    .map((r, i) => ({ raid: raids[i], myStatus: r.status }))
+    .filter((x) => {
+      if (!x.raid || x.raid.deleted) return false;
+      const end = x.raid.endAt?.toDate ? x.raid.endAt.toDate().getTime() : now + 1;
+      return end >= now; // 종료된 레이드 제외 (예정만)
+    });
 }
